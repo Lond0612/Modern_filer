@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <windows.h>
+#include <shellapi.h>
 
 // --- プロトタイプ宣言 ---
 int process_user_input(); // 入力の受付から振り分けまでを一括で行う
@@ -8,6 +9,9 @@ void cmd_ls(const char *path);
 void cmd_cd(const char *arg);
 void cmd_cat(const char *arg);
 void cmd_touch(const char *arg);
+void cmd_rm(const char *arg);
+
+static int resolve_full_path(const char *arg, char *out, size_t out_size);
 
 int main()
 {
@@ -61,6 +65,10 @@ int process_user_input()
     else if (strncmp(input, "touch ", 6) == 0)
     {
         cmd_touch(input + 6);
+    }
+    else if (strncmp(input, "rm ", 3) == 0)
+    {
+        cmd_rm(input + 3);
     }
     else if (strlen(input) > 0)
     {
@@ -138,4 +146,72 @@ void cmd_touch(const char *arg)
         return;
     }
     fclose(file);
+}
+
+// --- パスをフルパスに変換するヘルパー ---
+static int resolve_full_path(const char *arg, char *out, size_t out_size)
+{
+    if (GetFullPathName(arg, (DWORD)out_size, out, NULL) == 0)
+    {
+        printf("Failed to resolve path: %s\n", arg);
+        return 0;
+    }
+    return 1;
+}
+
+void cmd_rm(const char *arg)
+{
+    // --- フルパスに変換 ---
+    char fullpath[MAX_PATH + 1];
+    memset(fullpath, 0, sizeof(fullpath));
+    if (resolve_full_path(arg, fullpath, MAX_PATH) == 0)
+        return;
+
+    // --- 存在確認 + サイズ取得 ---
+    WIN32_FILE_ATTRIBUTE_DATA fileInfo;
+    if (GetFileAttributesEx(fullpath, GetFileExInfoStandard, &fileInfo) == FALSE)
+    {
+        printf("File not found: %s\n", fullpath);
+        return;
+    }
+
+    LARGE_INTEGER size;
+    size.LowPart = fileInfo.nFileSizeLow;
+    size.HighPart = fileInfo.nFileSizeHigh;
+
+    // --- サイズ判定（閾値：100MB）---
+    const LONGLONG THRESHOLD = 100LL * 1024 * 1024;
+
+    if (size.QuadPart > THRESHOLD)
+    {
+        printf("Warning: File size is %.1f MB. Permanently delete? (y/n): ",
+               (double)size.QuadPart / (1024 * 1024));
+
+        char confirm[8];
+        if (fgets(confirm, sizeof(confirm), stdin) == NULL)
+            return;
+        if (confirm[0] != 'y' && confirm[0] != 'Y')
+        {
+            printf("Cancelled.\n");
+            return;
+        }
+
+        if (remove(fullpath) != 0)
+            printf("Failed to delete: %s\n", fullpath);
+        else
+            printf("Permanently deleted: %s\n", fullpath);
+    }
+    else
+    {
+        SHFILEOPSTRUCT op;
+        memset(&op, 0, sizeof(op));
+        op.wFunc = FO_DELETE;
+        op.pFrom = fullpath;
+        op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
+
+        if (SHFileOperation(&op) != 0)
+            printf("Failed to move to trash: %s\n", fullpath);
+        else
+            printf("Moved to trash: %s\n", fullpath);
+    }
 }
