@@ -10,6 +10,7 @@ void cmd_cd(const char *arg);
 void cmd_cat(const char *arg);
 void cmd_touch(const char *arg);
 void cmd_rm(const char *arg);
+void cmd_cp(const char *src, const char *dst);
 
 static int resolve_full_path(const char *arg, char *out, size_t out_size);
 
@@ -69,6 +70,19 @@ int process_user_input()
     else if (strncmp(input, "rm ", 3) == 0)
     {
         cmd_rm(input + 3);
+    }
+    else if (strncmp(input, "cp ", 3) == 0)
+    {
+        // "cp src dst" の形式で引数を2つに分割
+        char src[MAX_PATH], dst[MAX_PATH];
+        if (sscanf(input + 3, "%s %s", src, dst) != 2)
+        {
+            printf("Usage: cp <src> <dst>\n");
+        }
+        else
+        {
+            cmd_cp(src, dst);
+        }
     }
     else if (strlen(input) > 0)
     {
@@ -214,4 +228,50 @@ void cmd_rm(const char *arg)
         else
             printf("Moved to trash: %s\n", fullpath);
     }
+}
+
+void cmd_cp(const char *src, const char *dst)
+{
+    // --- フルパスに変換 ---
+    char fullsrc[MAX_PATH], fulldst[MAX_PATH];
+    if (resolve_full_path(src, fullsrc, MAX_PATH) == 0)
+        return;
+    if (resolve_full_path(dst, fulldst, MAX_PATH) == 0)
+        return;
+
+    // --- コピー元の存在確認 ---
+    WIN32_FILE_ATTRIBUTE_DATA fileInfo;
+    if (GetFileAttributesEx(fullsrc, GetFileExInfoStandard, &fileInfo) == FALSE)
+    {
+        printf("File not found: %s\n", fullsrc);
+        return;
+    }
+
+    // --- ディレクトリは非対応 ---
+    if (fileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+    {
+        printf("Directory copy is not supported: %s\n", fullsrc);
+        return;
+    }
+
+    // --- コピー先が既存ファイルの場合は確認 ---
+    if (GetFileAttributesEx(fulldst, GetFileExInfoStandard, &fileInfo) != FALSE)
+    {
+        printf("'%s' already exists. Overwrite? (y/n): ", fulldst);
+        char confirm[8];
+        if (fgets(confirm, sizeof(confirm), stdin) == NULL)
+            return;
+        if (confirm[0] != 'y' && confirm[0] != 'Y')
+        {
+            printf("Cancelled.\n");
+            return;
+        }
+    }
+
+    // --- コピー実行 ---
+    // 第3引数 FALSE：コピー先が既存でも上書きする
+    if (CopyFile(fullsrc, fulldst, FALSE) == 0)
+        printf("Failed to copy: %s -> %s\n", fullsrc, fulldst);
+    else
+        printf("Copied: %s -> %s\n", fullsrc, fulldst);
 }
