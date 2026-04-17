@@ -13,6 +13,7 @@ void cmd_rm(const char *arg);
 void cmd_cp(const char *src, const char *dst);
 
 static int resolve_full_path(const char *arg, char *out, size_t out_size);
+static int copy_directory_recursive(const char *src, const char *dst);
 
 int main()
 {
@@ -230,6 +231,67 @@ void cmd_rm(const char *arg)
     }
 }
 
+// --- ディレクトリを再帰的にコピーするヘルパー ---
+static int copy_directory_recursive(const char *src, const char *dst)
+{
+    // --- コピー先ディレクトリを作成 ---
+    if (CreateDirectory(dst, NULL) == 0)
+    {
+        // 既に存在する場合はそのまま続行、それ以外はエラー
+        if (GetLastError() != ERROR_ALREADY_EXISTS)
+        {
+            printf("Failed to create directory: %s\n", dst);
+            return 0;
+        }
+    }
+
+    // --- コピー元の中身を列挙 ---
+    char search_path[MAX_PATH];
+    _snprintf(search_path, sizeof(search_path) - 1, "%s\\*", src);
+    search_path[sizeof(search_path) - 1] = '\0';
+
+    WIN32_FIND_DATA findData;
+    HANDLE hFind = FindFirstFile(search_path, &findData);
+    if (hFind == INVALID_HANDLE_VALUE)
+    {
+        printf("Failed to open directory: %s\n", src);
+        return 0;
+    }
+
+    int success = 1;
+    do
+    {
+        if (strcmp(findData.cFileName, ".") == 0 || strcmp(findData.cFileName, "..") == 0)
+            continue;
+
+        // --- src と dst にエントリ名を連結してフルパスを構築 ---
+        char child_src[MAX_PATH], child_dst[MAX_PATH];
+        _snprintf(child_src, sizeof(child_src) - 1, "%s\\%s", src, findData.cFileName);
+        _snprintf(child_dst, sizeof(child_dst) - 1, "%s\\%s", dst, findData.cFileName);
+        child_src[sizeof(child_src) - 1] = '\0';
+        child_dst[sizeof(child_dst) - 1] = '\0';
+
+        if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            // サブディレクトリは再帰
+            if (copy_directory_recursive(child_src, child_dst) == 0)
+                success = 0;
+        }
+        else
+        {
+            // ファイルは上書きあり（FALSE）でコピー
+            if (CopyFile(child_src, child_dst, FALSE) == 0)
+            {
+                printf("Failed to copy file: %s\n", child_src);
+                success = 0;
+            }
+        }
+    } while (FindNextFile(hFind, &findData));
+
+    FindClose(hFind);
+    return success;
+}
+
 void cmd_cp(const char *src, const char *dst)
 {
     // --- フルパスに変換 ---
@@ -247,10 +309,13 @@ void cmd_cp(const char *src, const char *dst)
         return;
     }
 
-    // --- ディレクトリは非対応 ---
+    // --- ディレクトリは再帰コピー ---
     if (fileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
     {
-        printf("Directory copy is not supported: %s\n", fullsrc);
+        if (copy_directory_recursive(fullsrc, fulldst) == 0)
+            printf("Failed to copy directory: %s -> %s\n", fullsrc, fulldst);
+        else
+            printf("Copied directory: %s -> %s\n", fullsrc, fulldst);
         return;
     }
 
