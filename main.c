@@ -11,6 +11,7 @@ void cmd_cat(const char *arg);
 void cmd_touch(const char *arg);
 void cmd_rm(const char *arg);
 void cmd_cp(const char *src, const char *dst);
+void cmd_mv(const char *src, const char *dst);
 
 static int resolve_full_path(const char *arg, char *out, size_t out_size);
 static int copy_directory_recursive(const char *src, const char *dst);
@@ -83,6 +84,18 @@ int process_user_input()
         else
         {
             cmd_cp(src, dst);
+        }
+    }
+    else if (strncmp(input, "mv ", 3) == 0)
+    {
+        char src[MAX_PATH], dst[MAX_PATH];
+        if (sscanf(input + 3, "%s %s", src, dst) != 2)
+        {
+            printf("Usage: mv <src> <dst>\n");
+        }
+        else
+        {
+            cmd_mv(src, dst);
         }
     }
     else if (strlen(input) > 0)
@@ -339,4 +352,44 @@ void cmd_cp(const char *src, const char *dst)
         printf("Failed to copy: %s -> %s\n", fullsrc, fulldst);
     else
         printf("Copied: %s -> %s\n", fullsrc, fulldst);
+}
+
+void cmd_mv(const char *src, const char *dst)
+{
+    // --- フルパスに変換 ---
+    char fullsrc[MAX_PATH], fulldst[MAX_PATH];
+    if (resolve_full_path(src, fullsrc, MAX_PATH) == 0)
+        return;
+    if (resolve_full_path(dst, fulldst, MAX_PATH) == 0)
+        return;
+
+    // --- 移動元の存在確認 ---
+    WIN32_FILE_ATTRIBUTE_DATA fileInfo;
+    if (GetFileAttributesEx(fullsrc, GetFileExInfoStandard, &fileInfo) == FALSE)
+    {
+        printf("Not found: %s\n", fullsrc);
+        return;
+    }
+
+    // --- 移動先が既存の場合は確認 ---
+    if (GetFileAttributesEx(fulldst, GetFileExInfoStandard, &fileInfo) != FALSE)
+    {
+        printf("'%s' already exists. Overwrite? (y/n): ", fulldst);
+        char confirm[8];
+        if (fgets(confirm, sizeof(confirm), stdin) == NULL)
+            return;
+        if (confirm[0] != 'y' && confirm[0] != 'Y')
+        {
+            printf("Cancelled.\n");
+            return;
+        }
+    }
+
+    // --- 移動実行 ---
+    // MOVEFILE_REPLACE_EXISTING：既存ファイルを上書き
+    // MOVEFILE_COPY_ALLOWED：ドライブをまたぐ場合もコピー＆削除で対応
+    if (MoveFileEx(fullsrc, fulldst, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED) == 0)
+        printf("Failed to move: %s -> %s\n", fullsrc, fulldst);
+    else
+        printf("Moved: %s -> %s\n", fullsrc, fulldst);
 }
