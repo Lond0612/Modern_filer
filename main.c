@@ -19,25 +19,6 @@ typedef enum
     SORT_DESC,
 } SortOrder;
 
-// --- プロトタイプ宣言 ---
-int process_user_input(); // 入力の受付から振り分けまでを一括で行う
-void cmd_cd(const char *arg);
-void cmd_cat(const char *arg);
-void cmd_touch(const char *arg);
-void cmd_rm(const char *arg);
-void cmd_cp(const char *src, const char *dst);
-void cmd_mv(const char *src, const char *dst);
-
-FileList filelist_create(void);
-int filelist_fetch(FileList *list, const char *path);
-void filelist_free(FileList *list);
-void cmd_ls(const char *path); // CUI向け表示（内部で上記を使う）
-
-static int resolve_full_path(const char *arg, char *out, size_t out_size);
-static int copy_directory_recursive(const char *src, const char *dst);
-
-void filelist_sort(FileList *list, SortKey key, SortOrder order);
-
 // --- ファイル情報 ---
 typedef struct
 {
@@ -56,6 +37,25 @@ typedef struct
     int count;          // 有効件数
     int capacity;       // 確保済み件数
 } FileList;
+
+// --- プロトタイプ宣言 ---
+int process_user_input(); // 入力の受付から振り分けまでを一括で行う
+void cmd_cd(const char *arg);
+void cmd_cat(const char *arg);
+void cmd_touch(const char *arg);
+void cmd_rm(const char *arg);
+void cmd_cp(const char *src, const char *dst);
+void cmd_mv(const char *src, const char *dst);
+
+FileList filelist_create(void);
+int filelist_fetch(FileList *list, const char *path);
+void filelist_free(FileList *list);
+void cmd_ls(const char *path); // CUI向け表示（内部で上記を使う）
+
+static int resolve_full_path(const char *arg, char *out, size_t out_size);
+static int copy_directory_recursive(const char *src, const char *dst);
+
+void filelist_sort(FileList *list, SortKey key, SortOrder order);
 
 int main()
 {
