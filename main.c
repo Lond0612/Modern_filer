@@ -2,6 +2,7 @@
 #include <string.h>
 #include <windows.h>
 #include <shellapi.h>
+#include <ctype.h>
 
 typedef enum
 {
@@ -38,6 +39,23 @@ typedef struct
     int capacity;       // 確保済み件数
 } FileList;
 
+// --- 検索条件 ---
+typedef enum
+{
+    SEARCH_MATCH_PARTIAL, // 部分一致
+    SEARCH_MATCH_PREFIX,  // 前方一致
+    SEARCH_MATCH_SUFFIX,  // 後方一致（拡張子検索に便利）
+    SEARCH_MATCH_EXACT,   // 完全一致
+} SearchMatchType;
+
+typedef struct
+{
+    char keyword[MAX_PATH];     // 検索キーワード
+    SearchMatchType match_type; // 一致条件
+    int include_dirs;           // ディレクトリを含むか（1:含む 0:除外）
+    int case_sensitive;         // 大文字小文字を区別するか（1:区別 0:無視）
+} SearchQuery;
+
 // --- プロトタイプ宣言 ---
 int process_user_input(); // 入力の受付から振り分けまでを一括で行う
 void cmd_cd(const char *arg);
@@ -56,6 +74,11 @@ static int resolve_full_path(const char *arg, char *out, size_t out_size);
 static int copy_directory_recursive(const char *src, const char *dst);
 
 void filelist_sort(FileList *list, SortKey key, SortOrder order);
+
+SearchQuery searchquery_create(const char *keyword, SearchMatchType match_type,
+                               int include_dirs, int case_sensitive);
+FileList filelist_search(FileList *list, const SearchQuery *query);
+void cmd_find(const char *path, const char *keyword);
 
 int main()
 {
@@ -151,6 +174,13 @@ int process_user_input()
             printf("Usage: mv <src> <dst>\n");
         else
             cmd_mv(argv[1], argv[2]);
+    }
+    else if (strcmp(argv[0], "find") == 0)
+    {
+        if (argc < 2)
+            printf("Usage: find <keyword>\n");
+        else
+            cmd_find(path, argv[1]);
     }
     else
     {
@@ -616,4 +646,131 @@ void filelist_sort(FileList *list, SortKey key, SortOrder order)
     g_sort_key = key;
     g_sort_order = order;
     qsort(list->entries, list->count, sizeof(FileEntry), file_entry_compare);
+}
+
+// --- SearchQuery の初期化 ---
+SearchQuery searchquery_create(const char *keyword, SearchMatchType match_type,
+                               int include_dirs, int case_sensitive)
+{
+    SearchQuery q;
+    strncpy(q.keyword, keyword, MAX_PATH - 1);
+    q.keyword[MAX_PATH - 1] = '\0';
+    q.match_type = match_type;
+    q.include_dirs = include_dirs;
+    q.case_sensitive = case_sensitive;
+    return q;
+}
+
+// --- 文字列一致判定ヘルパー ---
+static int match_keyword(const char *target, const SearchQuery *query)
+{
+    const char *kw = query->keyword;
+
+    // 大文字小文字を無視する場合は専用の比較関数を使う
+    int (*cmp)(const char *, const char *) = query->case_sensitive ? strcmp : _stricmp;
+    int (*ncmp)(const char *, const char *, size_t) = query->case_sensitive ? strncmp : _strnicmp;
+    const char *(*str_str)(const char *, const char *) = query->case_sensitive ? strstr : NULL;
+
+    // case_insensitive の strstr は標準にないので自前で処理
+    // target を小文字コピーして検索する
+    char t_lower[MAX_PATH], k_lower[MAX_PATH];
+    if (!query->case_sensitive)
+    {
+        strncpy(t_lower, target, MAX_PATH - 1);
+        t_lower[MAX_PATH - 1] = '\0';
+        strncpy(k_lower, kw, MAX_PATH - 1);
+        k_lower[MAX_PATH - 1] = '\0';
+        for (char *p = t_lower; *p; p++)
+            *p = (char)tolower((unsigned char)*p);
+        for (char *p = k_lower; *p; p++)
+            *p = (char)tolower((unsigned char)*p);
+        target = t_lower;
+        kw = k_lower;
+    }
+
+    size_t tlen = strlen(target);
+    size_t klen = strlen(kw);
+
+    switch (query->match_type)
+    {
+    case SEARCH_MATCH_PARTIAL:
+        return strstr(target, kw) != NULL;
+    case SEARCH_MATCH_PREFIX:
+        return strncmp(target, kw, klen) == 0;
+    case SEARCH_MATCH_SUFFIX:
+        return tlen >= klen && strcmp(target + tlen - klen, kw) == 0;
+    case SEARCH_MATCH_EXACT:
+        return strcmp(target, kw) == 0;
+    }
+    return 0;
+}
+
+// --- FileList から条件に合うエントリだけを抽出して新しい FileList として返す ---
+FileList filelist_search(FileList *list, const SearchQuery *query)
+{
+    FileList result = filelist_create();
+
+    for (int i = 0; i < list->count; i++)
+    {
+        FileEntry *e = &list->entries[i];
+
+        // ディレクトリを除外する設定の場合はスキップ
+        if (!query->include_dirs && (e->attributes & FILE_ATTRIBUTE_DIRECTORY))
+            continue;
+
+        if (!match_keyword(e->name, query))
+            continue;
+
+        // 容量が足りなければ拡張
+        if (result.count >= result.capacity)
+        {
+            result.capacity *= 2;
+            result.entries = (FileEntry *)realloc(result.entries,
+                                                  result.capacity * sizeof(FileEntry));
+            if (result.entries == NULL)
+            {
+                printf("Memory allocation failed.\n");
+                return result;
+            }
+        }
+
+        result.entries[result.count++] = *e;
+    }
+
+    return result;
+}
+
+// --- CUI向け絞り込み検索表示 ---
+void cmd_find(const char *path, const char *keyword)
+{
+    FileList list = filelist_create();
+    if (filelist_fetch(&list, path) < 0)
+    {
+        filelist_free(&list);
+        return;
+    }
+
+    // デフォルト：部分一致・ディレクトリ含む・大文字小文字無視
+    SearchQuery query = searchquery_create(keyword, SEARCH_MATCH_PARTIAL, 1, 0);
+    FileList result = filelist_search(&list, &query);
+
+    if (result.count == 0)
+    {
+        printf("No files found matching: %s\n", keyword);
+    }
+    else
+    {
+        printf("%d file(s) found:\n", result.count);
+        for (int i = 0; i < result.count; i++)
+        {
+            FileEntry *e = &result.entries[i];
+            if (e->attributes & FILE_ATTRIBUTE_DIRECTORY)
+                printf("[DIR]  %s\n", e->name);
+            else
+                printf("[FILE] %s  (%lld bytes)\n", e->name, e->size);
+        }
+    }
+
+    filelist_free(&result);
+    filelist_free(&list);
 }
