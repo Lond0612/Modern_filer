@@ -371,14 +371,36 @@ void cmd_mv(const char *src, const char *dst)
         return;
     }
 
-    // --- 移動先が既存の場合は確認 ---
-    if (GetFileAttributesEx(fulldst, GetFileExInfoStandard, &fileInfo) != FALSE)
+    // --- 移動先がディレクトリならファイル名を補完 ---
+    WIN32_FILE_ATTRIBUTE_DATA dstInfo;
+    if (GetFileAttributesEx(fulldst, GetFileExInfoStandard, &dstInfo) != FALSE)
+    {
+        if (dstInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            // fulldst の末尾に "\ファイル名" を追加
+            const char *filename = strrchr(fullsrc, '\\');
+            filename = filename ? filename + 1 : fullsrc;
+
+            char tmp[MAX_PATH];
+            _snprintf(tmp, sizeof(tmp) - 1, "%s\\%s", fulldst, filename);
+            tmp[sizeof(tmp) - 1] = '\0';
+            strncpy(fulldst, tmp, MAX_PATH);
+        }
+    }
+
+    // --- 移動先が既存ファイルの場合は確認 ---
+    if (GetFileAttributesEx(fulldst, GetFileExInfoStandard, &dstInfo) != FALSE)
     {
         printf("'%s' already exists. Overwrite? (y/n): ", fulldst);
         char confirm[8];
         if (fgets(confirm, sizeof(confirm), stdin) == NULL)
             return;
-        if (confirm[0] != 'y' && confirm[0] != 'Y')
+
+        // 先頭のスペースをスキップして y/n を判定
+        char *p = confirm;
+        while (*p == ' ' || *p == '\t')
+            p++;
+        if (*p != 'y' && *p != 'Y')
         {
             printf("Cancelled.\n");
             return;
@@ -386,8 +408,6 @@ void cmd_mv(const char *src, const char *dst)
     }
 
     // --- 移動実行 ---
-    // MOVEFILE_REPLACE_EXISTING：既存ファイルを上書き
-    // MOVEFILE_COPY_ALLOWED：ドライブをまたぐ場合もコピー＆削除で対応
     if (MoveFileEx(fullsrc, fulldst, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED) == 0)
         printf("Failed to move: %s -> %s\n", fullsrc, fulldst);
     else
