@@ -64,6 +64,8 @@ void cmd_touch(const char *arg);
 void cmd_rm(const char *arg);
 void cmd_cp(const char *src, const char *dst);
 void cmd_mv(const char *src, const char *dst);
+void filelist_sort(FileList *list, SortKey key, SortOrder order);
+void cmd_open(const char *arg);
 
 FileList filelist_create(void);
 int filelist_fetch(FileList *list, const char *path);
@@ -72,8 +74,6 @@ void cmd_ls(const char *path); // CUI向け表示（内部で上記を使う）
 
 static int resolve_full_path(const char *arg, char *out, size_t out_size);
 static int copy_directory_recursive(const char *src, const char *dst);
-
-void filelist_sort(FileList *list, SortKey key, SortOrder order);
 
 SearchQuery searchquery_create(const char *keyword, SearchMatchType match_type,
                                int include_dirs, int case_sensitive);
@@ -181,6 +181,13 @@ int process_user_input()
             printf("Usage: find <keyword>\n");
         else
             cmd_find(path, argv[1]);
+    }
+    else if (strcmp(argv[0], "open") == 0)
+    {
+        if (argc < 2)
+            printf("Usage: open <file>\n");
+        else
+            cmd_open(argv[1]);
     }
     else
     {
@@ -773,4 +780,53 @@ void cmd_find(const char *path, const char *keyword)
 
     filelist_free(&result);
     filelist_free(&list);
+}
+
+void cmd_open(const char *arg)
+{
+    // --- フルパスに変換 ---
+    char fullpath[MAX_PATH];
+    if (resolve_full_path(arg, fullpath, MAX_PATH) == 0)
+        return;
+
+    // --- 存在確認 ---
+    WIN32_FILE_ATTRIBUTE_DATA fileInfo;
+    if (GetFileAttributesEx(fullpath, GetFileExInfoStandard, &fileInfo) == FALSE)
+    {
+        printf("Not found: %s\n", fullpath);
+        return;
+    }
+
+    // --- 関連付けられたアプリで開く ---
+    HINSTANCE result = ShellExecute(
+        NULL,     // 親ウィンドウ（CUIなのでNULL）
+        "open",   // 動作（"open" で関連付けアプリを起動）
+        fullpath, // 対象ファイル
+        NULL,     // 追加の引数
+        NULL,     // 作業ディレクトリ（NULLでカレントディレクトリ）
+        SW_SHOWNORMAL);
+
+    // ShellExecute は失敗時に 32 以下の値を返す
+    if ((intptr_t)result <= 32)
+    {
+        switch ((intptr_t)result)
+        {
+        case SE_ERR_NOASSOC:
+            printf("No application associated with: %s\n", fullpath);
+            break;
+        case SE_ERR_FNF:
+            printf("File not found: %s\n", fullpath);
+            break;
+        case SE_ERR_ACCESSDENIED:
+            printf("Access denied: %s\n", fullpath);
+            break;
+        default:
+            printf("Failed to open: %s (error: %lld)\n", fullpath, (intptr_t)result);
+            break;
+        }
+    }
+    else
+    {
+        printf("Opened: %s\n", fullpath);
+    }
 }
