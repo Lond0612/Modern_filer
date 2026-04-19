@@ -3,6 +3,22 @@
 #include <windows.h>
 #include <shellapi.h>
 
+typedef enum
+{
+    SORT_NAME,
+    SORT_CREATED_AT,
+    SORT_UPDATED_AT,
+    SORT_EXTENSION,
+    SORT_SIZE,
+} SortKey;
+
+// --- ソート順 ---
+typedef enum
+{
+    SORT_ASC,
+    SORT_DESC,
+} SortOrder;
+
 // --- プロトタイプ宣言 ---
 int process_user_input(); // 入力の受付から振り分けまでを一括で行う
 void cmd_cd(const char *arg);
@@ -20,12 +36,17 @@ void cmd_ls(const char *path); // CUI向け表示（内部で上記を使う）
 static int resolve_full_path(const char *arg, char *out, size_t out_size);
 static int copy_directory_recursive(const char *src, const char *dst);
 
+void filelist_sort(FileList *list, SortKey key, SortOrder order);
+
 // --- ファイル情報 ---
 typedef struct
 {
     char name[MAX_PATH];
-    DWORD attributes; // FILE_ATTRIBUTE_DIRECTORY など
-    LONGLONG size;    // バイト単位（ディレクトリは0）
+    char extension[16]; // 拡張子（種類ソート用）
+    DWORD attributes;
+    LONGLONG size;
+    FILETIME created_at; // 作成日時
+    FILETIME updated_at; // 更新日時
 } FileEntry;
 
 // --- ls の結果リスト ---
@@ -169,26 +190,24 @@ int filelist_fetch(FileList *list, const char *path)
 
     do
     {
-        if (strcmp(findData.cFileName, ".") == 0 || strcmp(findData.cFileName, "..") == 0)
-            continue;
-
-        // 容量が足りなければ2倍に拡張
-        if (list->count >= list->capacity)
-        {
-            list->capacity *= 2;
-            list->entries = (FileEntry *)realloc(list->entries, list->capacity * sizeof(FileEntry));
-            if (list->entries == NULL)
-            {
-                printf("Memory allocation failed.\n");
-                FindClose(hFind);
-                return -1;
-            }
-        }
-
         FileEntry *e = &list->entries[list->count];
         strncpy(e->name, findData.cFileName, MAX_PATH - 1);
         e->name[MAX_PATH - 1] = '\0';
         e->attributes = findData.dwFileAttributes;
+        e->created_at = findData.ftCreationTime;
+        e->updated_at = findData.ftLastWriteTime;
+
+        // 拡張子を抽出
+        const char *dot = strrchr(findData.cFileName, '.');
+        if (dot && !(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+        {
+            strncpy(e->extension, dot + 1, sizeof(e->extension) - 1);
+            e->extension[sizeof(e->extension) - 1] = '\0';
+        }
+        else
+        {
+            e->extension[0] = '\0'; // ディレクトリや拡張子なしは空文字
+        }
 
         // サイズはディレクトリの場合0とする
         if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
@@ -228,6 +247,9 @@ void cmd_ls(const char *path)
         filelist_free(&list);
         return;
     }
+
+    // デフォルトは名前昇順
+    filelist_sort(&list, SORT_NAME, SORT_ASC);
 
     for (int i = 0; i < list.count; i++)
     {
@@ -540,4 +562,58 @@ void cmd_mv(const char *src, const char *dst)
         printf("Failed to move: %s -> %s\n", fullsrc, fulldst);
     else
         printf("Moved: %s -> %s\n", fullsrc, fulldst);
+}
+
+// --- ソート用比較関数群 ---
+// qsort に渡すためグローバルで保持
+static SortKey g_sort_key;
+static SortOrder g_sort_order;
+
+static int compare_filetime(const FILETIME *a, const FILETIME *b)
+{
+    if (a->dwHighDateTime != b->dwHighDateTime)
+        return (a->dwHighDateTime > b->dwHighDateTime) ? 1 : -1;
+    if (a->dwLowDateTime != b->dwLowDateTime)
+        return (a->dwLowDateTime > b->dwLowDateTime) ? 1 : -1;
+    return 0;
+}
+
+static int file_entry_compare(const void *a, const void *b)
+{
+    const FileEntry *ea = (const FileEntry *)a;
+    const FileEntry *eb = (const FileEntry *)b;
+    int result = 0;
+
+    switch (g_sort_key)
+    {
+    case SORT_NAME:
+        result = _stricmp(ea->name, eb->name); // 大文字小文字を無視
+        break;
+    case SORT_CREATED_AT:
+        result = compare_filetime(&ea->created_at, &eb->created_at);
+        break;
+    case SORT_UPDATED_AT:
+        result = compare_filetime(&ea->updated_at, &eb->updated_at);
+        break;
+    case SORT_EXTENSION:
+        result = _stricmp(ea->extension, eb->extension);
+        // 拡張子が同じならさらに名前順
+        if (result == 0)
+            result = _stricmp(ea->name, eb->name);
+        break;
+    case SORT_SIZE:
+        if (ea->size != eb->size)
+            result = (ea->size > eb->size) ? 1 : -1;
+        break;
+    }
+
+    return (g_sort_order == SORT_ASC) ? result : -result;
+}
+
+// --- ソート実行 ---
+void filelist_sort(FileList *list, SortKey key, SortOrder order)
+{
+    g_sort_key = key;
+    g_sort_order = order;
+    qsort(list->entries, list->count, sizeof(FileEntry), file_entry_compare);
 }
