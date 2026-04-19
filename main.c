@@ -38,69 +38,82 @@ int process_user_input()
     char path[MAX_PATH];
     char input[256];
 
-    // プロンプト表示用のパスを取得
     GetCurrentDirectory(MAX_PATH, path);
     printf("\n%s\n>", path);
 
-    // 入力取得
     if (fgets(input, sizeof(input), stdin) == NULL)
         return 0;
-    input[strcspn(input, "\n")] = 0; // 改行除去
+    input[strcspn(input, "\n")] = 0;
 
-    // コマンド判別
-    if (strcmp(input, "exit") == 0)
+    // --- スペース区切りでトークン分割 ---
+    // argv[0] = コマンド名, argv[1]以降 = 引数
+    char *argv[8] = {0};
+    int argc = 0;
+
+    char *token = strtok(input, " ");
+    while (token != NULL && argc < 8)
+    {
+        argv[argc++] = token;
+        token = strtok(NULL, " ");
+    }
+
+    if (argc == 0)
+        return 1; // 空入力はスルー
+
+    // --- コマンド判別 ---
+    if (strcmp(argv[0], "exit") == 0)
     {
         return 0;
     }
-
-    if (strcmp(input, "ls") == 0)
+    else if (strcmp(argv[0], "ls") == 0)
     {
         cmd_ls(path);
     }
-    else if (strncmp(input, "cd ", 3) == 0)
+    else if (strcmp(argv[0], "cd") == 0)
     {
-        cmd_cd(input + 3);
+        if (argc < 2)
+            printf("Usage: cd <path>\n");
+        else
+            cmd_cd(argv[1]);
     }
-    else if (strncmp(input, "cat ", 4) == 0)
+    else if (strcmp(argv[0], "cat") == 0)
     {
-        cmd_cat(input + 4);
+        if (argc < 2)
+            printf("Usage: cat <file>\n");
+        else
+            cmd_cat(argv[1]);
     }
-    else if (strncmp(input, "touch ", 6) == 0)
+    else if (strcmp(argv[0], "touch") == 0)
     {
-        cmd_touch(input + 6);
+        if (argc < 2)
+            printf("Usage: touch <file>\n");
+        else
+            cmd_touch(argv[1]);
     }
-    else if (strncmp(input, "rm ", 3) == 0)
+    else if (strcmp(argv[0], "rm") == 0)
     {
-        cmd_rm(input + 3);
+        if (argc < 2)
+            printf("Usage: rm <file>\n");
+        else
+            cmd_rm(argv[1]);
     }
-    else if (strncmp(input, "cp ", 3) == 0)
+    else if (strcmp(argv[0], "cp") == 0)
     {
-        // "cp src dst" の形式で引数を2つに分割
-        char src[MAX_PATH], dst[MAX_PATH];
-        if (sscanf(input + 3, "%s %s", src, dst) != 2)
-        {
+        if (argc < 3)
             printf("Usage: cp <src> <dst>\n");
-        }
         else
-        {
-            cmd_cp(src, dst);
-        }
+            cmd_cp(argv[1], argv[2]);
     }
-    else if (strncmp(input, "mv ", 3) == 0)
+    else if (strcmp(argv[0], "mv") == 0)
     {
-        char src[MAX_PATH], dst[MAX_PATH];
-        if (sscanf(input + 3, "%s %s", src, dst) != 2)
-        {
+        if (argc < 3)
             printf("Usage: mv <src> <dst>\n");
-        }
         else
-        {
-            cmd_mv(src, dst);
-        }
+            cmd_mv(argv[1], argv[2]);
     }
-    else if (strlen(input) > 0)
+    else
     {
-        printf("Unknown command: %s\n", input);
+        printf("Unknown command: %s\n", argv[0]);
     }
 
     return 1;
