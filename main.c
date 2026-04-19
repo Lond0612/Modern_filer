@@ -5,7 +5,6 @@
 
 // --- プロトタイプ宣言 ---
 int process_user_input(); // 入力の受付から振り分けまでを一括で行う
-void cmd_ls(const char *path);
 void cmd_cd(const char *arg);
 void cmd_cat(const char *arg);
 void cmd_touch(const char *arg);
@@ -13,8 +12,29 @@ void cmd_rm(const char *arg);
 void cmd_cp(const char *src, const char *dst);
 void cmd_mv(const char *src, const char *dst);
 
+FileList filelist_create(void);
+int filelist_fetch(FileList *list, const char *path);
+void filelist_free(FileList *list);
+void cmd_ls(const char *path); // CUI向け表示（内部で上記を使う）
+
 static int resolve_full_path(const char *arg, char *out, size_t out_size);
 static int copy_directory_recursive(const char *src, const char *dst);
+
+// --- ファイル情報 ---
+typedef struct
+{
+    char name[MAX_PATH];
+    DWORD attributes; // FILE_ATTRIBUTE_DIRECTORY など
+    LONGLONG size;    // バイト単位（ディレクトリは0）
+} FileEntry;
+
+// --- ls の結果リスト ---
+typedef struct
+{
+    FileEntry *entries; // 動的配列
+    int count;          // 有効件数
+    int capacity;       // 確保済み件数
+} FileList;
 
 int main()
 {
@@ -119,30 +139,106 @@ int process_user_input()
     return 1;
 }
 
-void cmd_ls(const char *path)
+// --- FileList の初期化 ---
+FileList filelist_create(void)
+{
+    FileList list;
+    list.count = 0;
+    list.capacity = 64;
+    list.entries = (FileEntry *)malloc(list.capacity * sizeof(FileEntry));
+    return list;
+}
+
+// --- 指定パスのファイル一覧を取得して list に格納 ---
+// 戻り値：成功した件数、失敗時 -1
+int filelist_fetch(FileList *list, const char *path)
 {
     char search_path[MAX_PATH];
-
     _snprintf(search_path, sizeof(search_path) - 1, "%s\\*", path);
     search_path[sizeof(search_path) - 1] = '\0';
 
     WIN32_FIND_DATA findData;
     HANDLE hFind = FindFirstFile(search_path, &findData);
-
     if (hFind == INVALID_HANDLE_VALUE)
     {
         printf("Failed to list directory: %s\n", path);
-        return;
+        return -1;
     }
+
+    list->count = 0;
 
     do
     {
         if (strcmp(findData.cFileName, ".") == 0 || strcmp(findData.cFileName, "..") == 0)
             continue;
-        printf("%s\n", findData.cFileName);
+
+        // 容量が足りなければ2倍に拡張
+        if (list->count >= list->capacity)
+        {
+            list->capacity *= 2;
+            list->entries = (FileEntry *)realloc(list->entries, list->capacity * sizeof(FileEntry));
+            if (list->entries == NULL)
+            {
+                printf("Memory allocation failed.\n");
+                FindClose(hFind);
+                return -1;
+            }
+        }
+
+        FileEntry *e = &list->entries[list->count];
+        strncpy(e->name, findData.cFileName, MAX_PATH - 1);
+        e->name[MAX_PATH - 1] = '\0';
+        e->attributes = findData.dwFileAttributes;
+
+        // サイズはディレクトリの場合0とする
+        if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            e->size = 0;
+        }
+        else
+        {
+            LARGE_INTEGER size;
+            size.LowPart = findData.nFileSizeLow;
+            size.HighPart = findData.nFileSizeHigh;
+            e->size = size.QuadPart;
+        }
+
+        list->count++;
     } while (FindNextFile(hFind, &findData));
 
     FindClose(hFind);
+    return list->count;
+}
+
+// --- FileList の解放 ---
+void filelist_free(FileList *list)
+{
+    free(list->entries);
+    list->entries = NULL;
+    list->count = 0;
+    list->capacity = 0;
+}
+
+// --- CUI向け表示 ---
+void cmd_ls(const char *path)
+{
+    FileList list = filelist_create();
+    if (filelist_fetch(&list, path) < 0)
+    {
+        filelist_free(&list);
+        return;
+    }
+
+    for (int i = 0; i < list.count; i++)
+    {
+        FileEntry *e = &list.entries[i];
+        if (e->attributes & FILE_ATTRIBUTE_DIRECTORY)
+            printf("[DIR]  %s\n", e->name);
+        else
+            printf("[FILE] %s  (%lld bytes)\n", e->name, e->size);
+    }
+
+    filelist_free(&list);
 }
 
 void cmd_cd(const char *arg)
