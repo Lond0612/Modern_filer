@@ -322,6 +322,22 @@ void cmd_cp(const char *src, const char *dst)
         return;
     }
 
+    // --- 移動先がディレクトリならファイル名を補完 ---
+    WIN32_FILE_ATTRIBUTE_DATA dstInfo;
+    if (GetFileAttributesEx(fulldst, GetFileExInfoStandard, &dstInfo) != FALSE)
+    {
+        if (dstInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            const char *filename = strrchr(fullsrc, '\\');
+            filename = filename ? filename + 1 : fullsrc;
+
+            char tmp[MAX_PATH];
+            _snprintf(tmp, sizeof(tmp) - 1, "%s\\%s", fulldst, filename);
+            tmp[sizeof(tmp) - 1] = '\0';
+            strncpy(fulldst, tmp, MAX_PATH);
+        }
+    }
+
     // --- ディレクトリは再帰コピー ---
     if (fileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
     {
@@ -333,13 +349,17 @@ void cmd_cp(const char *src, const char *dst)
     }
 
     // --- コピー先が既存ファイルの場合は確認 ---
-    if (GetFileAttributesEx(fulldst, GetFileExInfoStandard, &fileInfo) != FALSE)
+    if (GetFileAttributesEx(fulldst, GetFileExInfoStandard, &dstInfo) != FALSE)
     {
         printf("'%s' already exists. Overwrite? (y/n): ", fulldst);
         char confirm[8];
         if (fgets(confirm, sizeof(confirm), stdin) == NULL)
             return;
-        if (confirm[0] != 'y' && confirm[0] != 'Y')
+
+        char *p = confirm;
+        while (*p == ' ' || *p == '\t')
+            p++;
+        if (*p != 'y' && *p != 'Y')
         {
             printf("Cancelled.\n");
             return;
@@ -347,7 +367,6 @@ void cmd_cp(const char *src, const char *dst)
     }
 
     // --- コピー実行 ---
-    // 第3引数 FALSE：コピー先が既存でも上書きする
     if (CopyFile(fullsrc, fulldst, FALSE) == 0)
         printf("Failed to copy: %s -> %s\n", fullsrc, fulldst);
     else
