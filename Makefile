@@ -24,3 +24,5 @@ sort.o:     sort.c sort.h filelist.h
 search.o:   search.c search.h filelist.h
 fs_ops.o:   fs_ops.c fs_ops.h
 cui.o:      cui.c cui.h filelist.h sort.h search.h fs_ops.h
+
+# mingw32-make
