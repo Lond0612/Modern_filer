@@ -120,20 +120,20 @@ void cmd_touch(const char *arg)
     fclose(file);
 }
 
-void cmd_rm(const char *arg)
+int cmd_rm(const char *arg, int force)
 {
     // --- フルパスに変換 ---
     char fullpath[MAX_PATH + 1];
     memset(fullpath, 0, sizeof(fullpath));
     if (resolve_full_path(arg, fullpath, MAX_PATH) == 0)
-        return;
+        return FS_ERROR;
 
     // --- 存在確認 + サイズ取得 ---
     WIN32_FILE_ATTRIBUTE_DATA fileInfo;
     if (GetFileAttributesEx(fullpath, GetFileExInfoStandard, &fileInfo) == FALSE)
     {
         printf("File not found: %s\n", fullpath);
-        return;
+        return FS_ERROR;
     }
 
     LARGE_INTEGER size;
@@ -145,22 +145,20 @@ void cmd_rm(const char *arg)
 
     if (size.QuadPart > THRESHOLD)
     {
-        printf("Warning: File size is %.1f MB. Permanently delete? (y/n): ",
-               (double)size.QuadPart / (1024 * 1024));
-
-        char confirm[8];
-        if (fgets(confirm, sizeof(confirm), stdin) == NULL)
-            return;
-        if (confirm[0] != 'y' && confirm[0] != 'Y')
+        // 確認が必要で force=0 なら呼び出し側に委ねる
+        if (!force)
         {
-            printf("Cancelled.\n");
-            return;
+            printf("Warning: File size is %.1f MB. Permanently delete? (y/n): ",
+                   (double)size.QuadPart / (1024 * 1024));
+            return FS_NEED_CONFIRM;
         }
 
         if (remove(fullpath) != 0)
+        {
             printf("Failed to delete: %s\n", fullpath);
-        else
-            printf("Permanently deleted: %s\n", fullpath);
+            return FS_ERROR;
+        }
+        printf("Permanently deleted: %s\n", fullpath);
     }
     else
     {
@@ -171,27 +169,30 @@ void cmd_rm(const char *arg)
         op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
 
         if (SHFileOperation(&op) != 0)
+        {
             printf("Failed to move to trash: %s\n", fullpath);
-        else
-            printf("Moved to trash: %s\n", fullpath);
+            return FS_ERROR;
+        }
+        printf("Moved to trash: %s\n", fullpath);
     }
+    return FS_OK;
 }
 
-void cmd_cp(const char *src, const char *dst)
+int cmd_cp(const char *src, const char *dst, int force)
 {
     // --- フルパスに変換 ---
     char fullsrc[MAX_PATH], fulldst[MAX_PATH];
     if (resolve_full_path(src, fullsrc, MAX_PATH) == 0)
-        return;
+        return FS_ERROR;
     if (resolve_full_path(dst, fulldst, MAX_PATH) == 0)
-        return;
+        return FS_ERROR;
 
     // --- コピー元の存在確認 ---
     WIN32_FILE_ATTRIBUTE_DATA fileInfo;
     if (GetFileAttributesEx(fullsrc, GetFileExInfoStandard, &fileInfo) == FALSE)
     {
         printf("File not found: %s\n", fullsrc);
-        return;
+        return FS_ERROR;
     }
 
     // --- 移動先がディレクトリならファイル名を補完 ---
@@ -214,52 +215,49 @@ void cmd_cp(const char *src, const char *dst)
     if (fileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
     {
         if (copy_directory_recursive(fullsrc, fulldst) == 0)
+        {
             printf("Failed to copy directory: %s -> %s\n", fullsrc, fulldst);
-        else
-            printf("Copied directory: %s -> %s\n", fullsrc, fulldst);
-        return;
+            return FS_ERROR;
+        }
+        printf("Copied directory: %s -> %s\n", fullsrc, fulldst);
+        return FS_OK;
     }
 
     // --- コピー先が既存ファイルの場合は確認 ---
     if (GetFileAttributesEx(fulldst, GetFileExInfoStandard, &dstInfo) != FALSE)
     {
-        printf("'%s' already exists. Overwrite? (y/n): ", fulldst);
-        char confirm[8];
-        if (fgets(confirm, sizeof(confirm), stdin) == NULL)
-            return;
-
-        char *p = confirm;
-        while (*p == ' ' || *p == '\t')
-            p++;
-        if (*p != 'y' && *p != 'Y')
+        if (!force)
         {
-            printf("Cancelled.\n");
-            return;
+            printf("'%s' already exists. Overwrite? (y/n): ", fulldst);
+            return FS_NEED_CONFIRM;
         }
     }
 
     // --- コピー実行 ---
     if (CopyFile(fullsrc, fulldst, FALSE) == 0)
+    {
         printf("Failed to copy: %s -> %s\n", fullsrc, fulldst);
-    else
-        printf("Copied: %s -> %s\n", fullsrc, fulldst);
+        return FS_ERROR;
+    }
+    printf("Copied: %s -> %s\n", fullsrc, fulldst);
+    return FS_OK;
 }
 
-void cmd_mv(const char *src, const char *dst)
+int cmd_mv(const char *src, const char *dst, int force)
 {
     // --- フルパスに変換 ---
     char fullsrc[MAX_PATH], fulldst[MAX_PATH];
     if (resolve_full_path(src, fullsrc, MAX_PATH) == 0)
-        return;
+        return FS_ERROR;
     if (resolve_full_path(dst, fulldst, MAX_PATH) == 0)
-        return;
+        return FS_ERROR;
 
     // --- 移動元の存在確認 ---
     WIN32_FILE_ATTRIBUTE_DATA fileInfo;
     if (GetFileAttributesEx(fullsrc, GetFileExInfoStandard, &fileInfo) == FALSE)
     {
         printf("Not found: %s\n", fullsrc);
-        return;
+        return FS_ERROR;
     }
 
     // --- 移動先がディレクトリならファイル名を補完 ---
@@ -282,27 +280,21 @@ void cmd_mv(const char *src, const char *dst)
     // --- 移動先が既存ファイルの場合は確認 ---
     if (GetFileAttributesEx(fulldst, GetFileExInfoStandard, &dstInfo) != FALSE)
     {
-        printf("'%s' already exists. Overwrite? (y/n): ", fulldst);
-        char confirm[8];
-        if (fgets(confirm, sizeof(confirm), stdin) == NULL)
-            return;
-
-        // 先頭のスペースをスキップして y/n を判定
-        char *p = confirm;
-        while (*p == ' ' || *p == '\t')
-            p++;
-        if (*p != 'y' && *p != 'Y')
+        if (!force)
         {
-            printf("Cancelled.\n");
-            return;
+            printf("'%s' already exists. Overwrite? (y/n): ", fulldst);
+            return FS_NEED_CONFIRM;
         }
     }
 
     // --- 移動実行 ---
     if (MoveFileEx(fullsrc, fulldst, MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED) == 0)
+    {
         printf("Failed to move: %s -> %s\n", fullsrc, fulldst);
-    else
-        printf("Moved: %s -> %s\n", fullsrc, fulldst);
+        return FS_ERROR;
+    }
+    printf("Moved: %s -> %s\n", fullsrc, fulldst);
+    return FS_OK;
 }
 
 void cmd_open(const char *arg)

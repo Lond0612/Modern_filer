@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include "sort.h"
 
-// --- qsort に渡すためグローバルで保持 ---
-static SortKey g_sort_key;
-static SortOrder g_sort_order;
+// --- qsort コールバック用のスレッドローカルコンテキスト ---
+// （同一スレッド内での使用を前提とする）
+static _Thread_local SortContext s_ctx;
 
 static int compare_filetime(const FILETIME *a, const FILETIME *b)
 {
@@ -21,10 +21,10 @@ static int file_entry_compare(const void *a, const void *b)
     const FileEntry *eb = (const FileEntry *)b;
     int result = 0;
 
-    switch (g_sort_key)
+    switch (s_ctx.key)
     {
     case SORT_NAME:
-        result = _stricmp(ea->name, eb->name); // 大文字小文字を無視
+        result = _stricmp(ea->name, eb->name);
         break;
     case SORT_CREATED_AT:
         result = compare_filetime(&ea->created_at, &eb->created_at);
@@ -44,13 +44,12 @@ static int file_entry_compare(const void *a, const void *b)
         break;
     }
 
-    return (g_sort_order == SORT_ASC) ? result : -result;
+    return (s_ctx.order == SORT_ASC) ? result : -result;
 }
 
 // --- ソート実行 ---
-void filelist_sort(FileList *list, SortKey key, SortOrder order)
+void filelist_sort(FileList *list, SortContext ctx)
 {
-    g_sort_key = key;
-    g_sort_order = order;
+    s_ctx = ctx;
     qsort(list->entries, list->count, sizeof(FileEntry), file_entry_compare);
 }

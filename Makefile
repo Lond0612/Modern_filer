@@ -1,9 +1,9 @@
 CC      = gcc
 CFLAGS  = -Wall -Wextra -std=c11
-LDFLAGS = -lshell32
+LDFLAGS = -mwindows -lshell32 -lcomctl32
 
 TARGET  = filer.exe
-SRCS    = main.c filelist.c sort.c search.c fs_ops.c cui.c
+SRCS    = main.c filelist.c sort.c search.c fs_ops.c cui.c gui.c
 OBJS    = $(SRCS:.c=.o)
 
 all: $(TARGET)

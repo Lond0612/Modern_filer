@@ -18,7 +18,7 @@ void cmd_ls(const char *path)
     }
 
     // デフォルトは名前昇順
-    filelist_sort(&list, SORT_NAME, SORT_ASC);
+    filelist_sort(&list, (SortContext){SORT_NAME, SORT_ASC});
 
     for (int i = 0; i < list.count; i++)
     {
@@ -128,23 +128,69 @@ int process_user_input(void)
     else if (strcmp(argv[0], "rm") == 0)
     {
         if (argc < 2)
+        {
             printf("Usage: rm <file>\n");
+        }
         else
-            cmd_rm(argv[1]);
+        {
+            // force=0 で呼び出し、確認が必要なら stdin で受け取って force=1 で再呼び出し
+            if (cmd_rm(argv[1], 0) == FS_NEED_CONFIRM)
+            {
+                char confirm[8];
+                if (fgets(confirm, sizeof(confirm), stdin) == NULL)
+                    return 1;
+                if (confirm[0] == 'y' || confirm[0] == 'Y')
+                    cmd_rm(argv[1], 1);
+                else
+                    printf("Cancelled.\n");
+            }
+        }
     }
     else if (strcmp(argv[0], "cp") == 0)
     {
         if (argc < 3)
+        {
             printf("Usage: cp <src> <dst>\n");
+        }
         else
-            cmd_cp(argv[1], argv[2]);
+        {
+            if (cmd_cp(argv[1], argv[2], 0) == FS_NEED_CONFIRM)
+            {
+                char confirm[8];
+                if (fgets(confirm, sizeof(confirm), stdin) == NULL)
+                    return 1;
+                char *p = confirm;
+                while (*p == ' ' || *p == '\t')
+                    p++;
+                if (*p == 'y' || *p == 'Y')
+                    cmd_cp(argv[1], argv[2], 1);
+                else
+                    printf("Cancelled.\n");
+            }
+        }
     }
     else if (strcmp(argv[0], "mv") == 0)
     {
         if (argc < 3)
+        {
             printf("Usage: mv <src> <dst>\n");
+        }
         else
-            cmd_mv(argv[1], argv[2]);
+        {
+            if (cmd_mv(argv[1], argv[2], 0) == FS_NEED_CONFIRM)
+            {
+                char confirm[8];
+                if (fgets(confirm, sizeof(confirm), stdin) == NULL)
+                    return 1;
+                char *p = confirm;
+                while (*p == ' ' || *p == '\t')
+                    p++;
+                if (*p == 'y' || *p == 'Y')
+                    cmd_mv(argv[1], argv[2], 1);
+                else
+                    printf("Cancelled.\n");
+            }
+        }
     }
     else if (strcmp(argv[0], "find") == 0)
     {
