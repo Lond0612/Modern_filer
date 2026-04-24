@@ -4,15 +4,15 @@
             "name": "MinGW",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:/Program Files/mingw64/include/**",
-                "C:/Program Files/mingw64/x86_64-w64-mingw32/include/**"
+                "C:/mingw64/include/**",
+                "C:/mingw64/x86_64-w64-mingw32/include/**"
             ],
             "defines": [
                 "_WIN32",
                 "UNICODE",
                 "_UNICODE"
             ],
-            "compilerPath": "C:/Program Files/mingw64/bin/gcc.exe",
+            "compilerPath": "C:/mingw64/bin/gcc.exe",
             "cStandard": "c11",
             "intelliSenseMode": "windows-gcc-x64"
         }
