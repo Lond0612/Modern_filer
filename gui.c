@@ -10,20 +10,20 @@
 // ---------------------------------------------------------------------------
 // コントロール ID
 // ---------------------------------------------------------------------------
-#define ID_BTN_UP       101   // 「cd ..」ボタン
-#define ID_BTN_REFRESH  102   // 更新ボタン
-#define ID_LISTVIEW     103   // ディレクトリ表示（ListView）
-#define ID_CONSOLE      104   // コンソールペイン（Edit）
+#define ID_BTN_UP 101      // 「cd ..」ボタン
+#define ID_BTN_REFRESH 102 // 更新ボタン
+#define ID_LISTVIEW 103    // ディレクトリ表示（ListView）
+#define ID_CONSOLE 104     // コンソールペイン（Edit）
 
 // ---------------------------------------------------------------------------
 // レイアウト定数
 // ---------------------------------------------------------------------------
-#define TOOLBAR_H   36   // ツールバー行の高さ
-#define BTN_W       80   // ボタン幅
-#define BTN_H       24   // ボタン高さ
-#define BTN_MARGIN   8   // ボタン間マージン
-#define CONSOLE_H  160   // コンソールペインの高さ
-#define SPLITTER_H   4   // スプリッター（視覚的余白）
+#define TOOLBAR_H 36  // ツールバー行の高さ
+#define BTN_W 80      // ボタン幅
+#define BTN_H 24      // ボタン高さ
+#define BTN_MARGIN 8  // ボタン間マージン
+#define CONSOLE_H 160 // コンソールペインの高さ
+#define SPLITTER_H 4  // スプリッター（視覚的余白）
 
 // ---------------------------------------------------------------------------
 // ウィンドウクラス名
@@ -33,10 +33,10 @@ static const char *CLASS_NAME = "FilerMainWindow";
 // ---------------------------------------------------------------------------
 // グローバルハンドル（このファイル内でのみ使用）
 // ---------------------------------------------------------------------------
-static HWND g_hwnd        = NULL;
-static HWND g_hListView   = NULL;
-static HWND g_hConsole    = NULL;
-static HWND g_hBtnUp      = NULL;
+static HWND g_hwnd = NULL;
+static HWND g_hListView = NULL;
+static HWND g_hConsole = NULL;
+static HWND g_hBtnUp = NULL;
 static HWND g_hBtnRefresh = NULL;
 
 // ---------------------------------------------------------------------------
@@ -75,9 +75,9 @@ static void refresh_listview(void)
         FileEntry *e = &list.entries[i];
 
         // 列0: 名前
-        lvi.iItem    = i;
+        lvi.iItem = i;
         lvi.iSubItem = 0;
-        lvi.pszText  = e->name;
+        lvi.pszText = e->name;
         ListView_InsertItem(g_hListView, &lvi);
 
         // 列1: 種別
@@ -130,7 +130,7 @@ static void on_listview_dblclick(void)
 
     if (strcmp(kind, "[DIR]") == 0)
     {
-        cmd_cd(name);         // fs_ops の cmd_cd を使う
+        cmd_cd(name); // fs_ops の cmd_cd を使う
         refresh_listview();
     }
 }
@@ -157,39 +157,45 @@ static void create_controls(HWND hwnd)
     g_hListView = CreateWindowEx(
         WS_EX_CLIENTEDGE, WC_LISTVIEW, "",
         WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
-        0, TOOLBAR_H, 0, 0,   // サイズは WM_SIZE で決定
+        0, TOOLBAR_H, 0, 0, // サイズは WM_SIZE で決定
         hwnd, (HMENU)(INT_PTR)ID_LISTVIEW, GetModuleHandle(NULL), NULL);
 
     ListView_SetExtendedListViewStyle(g_hListView,
-        LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+                                      LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
     // 列の追加
     LVCOLUMN col;
     ZeroMemory(&col, sizeof(col));
     col.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_FMT;
 
-    col.pszText = "名前";   col.cx = 300; col.fmt = LVCFMT_LEFT;
+    col.pszText = "名前";
+    col.cx = 300;
+    col.fmt = LVCFMT_LEFT;
     ListView_InsertColumn(g_hListView, 0, &col);
 
-    col.pszText = "種別";   col.cx =  60; col.fmt = LVCFMT_CENTER;
+    col.pszText = "種別";
+    col.cx = 60;
+    col.fmt = LVCFMT_CENTER;
     ListView_InsertColumn(g_hListView, 1, &col);
 
-    col.pszText = "サイズ"; col.cx = 100; col.fmt = LVCFMT_RIGHT;
+    col.pszText = "サイズ";
+    col.cx = 100;
+    col.fmt = LVCFMT_RIGHT;
     ListView_InsertColumn(g_hListView, 2, &col);
 
     // --- コンソールペイン（読み取り専用 Edit） ---
     g_hConsole = CreateWindowEx(
         WS_EX_CLIENTEDGE, "EDIT", "",
         WS_CHILD | WS_VISIBLE | WS_VSCROLL |
-        ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL,
-        0, 0, 0, 0,   // サイズは WM_SIZE で決定
+            ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL,
+        0, 0, 0, 0, // サイズは WM_SIZE で決定
         hwnd, (HMENU)(INT_PTR)ID_CONSOLE, GetModuleHandle(NULL), NULL);
 
-    // 等幅フォントを設定
+    // 等幅フォントを設定（DEFAULT_CHARSET で日本語グリフも表示）
     HFONT hFont = CreateFont(
         14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-        ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-        DEFAULT_QUALITY, FIXED_PITCH | FF_MODERN, "Consolas");
+        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+        DEFAULT_QUALITY, FIXED_PITCH | FF_MODERN, "MS Gothic");
     SendMessage(g_hConsole, WM_SETFONT, (WPARAM)hFont, TRUE);
 }
 
@@ -198,16 +204,17 @@ static void create_controls(HWND hwnd)
 // ---------------------------------------------------------------------------
 static void on_resize(int cx, int cy)
 {
-    int list_h   = cy - TOOLBAR_H - SPLITTER_H - CONSOLE_H;
-    if (list_h < 0) list_h = 0;
+    int list_h = cy - TOOLBAR_H - SPLITTER_H - CONSOLE_H;
+    if (list_h < 0)
+        list_h = 0;
 
     SetWindowPos(g_hListView, NULL,
-        0, TOOLBAR_H, cx, list_h,
-        SWP_NOZORDER);
+                 0, TOOLBAR_H, cx, list_h,
+                 SWP_NOZORDER);
 
     SetWindowPos(g_hConsole, NULL,
-        0, TOOLBAR_H + list_h + SPLITTER_H, cx, CONSOLE_H,
-        SWP_NOZORDER);
+                 0, TOOLBAR_H + list_h + SPLITTER_H, cx, CONSOLE_H,
+                 SWP_NOZORDER);
 }
 
 // ---------------------------------------------------------------------------
@@ -263,23 +270,25 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 // ---------------------------------------------------------------------------
 int gui_run(HINSTANCE hInstance, int nCmdShow)
 {
+    // Win32 ANSI API が参照するコードページを CP932（Shift-JIS）に明示
+    SetThreadLocale(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
     // Common Controls（ListView 等）を有効化
     INITCOMMONCONTROLSEX icc;
     icc.dwSize = sizeof(icc);
-    icc.dwICC  = ICC_LISTVIEW_CLASSES;
+    icc.dwICC = ICC_LISTVIEW_CLASSES;
     InitCommonControlsEx(&icc);
 
     // ウィンドウクラスの登録
     WNDCLASSEX wc;
     ZeroMemory(&wc, sizeof(wc));
-    wc.cbSize        = sizeof(wc);
-    wc.style         = CS_HREDRAW | CS_VREDRAW;
-    wc.lpfnWndProc   = wnd_proc;
-    wc.hInstance     = hInstance;
-    wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
+    wc.cbSize = sizeof(wc);
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+    wc.lpfnWndProc = wnd_proc;
+    wc.hInstance = hInstance;
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
     wc.lpszClassName = CLASS_NAME;
-    wc.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 
     if (!RegisterClassEx(&wc))
         return -1;
