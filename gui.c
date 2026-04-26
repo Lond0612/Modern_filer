@@ -12,43 +12,33 @@
 // ---------------------------------------------------------------------------
 // コントロール ID
 // ---------------------------------------------------------------------------
-#define ID_BTN_UP 101      // 「cd ..」ボタン
-#define ID_BTN_REFRESH 102 // 更新ボタン
-#define ID_LISTVIEW 103    // ディレクトリ表示（ListView）
-#define ID_CONSOLE 104     // ログペイン（読み取り専用 Edit）
-#define ID_INPUT 105       // コマンド入力欄
-#define ID_BTN_EXEC 106    // 実行ボタン
+#define ID_BTN_UP 101
+#define ID_BTN_REFRESH 102
+#define ID_LISTVIEW 103
+#define ID_CONSOLE 104
+#define ID_INPUT 105
+#define ID_BTN_EXEC 106
 
-// ---------------------------------------------------------------------------
-// カスタムメッセージ
-// gui_log() はCUIスレッドから呼ばれる。
-// スレッドをまたいで直接 SendMessage するとデッドロックの危険があるため、
-// PostMessage でメインスレッドのメッセージキューに投げ、
-// wnd_proc 側で安全に Edit コントロールへ追記する。
-// lParam に _strdup した文字列ポインタを渡し、wnd_proc 側で free する。
-// ---------------------------------------------------------------------------
+// CUIスレッドから安全にログを追記するためのカスタムメッセージ
+// lParam に _strdup した char* を渡し、wnd_proc 側で free する
 #define WM_GUI_LOG (WM_USER + 1)
 
 // ---------------------------------------------------------------------------
 // レイアウト定数
 // ---------------------------------------------------------------------------
-#define TOOLBAR_H 36   // ツールバー行の高さ
-#define BTN_W 80       // ボタン幅
-#define BTN_H 24       // ボタン高さ
-#define BTN_MARGIN 8   // ボタン間マージン
-#define INPUTBAR_H 32  // 入力バーの高さ
-#define INPUT_BTN_W 64 // 実行ボタン幅
-#define CONSOLE_H 160  // ログペインの高さ
-#define SPLITTER_H 4   // スプリッター（視覚的余白）
+#define TOOLBAR_H 36
+#define BTN_W 80
+#define BTN_H 24
+#define BTN_MARGIN 8
+#define INPUTBAR_H 32
+#define INPUT_BTN_W 64
+#define CONSOLE_H 160
+#define SPLITTER_H 4
 
 // ---------------------------------------------------------------------------
-// ウィンドウクラス名
+// グローバルハンドル
 // ---------------------------------------------------------------------------
 static const char *CLASS_NAME = "FilerMainWindow";
-
-// ---------------------------------------------------------------------------
-// グローバルハンドル（このファイル内でのみ使用）
-// ---------------------------------------------------------------------------
 static HWND g_hwnd = NULL;
 static HWND g_hListView = NULL;
 static HWND g_hConsole = NULL;
@@ -56,9 +46,10 @@ static HWND g_hInput = NULL;
 static HWND g_hBtnUp = NULL;
 static HWND g_hBtnRefresh = NULL;
 static HWND g_hBtnExec = NULL;
+static WNDPROC g_orig_input_proc = NULL;
 
 // ---------------------------------------------------------------------------
-// ログペインへの追記（メインスレッド内から呼ぶこと）
+// append_log: メインスレッド専用・ログペインへ追記
 // ---------------------------------------------------------------------------
 static void append_log(const char *text)
 {
@@ -71,36 +62,31 @@ static void append_log(const char *text)
 
 // ---------------------------------------------------------------------------
 // gui_log: どのスレッドからでも安全に呼べるログ出力
-// PostMessage でメインスレッドに文字列を渡す。
 // ---------------------------------------------------------------------------
 void gui_log(const char *text)
 {
     if (g_hwnd == NULL)
         return;
-    // _strdup でヒープにコピー → wnd_proc の WM_GUI_LOG で free
     char *buf = _strdup(text);
     if (buf)
         PostMessage(g_hwnd, WM_GUI_LOG, 0, (LPARAM)buf);
 }
 
 // ---------------------------------------------------------------------------
-// ディレクトリ表示の更新（メインスレッドから呼ぶこと）
+// refresh_listview: ディレクトリ表示を更新（メインスレッド専用）
 // ---------------------------------------------------------------------------
 static void refresh_listview(void)
 {
     char path[MAX_PATH];
     GetCurrentDirectoryA(MAX_PATH, path);
 
-    // タイトルバーにカレントパスを表示
     char title[MAX_PATH + 32];
     _snprintf(title, sizeof(title) - 1, "Filer - %s", path);
     title[sizeof(title) - 1] = '\0';
     SetWindowTextA(g_hwnd, title);
 
-    // ListView をクリア
     ListView_DeleteAllItems(g_hListView);
 
-    // filelist を取得してソート
     FileList list = filelist_create();
     if (filelist_fetch(&list, path) < 0)
     {
@@ -109,8 +95,7 @@ static void refresh_listview(void)
     }
     filelist_sort(&list, (SortContext){SORT_NAME, SORT_ASC});
 
-    // ListView に挿入
-    LVITEM lvi;
+    LVITEMA lvi;
     ZeroMemory(&lvi, sizeof(lvi));
     lvi.mask = LVIF_TEXT;
 
@@ -121,27 +106,28 @@ static void refresh_listview(void)
         lvi.iItem = i;
         lvi.iSubItem = 0;
         lvi.pszText = e->name;
-        ListView_InsertItem(g_hListView, &lvi);
+        SendMessage(g_hListView, LVM_INSERTITEMA, 0, (LPARAM)&lvi);
 
         const char *kind = (e->attributes & FILE_ATTRIBUTE_DIRECTORY) ? "[DIR]" : "[FILE]";
         ListView_SetItemText(g_hListView, i, 1, (LPSTR)kind);
 
-        char size_str[32] = "-";
-        if (!(e->attributes & FILE_ATTRIBUTE_DIRECTORY))
+        char size_str[32];
+        if (e->attributes & FILE_ATTRIBUTE_DIRECTORY)
+            _snprintf(size_str, sizeof(size_str) - 1, "-");
+        else
             _snprintf(size_str, sizeof(size_str) - 1, "%lld", e->size);
         ListView_SetItemText(g_hListView, i, 2, size_str);
     }
 
     filelist_free(&list);
 
-    // ログに記録
     char log_buf[MAX_PATH + 32];
     _snprintf(log_buf, sizeof(log_buf) - 1, "ls: %s\r\n", path);
     append_log(log_buf);
 }
 
 // ---------------------------------------------------------------------------
-// ListView のダブルクリック：ディレクトリなら cd して更新
+// on_listview_dblclick: ダブルクリックでディレクトリ移動
 // ---------------------------------------------------------------------------
 static void on_listview_dblclick(void)
 {
@@ -166,52 +152,52 @@ static void on_listview_dblclick(void)
 }
 
 // ---------------------------------------------------------------------------
-// 入力欄のコマンドを実行（メインスレッド）
+// execute_input: 入力欄のコマンドを解析して実行
 //
-// Editコントロールは内部でUnicode(W)で動いているため、
-// GetWindowTextW で取得して CP932 に変換してから処理する。
-// これにより日本語パスの文字化けを防ぐ。
+// EditコントロールはUnicodeで動いているため GetWindowTextW で取得し
+// WideCharToMultiByte で CP932 に変換する（日本語パス対応）。
 //
-// コマンド解析は「最初の単語 = コマンド名、残り全体 = 引数」とする。
-// strtok でスペース区切りにすると日本語パスやスペース入りパスが壊れる。
+// 解析方式: 「先頭の単語 = コマンド名」「残り全体 = arg1」
+// cp/mv のみ arg1 内の最初のスペースで arg2 を切り出す。
+// strtok でスペース分割しないことで日本語・スペース入りパスを保護する。
 // ---------------------------------------------------------------------------
 static void execute_input(void)
 {
-    // --- EditコントロールからUnicodeで取得してCP932に変換 ---
-    WCHAR winput[512] = {0};
+    // Unicode で取得して CP932 に変換
+    WCHAR winput[512];
+    ZeroMemory(winput, sizeof(winput));
     GetWindowTextW(g_hInput, winput, 512);
     if (wcslen(winput) == 0)
         return;
 
-    char input[512] = {0};
-    WideCharToMultiByte(CP_ACP, 0, winput, -1, input, sizeof(input), NULL, NULL);
+    char input[512];
+    ZeroMemory(input, sizeof(input));
+    WideCharToMultiByte(CP_ACP, 0, winput, -1, input, sizeof(input) - 1, NULL, NULL);
 
-    // ログに入力内容を表示
+    // ログに表示・入力欄クリア
     char log_buf[560];
     _snprintf(log_buf, sizeof(log_buf) - 1, "> %s\r\n", input);
     append_log(log_buf);
-
-    // 入力欄をクリア
     SetWindowTextA(g_hInput, "");
 
-    // --- コマンド名と引数を分離 ---
-    // 先頭の空白をスキップ
+    // 先頭空白をスキップ
     char *p = input;
     while (*p == ' ')
         p++;
     if (*p == '\0')
         return;
 
-    // コマンド名（最初のスペースまで）
-    char cmd[64] = {0};
+    // コマンド名を切り出す
+    char cmd[64];
+    ZeroMemory(cmd, sizeof(cmd));
     char *sp = strchr(p, ' ');
-    if (sp)
+    if (sp != NULL)
     {
-        size_t len = sp - p;
-        if (len >= sizeof(cmd))
-            len = sizeof(cmd) - 1;
-        strncpy(cmd, p, len);
-        // 引数（コマンド名の後ろ、先頭スペースをスキップ）
+        size_t clen = (size_t)(sp - p);
+        if (clen >= sizeof(cmd))
+            clen = sizeof(cmd) - 1;
+        strncpy(cmd, p, clen);
+        // arg1: コマンド名の後ろ（先頭空白スキップ）
         p = sp + 1;
         while (*p == ' ')
             p++;
@@ -219,14 +205,15 @@ static void execute_input(void)
     else
     {
         strncpy(cmd, p, sizeof(cmd) - 1);
-        p = p + strlen(p); // 引数なし（空文字列を指す）
+        p = p + strlen(p); // 引数なし → 空文字列を指す
     }
-    char *arg1 = p; // 引数全体（スペース含む日本語パスもそのまま通る）
 
-    // --- 2つ目の引数（cp/mv用）: arg1 内の最初のスペースで分割 ---
+    char *arg1 = p;
+
+    // arg2: arg1 内の最初のスペースで分割（cp/mv 用）
     char *arg2 = NULL;
     char *sp2 = strchr(arg1, ' ');
-    if (sp2)
+    if (sp2 != NULL)
     {
         *sp2 = '\0';
         arg2 = sp2 + 1;
@@ -234,6 +221,7 @@ static void execute_input(void)
             arg2++;
     }
 
+    // コマンド振り分け
     if (strcmp(cmd, "ls") == 0)
     {
         refresh_listview();
@@ -268,7 +256,9 @@ static void execute_input(void)
     else if (strcmp(cmd, "rm") == 0)
     {
         if (strlen(arg1) == 0)
+        {
             append_log("Usage: rm <file>\r\n");
+        }
         else
         {
             int r = cmd_rm(arg1, 0);
@@ -286,8 +276,10 @@ static void execute_input(void)
     }
     else if (strcmp(cmd, "cp") == 0)
     {
-        if (strlen(arg1) == 0 || arg2 == NULL)
+        if (strlen(arg1) == 0 || arg2 == NULL || strlen(arg2) == 0)
+        {
             append_log("Usage: cp <src> <dst>\r\n");
+        }
         else
         {
             int r = cmd_cp(arg1, arg2, 0);
@@ -305,8 +297,10 @@ static void execute_input(void)
     }
     else if (strcmp(cmd, "mv") == 0)
     {
-        if (strlen(arg1) == 0 || arg2 == NULL)
+        if (strlen(arg1) == 0 || arg2 == NULL || strlen(arg2) == 0)
+        {
             append_log("Usage: mv <src> <dst>\r\n");
+        }
         else
         {
             int r = cmd_mv(arg1, arg2, 0);
@@ -331,7 +325,11 @@ static void execute_input(void)
     }
     else if (strcmp(cmd, "exit") == 0)
     {
-        append_log("GUIを終了するには右上の×ボタンを使用してください。\r\n");
+#ifdef DEBUG
+        // cmdウィンドウを閉じてからGUIも終了
+        FreeConsole();
+#endif
+        DestroyWindow(g_hwnd);
     }
     else
     {
@@ -340,16 +338,28 @@ static void execute_input(void)
         append_log(unk);
     }
 }
+
+// ---------------------------------------------------------------------------
+// input_subclass_proc: 入力欄の Enter キーをフック
+// ---------------------------------------------------------------------------
+static LRESULT CALLBACK input_subclass_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    if (msg == WM_KEYDOWN && wp == VK_RETURN)
+    {
+        execute_input();
+        return 0;
+    }
+    return CallWindowProc(g_orig_input_proc, hwnd, msg, wp, lp);
 }
 
 // ---------------------------------------------------------------------------
-// コントロールの生成
+// create_controls: 全コントロールを生成
 // ---------------------------------------------------------------------------
 static void create_controls(HWND hwnd)
 {
     HINSTANCE hInst = GetModuleHandle(NULL);
 
-    // --- ツールバー行のボタン ---
+    // ツールバー
     g_hBtnUp = CreateWindowExA(
         0, "BUTTON", "[ .. ]",
         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
@@ -362,7 +372,7 @@ static void create_controls(HWND hwnd)
         BTN_MARGIN * 2 + BTN_W, (TOOLBAR_H - BTN_H) / 2, BTN_W, BTN_H,
         hwnd, (HMENU)(INT_PTR)ID_BTN_REFRESH, hInst, NULL);
 
-    // --- ListView（ディレクトリ表示） ---
+    // ListView
     g_hListView = CreateWindowExA(
         WS_EX_CLIENTEDGE, WC_LISTVIEWA, "",
         WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
@@ -391,7 +401,7 @@ static void create_controls(HWND hwnd)
     col.fmt = LVCFMT_RIGHT;
     SendMessage(g_hListView, LVM_INSERTCOLUMNA, 2, (LPARAM)&col);
 
-    // --- ログペイン（読み取り専用 Edit） ---
+    // ログペイン
     g_hConsole = CreateWindowExA(
         WS_EX_CLIENTEDGE, "EDIT", "",
         WS_CHILD | WS_VISIBLE | WS_VSCROLL |
@@ -399,41 +409,41 @@ static void create_controls(HWND hwnd)
         0, 0, 0, 0,
         hwnd, (HMENU)(INT_PTR)ID_CONSOLE, hInst, NULL);
 
-    // --- 入力欄 ---
+    // 入力欄
     g_hInput = CreateWindowExA(
         WS_EX_CLIENTEDGE, "EDIT", "",
         WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
         0, 0, 0, 0,
         hwnd, (HMENU)(INT_PTR)ID_INPUT, hInst, NULL);
 
-    // --- 実行ボタン ---
+    // 実行ボタン
     g_hBtnExec = CreateWindowExA(
         0, "BUTTON", "実行",
-        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_DEFPUSHBUTTON,
+        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
         0, 0, 0, 0,
         hwnd, (HMENU)(INT_PTR)ID_BTN_EXEC, hInst, NULL);
 
-    // 等幅フォントを生成（ログペインと入力欄に適用）
+    // フォント（日本語対応等幅）
     HFONT hFont = CreateFontA(
         14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
         DEFAULT_QUALITY, FIXED_PITCH | FF_MODERN, "MS Gothic");
     SendMessage(g_hConsole, WM_SETFONT, (WPARAM)hFont, TRUE);
     SendMessage(g_hInput, WM_SETFONT, (WPARAM)hFont, TRUE);
+    SendMessage(g_hBtnUp, WM_SETFONT, (WPARAM)hFont, TRUE);
+    SendMessage(g_hBtnRefresh, WM_SETFONT, (WPARAM)hFont, TRUE);
     SendMessage(g_hBtnExec, WM_SETFONT, (WPARAM)hFont, TRUE);
+
+    // 入力欄に Enter フックを設定
+    g_orig_input_proc = (WNDPROC)SetWindowLongPtr(
+        g_hInput, GWLP_WNDPROC, (LONG_PTR)input_subclass_proc);
 }
 
 // ---------------------------------------------------------------------------
-// WM_SIZE: コントロールのリサイズ
+// on_resize: ウィンドウサイズ変更時のレイアウト調整
 // ---------------------------------------------------------------------------
 static void on_resize(int cx, int cy)
 {
-    // 縦方向の割り当て:
-    //   TOOLBAR_H  : ツールバー
-    //   list_h     : ListView（残り全部）
-    //   SPLITTER_H : 余白
-    //   CONSOLE_H  : ログペイン
-    //   INPUTBAR_H : 入力バー
     int list_h = cy - TOOLBAR_H - SPLITTER_H - CONSOLE_H - INPUTBAR_H;
     if (list_h < 0)
         list_h = 0;
@@ -442,20 +452,17 @@ static void on_resize(int cx, int cy)
     int y_console = y_list + list_h + SPLITTER_H;
     int y_input = y_console + CONSOLE_H;
 
-    SetWindowPos(g_hListView, NULL, 0, y_list, cx, list_h, SWP_NOZORDER);
-    SetWindowPos(g_hConsole, NULL, 0, y_console, cx, CONSOLE_H, SWP_NOZORDER);
-
-    // 入力バー: [入力欄 | 実行ボタン]
     int input_w = cx - INPUT_BTN_W - BTN_MARGIN;
     int btn_margin_v = (INPUTBAR_H - BTN_H) / 2;
-    SetWindowPos(g_hInput, NULL, 0, y_input + btn_margin_v,
-                 input_w, BTN_H, SWP_NOZORDER);
-    SetWindowPos(g_hBtnExec, NULL, input_w, y_input + btn_margin_v,
-                 INPUT_BTN_W, BTN_H, SWP_NOZORDER);
+
+    SetWindowPos(g_hListView, NULL, 0, y_list, cx, list_h, SWP_NOZORDER);
+    SetWindowPos(g_hConsole, NULL, 0, y_console, cx, CONSOLE_H, SWP_NOZORDER);
+    SetWindowPos(g_hInput, NULL, 0, y_input + btn_margin_v, input_w, BTN_H, SWP_NOZORDER);
+    SetWindowPos(g_hBtnExec, NULL, input_w, y_input + btn_margin_v, INPUT_BTN_W, BTN_H, SWP_NOZORDER);
 }
 
 // ---------------------------------------------------------------------------
-// ウィンドウプロシージャ
+// wnd_proc: メインウィンドウプロシージャ
 // ---------------------------------------------------------------------------
 static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
@@ -471,7 +478,6 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         on_resize(LOWORD(lp), HIWORD(lp));
         return 0;
 
-    // --- CUIスレッドからの安全なログ追記 ---
     case WM_GUI_LOG:
     {
         char *text = (char *)lp;
@@ -499,18 +505,7 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         case ID_BTN_EXEC:
             execute_input();
             break;
-
-        // 入力欄で Enter キーが押された
-        case ID_INPUT:
-            if (HIWORD(wp) == EN_CHANGE)
-                break; // 文字変化は無視
-            // EN_CHANGE 以外は実行（Enter = WM_COMMAND が来る）
-            break;
         }
-        return 0;
-
-    // 入力欄での Enter キーをフックして実行
-    case WM_KEYDOWN:
         return 0;
 
     case WM_NOTIFY:
@@ -529,25 +524,13 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 }
 
 // ---------------------------------------------------------------------------
-// 入力欄の Enter キーをサブクラス化でフック
-// ---------------------------------------------------------------------------
-static WNDPROC g_orig_input_proc = NULL;
-
-static LRESULT CALLBACK input_subclass_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
-{
-    if (msg == WM_KEYDOWN && wp == VK_RETURN)
-    {
-        execute_input();
-        return 0;
-    }
-    return CallWindowProc(g_orig_input_proc, hwnd, msg, wp, lp);
-}
-
-// ---------------------------------------------------------------------------
 // gui_run: ウィンドウ作成とメッセージループ
 // ---------------------------------------------------------------------------
 int gui_run(HINSTANCE hInstance, int nCmdShow)
 {
+    // fs_ops の printf 出力を GUI ログペインにも転送する
+    fs_ops_set_output_hook(gui_log);
+
     SetThreadLocale(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
 
     INITCOMMONCONTROLSEX icc;
@@ -577,10 +560,6 @@ int gui_run(HINSTANCE hInstance, int nCmdShow)
 
     if (hwnd == NULL)
         return -1;
-
-    // 入力欄に Enter フックのサブクラスを設定
-    g_orig_input_proc = (WNDPROC)SetWindowLongPtr(
-        g_hInput, GWLP_WNDPROC, (LONG_PTR)input_subclass_proc);
 
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);

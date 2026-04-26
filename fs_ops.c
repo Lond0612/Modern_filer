@@ -1,10 +1,49 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 #include <windows.h>
 #include <shellapi.h>
 #include "fs_ops.h"
 
-// --- パスをフルパスに変換するヘルパー ---
+// --- 出力フック（NULLのときはprintf のみ）---
+static FsOutputHook s_output_hook = NULL;
+
+void fs_ops_set_output_hook(FsOutputHook hook)
+{
+    s_output_hook = hook;
+}
+
+// --- 内部出力ヘルパー: printf + フック両方に流す（将来のコマンド拡張用）---
+// DEBUG時: printf（cmd）+ フック（GUIログペイン）
+// リリース時: フックのみ
+static void fs_print(const char *text) __attribute__((unused));
+static void fs_print(const char *text)
+{
+#ifdef DEBUG
+    printf("%s", text);
+#endif
+    if (s_output_hook)
+        s_output_hook(text);
+}
+
+// --- cat 専用出力: フック（GUIログペイン）のみに流す。printf は呼ばない ---
+static void cat_print(const char *text)
+{
+    if (s_output_hook)
+        s_output_hook(text);
+}
+
+static void cat_printf(const char *fmt, ...)
+{
+    char buf[1024];
+    va_list args;
+    va_start(args, fmt);
+    _vsnprintf(buf, sizeof(buf) - 1, fmt, args);
+    buf[sizeof(buf) - 1] = '\0';
+    va_end(args);
+    cat_print(buf);
+}
+
 static int resolve_full_path(const char *arg, char *out, size_t out_size)
 {
     if (GetFullPathName(arg, (DWORD)out_size, out, NULL) == 0)
@@ -89,14 +128,23 @@ void cmd_cat(const char *arg)
     FILE *file = fopen(arg, "r");
     if (file == NULL)
     {
-        printf("Failed to open file: %s\n", arg);
+        cat_printf("Failed to open file: %s\r\n", arg);
         return;
     }
 
-    char buffer[256];
+    char buffer[512];
     while (fgets(buffer, sizeof(buffer), file) != NULL)
     {
-        printf("%s", buffer);
+        size_t len = strlen(buffer);
+        if (len > 0 && buffer[len - 1] == '\n')
+        {
+            buffer[len - 1] = '\0';
+            cat_printf("%s\r\n", buffer);
+        }
+        else
+        {
+            cat_print(buffer);
+        }
     }
 
     fclose(file);
