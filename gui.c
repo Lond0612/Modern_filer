@@ -143,11 +143,20 @@ static void on_listview_dblclick(void)
 
     if (strcmp(kind, "[DIR]") == 0)
     {
+        // ディレクトリ: cd して ListView を更新
         char log_buf[MAX_PATH + 16];
         _snprintf(log_buf, sizeof(log_buf) - 1, "cd %s\r\n", name);
         append_log(log_buf);
         cmd_cd(name);
         refresh_listview();
+    }
+    else
+    {
+        // ファイル: 関連付けアプリで開く
+        char log_buf[MAX_PATH + 16];
+        _snprintf(log_buf, sizeof(log_buf) - 1, "open %s\r\n", name);
+        append_log(log_buf);
+        cmd_open(name);
     }
 }
 
