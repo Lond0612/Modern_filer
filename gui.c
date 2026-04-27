@@ -4,10 +4,9 @@
 #include <windows.h>
 #include <commctrl.h>
 #include "gui.h"
+#include "cmd_proc.h"
 #include "filelist.h"
 #include "sort.h"
-#include "fs_ops.h"
-#include "cui.h"
 
 // ---------------------------------------------------------------------------
 // コントロール ID
@@ -21,24 +20,23 @@
 #define ID_TREEVIEW 107
 #define ID_ADDRESSBAR 108
 
-// カスタムメッセージ: CUIスレッドから安全にログ追記
-#define WM_GUI_LOG (WM_USER + 1)
+// カスタムメッセージ
+#define WM_GUI_LOG (WM_USER + 1) // cmd出力をメインスレッドでログペインへ追記
 
 // ---------------------------------------------------------------------------
 // レイアウト定数
 // ---------------------------------------------------------------------------
-#define TOOLBAR_H 36       // ツールバー行の高さ
-#define BTN_W 80           // [..] / 更新ボタン幅
-#define BTN_H 24           // ボタン高さ
-#define BTN_MARGIN 8       // ボタン間マージン
-#define ADDR_MARGIN 4      // アドレスバーのマージン
-#define INPUTBAR_H 32      // 入力バー行の高さ
-#define INPUT_BTN_W 64     // 実行ボタン幅
-#define CONSOLE_H 160      // ログペインの高さ
-#define VSPLIT_H 4         // 水平スプリッター（余白）
-#define HSPLIT_W 4         // 垂直スプリッター（ツリー|ListView間）
-#define TREE_W_DEFAULT 200 // ツリーペインの初期幅
-#define TREE_W_MIN 60      // ツリーペインの最小幅
+#define TOOLBAR_H 36
+#define BTN_W 80
+#define BTN_H 24
+#define BTN_MARGIN 8
+#define INPUTBAR_H 32
+#define INPUT_BTN_W 64
+#define CONSOLE_H 180
+#define VSPLIT_H 4
+#define HSPLIT_W 4
+#define TREE_W_DEFAULT 200
+#define TREE_W_MIN 60
 
 // ---------------------------------------------------------------------------
 // グローバルハンドル / 状態
@@ -56,14 +54,11 @@ static HWND g_hBtnExec = NULL;
 static WNDPROC g_orig_input_proc = NULL;
 static WNDPROC g_orig_addr_proc = NULL;
 
-// 垂直スプリッター（ツリーとListViewの境界）
 static int g_tree_w = TREE_W_DEFAULT;
 static BOOL g_dragging_split = FALSE;
 static int g_drag_start_x = 0;
-static int g_drag_tree_w = 0;
-
-// ---------------------------------------------------------------------------
-// append_log / gui_log
+static int g_drag_tree_w = 0; // ---------------------------------------------------------------------------
+// ログペインへの追記（メインスレッド専用）
 // ---------------------------------------------------------------------------
 static void append_log(const char *text)
 {
@@ -74,6 +69,10 @@ static void append_log(const char *text)
     SendMessage(g_hConsole, EM_REPLACESEL, FALSE, (LPARAM)text);
 }
 
+// ---------------------------------------------------------------------------
+// gui_log: どのスレッドからでも安全に呼べるログ出力
+// cmd の出力スレッドから呼ばれるため PostMessage で渡す
+// ---------------------------------------------------------------------------
 void gui_log(const char *text)
 {
     if (g_hwnd == NULL)
@@ -84,7 +83,15 @@ void gui_log(const char *text)
 }
 
 // ---------------------------------------------------------------------------
-// アドレスバーをカレントパスで更新
+// cmd 出力コールバック（読み取りスレッドから呼ばれる）
+// ---------------------------------------------------------------------------
+static void on_cmd_output(const char *text)
+{
+    gui_log(text);
+}
+
+// ---------------------------------------------------------------------------
+// アドレスバーとタイトルバーをカレントパスで更新
 // ---------------------------------------------------------------------------
 static void update_addressbar(void)
 {
@@ -99,13 +106,28 @@ static void update_addressbar(void)
 }
 
 // ---------------------------------------------------------------------------
-// TreeView: ドライブ一覧とディレクトリを列挙して追加
+// ディレクトリ移動: GUI + cmd を同期して更新
 // ---------------------------------------------------------------------------
+static void navigate_to(const char *path)
+{
+    // GUI 側のカレントディレクトリを変更
+    if (!SetCurrentDirectoryA(path))
+    {
+        char msg[MAX_PATH + 32];
+        _snprintf(msg, sizeof(msg) - 1, "移動できませんでした: %s\r\n", path);
+        append_log(msg);
+        return;
+    }
+    // cmd プロセスのカレントディレクトリも同期
+    cmd_proc_cd(path);
+    update_addressbar();
+}
 
-// ツリーアイテムにパスを lParam として持たせるため、動的に確保した文字列を使う。
-// WM_DESTROY で解放する。
-
-static HTREEITEM tree_add_item(HTREEITEM hParent, const char *label, const char *path, BOOL hasChildren)
+// ---------------------------------------------------------------------------
+// TreeView
+// ---------------------------------------------------------------------------
+static HTREEITEM tree_add_item(HTREEITEM hParent, const char *label,
+                               const char *path, BOOL hasChildren)
 {
     TVINSERTSTRUCTA tvis;
     ZeroMemory(&tvis, sizeof(tvis));
@@ -113,12 +135,11 @@ static HTREEITEM tree_add_item(HTREEITEM hParent, const char *label, const char 
     tvis.hInsertAfter = TVI_SORT;
     tvis.item.mask = TVIF_TEXT | TVIF_PARAM | TVIF_CHILDREN;
     tvis.item.pszText = (LPSTR)label;
-    tvis.item.lParam = (LPARAM)_strdup(path); // WM_DESTROY で free
+    tvis.item.lParam = (LPARAM)_strdup(path);
     tvis.item.cChildren = hasChildren ? 1 : 0;
     return (HTREEITEM)SendMessage(g_hTreeView, TVM_INSERTITEMA, 0, (LPARAM)&tvis);
 }
 
-// 指定パスの直下サブディレクトリを親アイテムに追加
 static void tree_populate_children(HTREEITEM hParent, const char *path)
 {
     char search[MAX_PATH];
@@ -141,12 +162,11 @@ static void tree_populate_children(HTREEITEM hParent, const char *path)
         _snprintf(child_path, sizeof(child_path) - 1, "%s\\%s", path, fd.cFileName);
         child_path[sizeof(child_path) - 1] = '\0';
 
-        // 子ディレクトリがあるかチェック（展開矢印の有無）
+        // 孫ディレクトリの有無（展開矢印の表示判定）
+        BOOL hasChildren = FALSE;
         char grandchild[MAX_PATH];
         _snprintf(grandchild, sizeof(grandchild) - 1, "%s\\*", child_path);
         grandchild[sizeof(grandchild) - 1] = '\0';
-
-        BOOL hasChildren = FALSE;
         WIN32_FIND_DATAA fd2;
         HANDLE hFind2 = FindFirstFileA(grandchild, &fd2);
         if (hFind2 != INVALID_HANDLE_VALUE)
@@ -163,14 +183,11 @@ static void tree_populate_children(HTREEITEM hParent, const char *path)
             } while (FindNextFileA(hFind2, &fd2));
             FindClose(hFind2);
         }
-
         tree_add_item(hParent, fd.cFileName, child_path, hasChildren);
     } while (FindNextFileA(hFind, &fd));
-
     FindClose(hFind);
 }
 
-// ドライブ一覧をルートに追加
 static void tree_populate_drives(void)
 {
     DWORD drives = GetLogicalDrives();
@@ -178,21 +195,15 @@ static void tree_populate_drives(void)
     {
         if (!(drives & (1 << i)))
             continue;
-        char label[4];
-        label[0] = 'A' + i;
-        label[1] = ':';
-        label[2] = '\\';
-        label[3] = '\0';
+        char label[4] = {'A' + i, ':', '\\', '\0'};
         tree_add_item(TVI_ROOT, label, label, TRUE);
     }
 }
 
-// lParam（_strdup したパス文字列）を再帰的に解放
 static void tree_free_lparams(HTREEITEM hItem)
 {
     if (hItem == NULL)
         return;
-
     TVITEMA tvi;
     ZeroMemory(&tvi, sizeof(tvi));
     tvi.mask = TVIF_PARAM | TVIF_HANDLE;
@@ -200,7 +211,6 @@ static void tree_free_lparams(HTREEITEM hItem)
     SendMessage(g_hTreeView, TVM_GETITEMA, 0, (LPARAM)&tvi);
     free((void *)tvi.lParam);
 
-    // 子を再帰
     HTREEITEM hChild = (HTREEITEM)SendMessage(g_hTreeView, TVM_GETNEXTITEM,
                                               TVGN_CHILD, (LPARAM)hItem);
     while (hChild)
@@ -211,14 +221,40 @@ static void tree_free_lparams(HTREEITEM hItem)
     }
 }
 
+static void on_treeview_expand(HTREEITEM hItem)
+{
+    // 子の lParam を確認し、展開済みかどうかを判断
+    HTREEITEM hChild = (HTREEITEM)SendMessage(g_hTreeView, TVM_GETNEXTITEM,
+                                              TVGN_CHILD, (LPARAM)hItem);
+    if (hChild != NULL)
+    {
+        TVITEMA tvi;
+        ZeroMemory(&tvi, sizeof(tvi));
+        tvi.mask = TVIF_PARAM | TVIF_HANDLE;
+        tvi.hItem = hChild;
+        SendMessage(g_hTreeView, TVM_GETITEMA, 0, (LPARAM)&tvi);
+        if (tvi.lParam != 0)
+            return; // 展開済み
+        SendMessage(g_hTreeView, TVM_DELETEITEM, 0, (LPARAM)hChild);
+    }
+
+    TVITEMA tvi;
+    ZeroMemory(&tvi, sizeof(tvi));
+    tvi.mask = TVIF_PARAM | TVIF_HANDLE;
+    tvi.hItem = hItem;
+    SendMessage(g_hTreeView, TVM_GETITEMA, 0, (LPARAM)&tvi);
+    const char *path = (const char *)tvi.lParam;
+    if (path)
+        tree_populate_children(hItem, path);
+}
+
 // ---------------------------------------------------------------------------
-// ListView の更新（ツリー連動・アドレスバー更新含む）
+// ListView の更新
 // ---------------------------------------------------------------------------
 static void refresh_listview(void)
 {
     char path[MAX_PATH];
     GetCurrentDirectoryA(MAX_PATH, path);
-
     update_addressbar();
     ListView_DeleteAllItems(g_hListView);
 
@@ -253,10 +289,6 @@ static void refresh_listview(void)
         ListView_SetItemText(g_hListView, i, 2, size_str);
     }
     filelist_free(&list);
-
-    char log_buf[MAX_PATH + 32];
-    _snprintf(log_buf, sizeof(log_buf) - 1, "ls: %s\r\n", path);
-    append_log(log_buf);
 }
 
 // ---------------------------------------------------------------------------
@@ -273,35 +305,30 @@ static void on_listview_dblclick(void)
     char kind[16];
     ListView_GetItemText(g_hListView, sel, 1, kind, sizeof(kind));
 
-    char log_buf[MAX_PATH + 16];
+    char path[MAX_PATH];
+    GetCurrentDirectoryA(MAX_PATH, path);
+
     if (strcmp(kind, "[DIR]") == 0)
     {
-        _snprintf(log_buf, sizeof(log_buf) - 1, "cd %s\r\n", name);
-        append_log(log_buf);
-        cmd_cd(name);
+        char fullpath[MAX_PATH];
+        _snprintf(fullpath, sizeof(fullpath) - 1, "%s\\%s", path, name);
+        navigate_to(fullpath);
         refresh_listview();
     }
     else
     {
-        _snprintf(log_buf, sizeof(log_buf) - 1, "open %s\r\n", name);
-        append_log(log_buf);
-        cmd_open(name);
+        // ファイル: 関連付けアプリで開く
+        char fullpath[MAX_PATH];
+        _snprintf(fullpath, sizeof(fullpath) - 1, "%s\\%s", path, name);
+        ShellExecuteA(NULL, "open", fullpath, NULL, NULL, SW_SHOWNORMAL);
     }
 }
 
-// TreeView 展開時に子を動的追加（初回展開のみ）
-static void on_treeview_expand(HTREEITEM hItem)
+// ---------------------------------------------------------------------------
+// TreeView クリック: 選択ディレクトリに移動
+// ---------------------------------------------------------------------------
+static void on_treeview_select(HTREEITEM hItem)
 {
-    // 既に子が存在すれば再展開なのでスキップ
-    HTREEITEM hChild = (HTREEITEM)SendMessage(g_hTreeView, TVM_GETNEXTITEM,
-                                              TVGN_CHILD, (LPARAM)hItem);
-    // 子が既にあれば展開済みと判断してスキップ
-    if (hChild != NULL)
-    {
-        // 孫の有無を確認して cChildren を更新する必要があるかチェック
-        return;
-    }
-
     TVITEMA tvi;
     ZeroMemory(&tvi, sizeof(tvi));
     tvi.mask = TVIF_PARAM | TVIF_HANDLE;
@@ -309,180 +336,63 @@ static void on_treeview_expand(HTREEITEM hItem)
     SendMessage(g_hTreeView, TVM_GETITEMA, 0, (LPARAM)&tvi);
 
     const char *path = (const char *)tvi.lParam;
-    if (path)
-        tree_populate_children(hItem, path);
+    if (path == NULL || strlen(path) == 0)
+        return;
+
+    navigate_to(path);
+    refresh_listview();
 }
 
 // ---------------------------------------------------------------------------
-// execute_input: 入力欄コマンドの解析・実行
+// 入力欄のコマンドを cmd に送信
 // ---------------------------------------------------------------------------
 static void execute_input(void)
 {
-    WCHAR winput[512];
+    WCHAR winput[1024];
     ZeroMemory(winput, sizeof(winput));
-    GetWindowTextW(g_hInput, winput, 512);
+    GetWindowTextW(g_hInput, winput, 1024);
     if (wcslen(winput) == 0)
         return;
 
-    char input[512];
+    char input[1024];
     ZeroMemory(input, sizeof(input));
     WideCharToMultiByte(CP_ACP, 0, winput, -1, input, sizeof(input) - 1, NULL, NULL);
 
-    char log_buf[560];
-    _snprintf(log_buf, sizeof(log_buf) - 1, "> %s\r\n", input);
-    append_log(log_buf);
     SetWindowTextA(g_hInput, "");
 
-    char *p = input;
+    // exit はアプリ終了
+    char trimmed[1024];
+    strncpy(trimmed, input, sizeof(trimmed) - 1);
+    trimmed[sizeof(trimmed) - 1] = '\0';
+    // 先頭の空白をスキップして比較
+    char *p = trimmed;
     while (*p == ' ')
         p++;
-    if (*p == '\0')
-        return;
-
-    char cmd[64];
-    ZeroMemory(cmd, sizeof(cmd));
-    char *sp = strchr(p, ' ');
-    if (sp != NULL)
+    if (_stricmp(p, "exit") == 0)
     {
-        size_t clen = (size_t)(sp - p);
-        if (clen >= sizeof(cmd))
-            clen = sizeof(cmd) - 1;
-        strncpy(cmd, p, clen);
-        p = sp + 1;
-        while (*p == ' ')
-            p++;
-    }
-    else
-    {
-        strncpy(cmd, p, sizeof(cmd) - 1);
-        p = p + strlen(p);
-    }
-
-    char *arg1 = p;
-    char *arg2 = NULL;
-    char *sp2 = strchr(arg1, ' ');
-    if (sp2 != NULL)
-    {
-        *sp2 = '\0';
-        arg2 = sp2 + 1;
-        while (*arg2 == ' ')
-            arg2++;
-    }
-
-    if (strcmp(cmd, "ls") == 0)
-    {
-        refresh_listview();
-    }
-    else if (strcmp(cmd, "cd") == 0)
-    {
-        if (strlen(arg1) == 0)
-            append_log("Usage: cd <path>\r\n");
-        else
-        {
-            cmd_cd(arg1);
-            refresh_listview();
-        }
-    }
-    else if (strcmp(cmd, "cat") == 0)
-    {
-        if (strlen(arg1) == 0)
-            append_log("Usage: cat <file>\r\n");
-        else
-            cmd_cat(arg1);
-    }
-    else if (strcmp(cmd, "touch") == 0)
-    {
-        if (strlen(arg1) == 0)
-            append_log("Usage: touch <file>\r\n");
-        else
-        {
-            cmd_touch(arg1);
-            refresh_listview();
-        }
-    }
-    else if (strcmp(cmd, "rm") == 0)
-    {
-        if (strlen(arg1) == 0)
-        {
-            append_log("Usage: rm <file>\r\n");
-        }
-        else
-        {
-            int r = cmd_rm(arg1, 0);
-            if (r == FS_NEED_CONFIRM)
-            {
-                char msg[MAX_PATH + 32];
-                _snprintf(msg, sizeof(msg) - 1, "%s\nこのファイルを削除しますか？", arg1);
-                if (MessageBoxA(g_hwnd, msg, "確認", MB_YESNO | MB_ICONWARNING) == IDYES)
-                    cmd_rm(arg1, 1);
-                else
-                    append_log("Cancelled.\r\n");
-            }
-            refresh_listview();
-        }
-    }
-    else if (strcmp(cmd, "cp") == 0)
-    {
-        if (strlen(arg1) == 0 || arg2 == NULL || strlen(arg2) == 0)
-            append_log("Usage: cp <src> <dst>\r\n");
-        else
-        {
-            int r = cmd_cp(arg1, arg2, 0);
-            if (r == FS_NEED_CONFIRM)
-            {
-                char msg[MAX_PATH + 32];
-                _snprintf(msg, sizeof(msg) - 1, "%s は既に存在します。上書きしますか？", arg2);
-                if (MessageBoxA(g_hwnd, msg, "確認", MB_YESNO | MB_ICONWARNING) == IDYES)
-                    cmd_cp(arg1, arg2, 1);
-                else
-                    append_log("Cancelled.\r\n");
-            }
-            refresh_listview();
-        }
-    }
-    else if (strcmp(cmd, "mv") == 0)
-    {
-        if (strlen(arg1) == 0 || arg2 == NULL || strlen(arg2) == 0)
-            append_log("Usage: mv <src> <dst>\r\n");
-        else
-        {
-            int r = cmd_mv(arg1, arg2, 0);
-            if (r == FS_NEED_CONFIRM)
-            {
-                char msg[MAX_PATH + 32];
-                _snprintf(msg, sizeof(msg) - 1, "%s は既に存在します。上書きしますか？", arg2);
-                if (MessageBoxA(g_hwnd, msg, "確認", MB_YESNO | MB_ICONWARNING) == IDYES)
-                    cmd_mv(arg1, arg2, 1);
-                else
-                    append_log("Cancelled.\r\n");
-            }
-            refresh_listview();
-        }
-    }
-    else if (strcmp(cmd, "open") == 0)
-    {
-        if (strlen(arg1) == 0)
-            append_log("Usage: open <file>\r\n");
-        else
-            cmd_open(arg1);
-    }
-    else if (strcmp(cmd, "exit") == 0)
-    {
-#ifdef DEBUG
-        FreeConsole();
-#endif
+        cmd_proc_stop();
         DestroyWindow(g_hwnd);
+        return;
     }
-    else
+
+    // それ以外は cmd にそのまま送る
+    cmd_proc_send(input);
+
+    // cd コマンドを検出して GUI 側のカレントディレクトリも更新
+    // （cmd は別プロセスのため GUI 側に反映されない）
+    if (_strnicmp(p, "cd", 2) == 0 && (p[2] == ' ' || p[2] == '\0'))
     {
-        char unk[128];
-        _snprintf(unk, sizeof(unk) - 1, "Unknown command: %s\r\n", cmd);
-        append_log(unk);
+        // cmd の処理が完了するまで少し待ってから GUI を更新
+        Sleep(100);
+        // cd の引数からパスを取得するのは複雑なため、
+        // cmd に問い合わせて現在のパスを取得する方式を取る。
+        // ここでは簡易的に refresh_listview のタイマーで対応。
+        SetTimer(g_hwnd, 1, 200, NULL);
     }
 }
 
 // ---------------------------------------------------------------------------
-// アドレスバーの Enter フック
+// アドレスバー Enter フック
 // ---------------------------------------------------------------------------
 static LRESULT CALLBACK addr_subclass_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
@@ -498,10 +408,7 @@ static LRESULT CALLBACK addr_subclass_proc(HWND hwnd, UINT msg, WPARAM wp, LPARA
 
         if (strlen(path) > 0)
         {
-            char log_buf[MAX_PATH + 16];
-            _snprintf(log_buf, sizeof(log_buf) - 1, "cd %s\r\n", path);
-            append_log(log_buf);
-            cmd_cd(path);
+            navigate_to(path);
             refresh_listview();
         }
         return 0;
@@ -510,7 +417,7 @@ static LRESULT CALLBACK addr_subclass_proc(HWND hwnd, UINT msg, WPARAM wp, LPARA
 }
 
 // ---------------------------------------------------------------------------
-// 入力欄の Enter フック
+// 入力欄 Enter フック
 // ---------------------------------------------------------------------------
 static LRESULT CALLBACK input_subclass_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
@@ -523,34 +430,30 @@ static LRESULT CALLBACK input_subclass_proc(HWND hwnd, UINT msg, WPARAM wp, LPAR
 }
 
 // ---------------------------------------------------------------------------
-// create_controls
+// コントロール生成
 // ---------------------------------------------------------------------------
 static void create_controls(HWND hwnd)
 {
     HINSTANCE hInst = GetModuleHandle(NULL);
 
-    // フォント（全コントロール共通）
     HFONT hFont = CreateFontA(
         14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
         DEFAULT_QUALITY, FIXED_PITCH | FF_MODERN, "MS Gothic");
 
-    // --- ツールバー行 ---
-    // [..] ボタン
+    // ツールバー
     g_hBtnUp = CreateWindowExA(0, "BUTTON", "[ .. ]",
                                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
                                BTN_MARGIN, (TOOLBAR_H - BTN_H) / 2, BTN_W, BTN_H,
                                hwnd, (HMENU)(INT_PTR)ID_BTN_UP, hInst, NULL);
     SendMessage(g_hBtnUp, WM_SETFONT, (WPARAM)hFont, TRUE);
 
-    // 更新ボタン
     g_hBtnRefresh = CreateWindowExA(0, "BUTTON", "更新",
                                     WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
                                     BTN_MARGIN * 2 + BTN_W, (TOOLBAR_H - BTN_H) / 2, BTN_W, BTN_H,
                                     hwnd, (HMENU)(INT_PTR)ID_BTN_REFRESH, hInst, NULL);
     SendMessage(g_hBtnRefresh, WM_SETFONT, (WPARAM)hFont, TRUE);
 
-    // アドレスバー（[..][更新] の右に伸びる・WM_SIZEで幅調整）
     g_hAddrBar = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
                                  WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
                                  BTN_MARGIN * 3 + BTN_W * 2, (TOOLBAR_H - BTN_H) / 2, 0, BTN_H,
@@ -559,15 +462,16 @@ static void create_controls(HWND hwnd)
     g_orig_addr_proc = (WNDPROC)SetWindowLongPtr(
         g_hAddrBar, GWLP_WNDPROC, (LONG_PTR)addr_subclass_proc);
 
-    // --- TreeView（左パネル）---
+    // TreeView
     g_hTreeView = CreateWindowExA(WS_EX_CLIENTEDGE, WC_TREEVIEWA, "",
-                                  WS_CHILD | WS_VISIBLE | TVS_HASLINES | TVS_HASBUTTONS | TVS_LINESATROOT | TVS_SHOWSELALWAYS,
+                                  WS_CHILD | WS_VISIBLE | TVS_HASLINES | TVS_HASBUTTONS |
+                                      TVS_LINESATROOT | TVS_SHOWSELALWAYS,
                                   0, TOOLBAR_H, 0, 0,
                                   hwnd, (HMENU)(INT_PTR)ID_TREEVIEW, hInst, NULL);
     SendMessage(g_hTreeView, WM_SETFONT, (WPARAM)hFont, TRUE);
     tree_populate_drives();
 
-    // --- ListView（右パネル）---
+    // ListView
     g_hListView = CreateWindowExA(WS_EX_CLIENTEDGE, WC_LISTVIEWA, "",
                                   WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
                                   0, TOOLBAR_H, 0, 0,
@@ -591,7 +495,7 @@ static void create_controls(HWND hwnd)
     col.fmt = LVCFMT_RIGHT;
     SendMessage(g_hListView, LVM_INSERTCOLUMNA, 2, (LPARAM)&col);
 
-    // --- ログペイン ---
+    // ログペイン
     g_hConsole = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
                                  WS_CHILD | WS_VISIBLE | WS_VSCROLL |
                                      ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL,
@@ -599,7 +503,7 @@ static void create_controls(HWND hwnd)
                                  hwnd, (HMENU)(INT_PTR)ID_CONSOLE, hInst, NULL);
     SendMessage(g_hConsole, WM_SETFONT, (WPARAM)hFont, TRUE);
 
-    // --- 入力欄 ---
+    // 入力欄
     g_hInput = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
                                WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,
                                0, 0, 0, 0,
@@ -608,7 +512,7 @@ static void create_controls(HWND hwnd)
     g_orig_input_proc = (WNDPROC)SetWindowLongPtr(
         g_hInput, GWLP_WNDPROC, (LONG_PTR)input_subclass_proc);
 
-    // --- 実行ボタン ---
+    // 実行ボタン
     g_hBtnExec = CreateWindowExA(0, "BUTTON", "実行",
                                  WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
                                  0, 0, 0, 0,
@@ -617,11 +521,10 @@ static void create_controls(HWND hwnd)
 }
 
 // ---------------------------------------------------------------------------
-// on_resize: レイアウト計算
+// レイアウト計算
 // ---------------------------------------------------------------------------
 static void on_resize(int cx, int cy)
 {
-    // ツールバー: [..][更新][アドレスバー(残り全幅)]
     int addr_x = BTN_MARGIN * 3 + BTN_W * 2;
     int addr_w = cx - addr_x - BTN_MARGIN;
     if (addr_w < 0)
@@ -629,7 +532,6 @@ static void on_resize(int cx, int cy)
     int btn_v = (TOOLBAR_H - BTN_H) / 2;
     SetWindowPos(g_hAddrBar, NULL, addr_x, btn_v, addr_w, BTN_H, SWP_NOZORDER);
 
-    // 中段: ツリー | スプリッター | ListView
     int panel_h = cy - TOOLBAR_H - VSPLIT_H - CONSOLE_H - INPUTBAR_H;
     if (panel_h < 0)
         panel_h = 0;
@@ -648,7 +550,7 @@ static void on_resize(int cx, int cy)
     int y_panel = TOOLBAR_H;
     int y_console = y_panel + panel_h + VSPLIT_H;
     int y_input = y_console + CONSOLE_H;
-    int btn_margin_v = (INPUTBAR_H - BTN_H) / 2;
+    int bv = (INPUTBAR_H - BTN_H) / 2;
     int input_w = cx - INPUT_BTN_W - BTN_MARGIN;
     if (input_w < 0)
         input_w = 0;
@@ -656,26 +558,23 @@ static void on_resize(int cx, int cy)
     SetWindowPos(g_hTreeView, NULL, 0, y_panel, tree_w, panel_h, SWP_NOZORDER);
     SetWindowPos(g_hListView, NULL, list_x, y_panel, list_w, panel_h, SWP_NOZORDER);
     SetWindowPos(g_hConsole, NULL, 0, y_console, cx, CONSOLE_H, SWP_NOZORDER);
-    SetWindowPos(g_hInput, NULL, 0, y_input + btn_margin_v, input_w, BTN_H, SWP_NOZORDER);
-    SetWindowPos(g_hBtnExec, NULL, input_w, y_input + btn_margin_v, INPUT_BTN_W, BTN_H, SWP_NOZORDER);
+    SetWindowPos(g_hInput, NULL, 0, y_input + bv, input_w, BTN_H, SWP_NOZORDER);
+    SetWindowPos(g_hBtnExec, NULL, input_w, y_input + bv, INPUT_BTN_W, BTN_H, SWP_NOZORDER);
 }
 
-// スプリッターのヒット判定（ツリーとListViewの境界）
-static BOOL is_on_splitter(int x, int cy)
+static BOOL is_on_splitter(int x, int y)
 {
     RECT rc;
     GetClientRect(g_hwnd, &rc);
     int panel_h = rc.bottom - TOOLBAR_H - VSPLIT_H - CONSOLE_H - INPUTBAR_H;
     if (panel_h < 0)
         panel_h = 0;
-
-    // スプリッター領域: x が tree_w ± HSPLIT_W、y が中段パネル内
     return (x >= g_tree_w && x <= g_tree_w + HSPLIT_W &&
-            cy >= TOOLBAR_H && cy < TOOLBAR_H + panel_h);
+            y >= TOOLBAR_H && y < TOOLBAR_H + panel_h);
 }
 
 // ---------------------------------------------------------------------------
-// wnd_proc
+// ウィンドウプロシージャ
 // ---------------------------------------------------------------------------
 static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
@@ -685,16 +584,19 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         g_hwnd = hwnd;
         create_controls(hwnd);
         refresh_listview();
+        // cmd.exe を起動
+        if (!cmd_proc_start(on_cmd_output))
+            MessageBoxA(hwnd, "cmd.exe の起動に失敗しました。", "エラー", MB_OK | MB_ICONERROR);
         return 0;
 
     case WM_SIZE:
         on_resize(LOWORD(lp), HIWORD(lp));
         return 0;
 
-    // --- スプリッタードラッグ ---
     case WM_MOUSEMOVE:
     {
-        int mx = LOWORD(lp), my = HIWORD(lp);
+        int mx = (int)(short)LOWORD(lp);
+        int my = (int)(short)HIWORD(lp);
         if (g_dragging_split)
         {
             int dx = mx - g_drag_start_x;
@@ -714,7 +616,8 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 
     case WM_LBUTTONDOWN:
     {
-        int mx = LOWORD(lp), my = HIWORD(lp);
+        int mx = (int)(short)LOWORD(lp);
+        int my = (int)(short)HIWORD(lp);
         if (is_on_splitter(mx, my))
         {
             g_dragging_split = TRUE;
@@ -746,7 +649,13 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         break;
     }
 
-    // --- CUIスレッドからのログ追記 ---
+    case WM_TIMER:
+        // cd コマンド後に GUI のカレントディレクトリを cmd に合わせて更新
+        KillTimer(hwnd, 1);
+        refresh_listview();
+        return 0;
+
+    // cmd 出力をログペインへ（スレッドをまたぐため PostMessage 経由）
     case WM_GUI_LOG:
     {
         char *text = (char *)lp;
@@ -762,10 +671,20 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         switch (LOWORD(wp))
         {
         case ID_BTN_UP:
-            append_log("cd ..\r\n");
-            cmd_cd("..");
+        {
+            char path[MAX_PATH];
+            GetCurrentDirectoryA(MAX_PATH, path);
+            char *sep = strrchr(path, '\\');
+            if (sep && sep != path)
+                *sep = '\0';
+            else if (sep == path)
+            {
+                path[1] = '\0';
+            } // ルート
+            navigate_to(path);
             refresh_listview();
             break;
+        }
         case ID_BTN_REFRESH:
             refresh_listview();
             break;
@@ -778,15 +697,17 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     case WM_NOTIFY:
     {
         NMHDR *nm = (NMHDR *)lp;
-
-        // ListView ダブルクリック
         if (nm->idFrom == ID_LISTVIEW && nm->code == NM_DBLCLK)
         {
             on_listview_dblclick();
             return 0;
         }
-
-        // TreeView 展開 → 子を動的追加
+        if (nm->idFrom == ID_TREEVIEW && nm->code == TVN_SELCHANGEDA)
+        {
+            NMTREEVIEWA *ntv = (NMTREEVIEWA *)lp;
+            on_treeview_select(ntv->itemNew.hItem);
+            return 0;
+        }
         if (nm->idFrom == ID_TREEVIEW && nm->code == TVN_ITEMEXPANDINGA)
         {
             NMTREEVIEWA *ntv = (NMTREEVIEWA *)lp;
@@ -794,20 +715,17 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
                 on_treeview_expand(ntv->itemNew.hItem);
             return 0;
         }
-
         return 0;
     }
 
     case WM_DESTROY:
-        // TreeView の lParam（_strdup したパス文字列）を解放
+        cmd_proc_stop();
         {
-            HTREEITEM hRoot = (HTREEITEM)SendMessage(g_hTreeView, TVM_GETNEXTITEM,
-                                                     TVGN_ROOT, 0);
-            while (hRoot)
+            HTREEITEM h = (HTREEITEM)SendMessage(g_hTreeView, TVM_GETNEXTITEM, TVGN_ROOT, 0);
+            while (h)
             {
-                tree_free_lparams(hRoot);
-                hRoot = (HTREEITEM)SendMessage(g_hTreeView, TVM_GETNEXTITEM,
-                                               TVGN_NEXT, (LPARAM)hRoot);
+                tree_free_lparams(h);
+                h = (HTREEITEM)SendMessage(g_hTreeView, TVM_GETNEXTITEM, TVGN_NEXT, (LPARAM)h);
             }
         }
         PostQuitMessage(0);
@@ -821,7 +739,6 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 // ---------------------------------------------------------------------------
 int gui_run(HINSTANCE hInstance, int nCmdShow)
 {
-    fs_ops_set_output_hook(gui_log);
     SetThreadLocale(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
 
     INITCOMMONCONTROLSEX icc;
