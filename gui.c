@@ -7,6 +7,7 @@
 #include "cmd_proc.h"
 #include "filelist.h"
 #include "sort.h"
+#include "config.h"
 
 // ---------------------------------------------------------------------------
 // コントロール ID
@@ -54,7 +55,7 @@ static HWND g_hBtnExec = NULL;
 static WNDPROC g_orig_input_proc = NULL;
 static WNDPROC g_orig_addr_proc = NULL;
 
-static int g_tree_w = TREE_W_DEFAULT;
+static int g_tree_w = TREE_W_DEFAULT; // config_load後にWM_CREATEで上書き
 static BOOL g_dragging_split = FALSE;
 static int g_drag_start_x = 0;
 static int g_drag_tree_w = 0; // ---------------------------------------------------------------------------
@@ -437,9 +438,9 @@ static void create_controls(HWND hwnd)
     HINSTANCE hInst = GetModuleHandle(NULL);
 
     HFONT hFont = CreateFontA(
-        14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+        g_config.font_size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
         DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-        DEFAULT_QUALITY, FIXED_PITCH | FF_MODERN, "MS Gothic");
+        DEFAULT_QUALITY, FIXED_PITCH | FF_MODERN, g_config.font_name);
 
     // ツールバー
     g_hBtnUp = CreateWindowExA(0, "BUTTON", "[ .. ]",
@@ -532,7 +533,7 @@ static void on_resize(int cx, int cy)
     int btn_v = (TOOLBAR_H - BTN_H) / 2;
     SetWindowPos(g_hAddrBar, NULL, addr_x, btn_v, addr_w, BTN_H, SWP_NOZORDER);
 
-    int panel_h = cy - TOOLBAR_H - VSPLIT_H - CONSOLE_H - INPUTBAR_H;
+    int panel_h = cy - TOOLBAR_H - VSPLIT_H - g_config.console_height - INPUTBAR_H;
     if (panel_h < 0)
         panel_h = 0;
 
@@ -549,7 +550,7 @@ static void on_resize(int cx, int cy)
 
     int y_panel = TOOLBAR_H;
     int y_console = y_panel + panel_h + VSPLIT_H;
-    int y_input = y_console + CONSOLE_H;
+    int y_input = y_console + g_config.console_height;
     int bv = (INPUTBAR_H - BTN_H) / 2;
     int input_w = cx - INPUT_BTN_W - BTN_MARGIN;
     if (input_w < 0)
@@ -557,7 +558,7 @@ static void on_resize(int cx, int cy)
 
     SetWindowPos(g_hTreeView, NULL, 0, y_panel, tree_w, panel_h, SWP_NOZORDER);
     SetWindowPos(g_hListView, NULL, list_x, y_panel, list_w, panel_h, SWP_NOZORDER);
-    SetWindowPos(g_hConsole, NULL, 0, y_console, cx, CONSOLE_H, SWP_NOZORDER);
+    SetWindowPos(g_hConsole, NULL, 0, y_console, cx, g_config.console_height, SWP_NOZORDER);
     SetWindowPos(g_hInput, NULL, 0, y_input + bv, input_w, BTN_H, SWP_NOZORDER);
     SetWindowPos(g_hBtnExec, NULL, input_w, y_input + bv, INPUT_BTN_W, BTN_H, SWP_NOZORDER);
 }
@@ -566,7 +567,7 @@ static BOOL is_on_splitter(int x, int y)
 {
     RECT rc;
     GetClientRect(g_hwnd, &rc);
-    int panel_h = rc.bottom - TOOLBAR_H - VSPLIT_H - CONSOLE_H - INPUTBAR_H;
+    int panel_h = rc.bottom - TOOLBAR_H - VSPLIT_H - g_config.console_height - INPUTBAR_H;
     if (panel_h < 0)
         panel_h = 0;
     return (x >= g_tree_w && x <= g_tree_w + HSPLIT_W &&
@@ -582,6 +583,8 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     {
     case WM_CREATE:
         g_hwnd = hwnd;
+        // config のレイアウト値を反映
+        g_tree_w = g_config.tree_width;
         create_controls(hwnd);
         refresh_listview();
         // cmd.exe を起動
@@ -649,7 +652,33 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         break;
     }
 
-    case WM_TIMER:
+    case WM_CTLCOLOREDIT:
+    {
+        HWND hCtrl = (HWND)lp;
+        HDC hdc = (HDC)wp;
+        if (hCtrl == g_hConsole)
+        {
+            SetTextColor(hdc, g_config.color_log_text);
+            SetBkColor(hdc, g_config.color_log_bg);
+            return (LRESULT)CreateSolidBrush(g_config.color_log_bg);
+        }
+        // 入力欄・アドレスバーは通常色
+        SetTextColor(hdc, g_config.color_text);
+        SetBkColor(hdc, g_config.color_bg);
+        return (LRESULT)CreateSolidBrush(g_config.color_bg);
+    }
+
+    case WM_ERASEBKGND:
+    {
+        // ウィンドウ背景色
+        HDC hdc = (HDC)wp;
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+        HBRUSH hBr = CreateSolidBrush(g_config.color_bg);
+        FillRect(hdc, &rc, hBr);
+        DeleteObject(hBr);
+        return 1;
+    }
         // cd コマンド後に GUI のカレントディレクトリを cmd に合わせて更新
         KillTimer(hwnd, 1);
         refresh_listview();
