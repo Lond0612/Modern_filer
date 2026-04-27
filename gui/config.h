@@ -14,21 +14,21 @@
 typedef struct
 {
     // [Font]
-    char font_name[64];   // フォント名
-    int  font_size;       // フォントサイズ（pt）
+    char font_name[64]; // フォント名
+    int font_size;      // フォントサイズ（pt）
 
     // [Color] - COLORREF (0x00BBGGRR)
-    COLORREF color_bg;          // ウィンドウ背景
-    COLORREF color_text;        // 通常テキスト
-    COLORREF color_log_bg;      // ログペイン背景
-    COLORREF color_log_text;    // ログペインテキスト
-    COLORREF color_tree_bg;     // ツリービュー背景
-    COLORREF color_sel_bg;      // 選択背景
-    COLORREF color_sel_text;    // 選択テキスト
+    COLORREF color_bg;       // ウィンドウ背景
+    COLORREF color_text;     // 通常テキスト
+    COLORREF color_log_bg;   // ログペイン背景
+    COLORREF color_log_text; // ログペインテキスト
+    COLORREF color_tree_bg;  // ツリービュー背景
+    COLORREF color_sel_bg;   // 選択背景
+    COLORREF color_sel_text; // 選択テキスト
 
     // [Layout]
-    int tree_width;       // ツリーペインの初期幅
-    int console_height;   // ログペインの高さ
+    int tree_width;     // ツリーペインの初期幅
+    int console_height; // ログペインの高さ
 } FilerConfig;
 
 // グローバル設定インスタンス（gui.c / main.c から参照）

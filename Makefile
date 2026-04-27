@@ -3,9 +3,27 @@ CFLAGS  = -Wall -Wextra -std=c11 -finput-charset=utf-8 -fexec-charset=cp932
 LDFLAGS = -mwindows -lshell32 -lcomctl32
 
 TARGET  = filer.exe
-SRCS    = main.c cmd_proc.c config.c filelist.c sort.c search.c gui.c
-OBJS    = $(SRCS:.c=.o)
 
+# ---------------------------------------------------------------------------
+# ソースファイル（サブフォルダ構成）
+# ---------------------------------------------------------------------------
+SRCS = \
+    main.c              \
+    core/filelist.c     \
+    core/sort.c         \
+    core/search.c       \
+    proc/cmd_proc.c     \
+    gui/config.c        \
+    gui/gui.c
+
+OBJS = $(SRCS:.c=.o)
+
+# ---------------------------------------------------------------------------
+# ビルドターゲット
+#   debug   : 開発用（-DDEBUG -g）
+#   release : 配布用
+#   all     : debug と同じ（デフォルト）
+# ---------------------------------------------------------------------------
 all: debug
 
 debug: CFLAGS += -DDEBUG -g
@@ -20,13 +38,19 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	del /Q $(OBJS) $(TARGET) 2>nul || true
+	del /Q $(subst /,\,$(OBJS)) $(TARGET) 2>nul || true
 
+# ---------------------------------------------------------------------------
 # 依存関係
-main.o:      main.c config.h gui.h
-cmd_proc.o:  cmd_proc.c cmd_proc.h
-config.o:    config.c config.h
-filelist.o:  filelist.c filelist.h
-sort.o:      sort.c sort.h filelist.h
-search.o:    search.c search.h filelist.h
-gui.o:       gui.c gui.h cmd_proc.h config.h filelist.h sort.h
+# ---------------------------------------------------------------------------
+main.o:             main.c gui/gui.h gui/config.h
+
+core/filelist.o:    core/filelist.c core/filelist.h
+core/sort.o:        core/sort.c core/sort.h core/filelist.h
+core/search.o:      core/search.c core/search.h core/filelist.h
+
+proc/cmd_proc.o:    proc/cmd_proc.c proc/cmd_proc.h
+
+gui/config.o:       gui/config.c gui/config.h
+gui/gui.o:          gui/gui.c gui/gui.h gui/config.h \
+                    proc/cmd_proc.h core/filelist.h core/sort.h

@@ -6,10 +6,10 @@
 // ---------------------------------------------------------------------------
 // 内部状態
 // ---------------------------------------------------------------------------
-static HANDLE s_hProc      = NULL;   // cmd.exe プロセスハンドル
-static HANDLE s_hStdin     = NULL;   // cmd の stdin  書き込み端
-static HANDLE s_hStdout    = NULL;   // cmd の stdout 読み込み端
-static HANDLE s_hReadThread = NULL;  // 出力読み取りスレッド
+static HANDLE s_hProc = NULL;       // cmd.exe プロセスハンドル
+static HANDLE s_hStdin = NULL;      // cmd の stdin  書き込み端
+static HANDLE s_hStdout = NULL;     // cmd の stdout 読み込み端
+static HANDLE s_hReadThread = NULL; // 出力読み取りスレッド
 static CmdOutputCallback s_callback = NULL;
 static volatile BOOL s_running = FALSE;
 
@@ -54,7 +54,7 @@ static DWORD WINAPI read_thread(LPVOID _unused)
         int ni = 0;
         for (DWORD i = 0; i < read && ni < (int)sizeof(norm) - 3; i++)
         {
-            if (buf[i] == '\n' && (i == 0 || buf[i-1] != '\r'))
+            if (buf[i] == '\n' && (i == 0 || buf[i - 1] != '\r'))
             {
                 norm[ni++] = '\r';
                 norm[ni++] = '\n';
@@ -66,7 +66,8 @@ static DWORD WINAPI read_thread(LPVOID _unused)
         }
         norm[ni] = '\0';
 
-        if (s_callback) s_callback(norm);
+        if (s_callback)
+            s_callback(norm);
     }
     return 0;
 }
@@ -80,47 +81,51 @@ int cmd_proc_start(CmdOutputCallback cb)
 
     // パイプを作成
     // stdin 用: GUI → cmd
-    HANDLE hStdinRead  = NULL, hStdinWrite = NULL;
+    HANDLE hStdinRead = NULL, hStdinWrite = NULL;
     // stdout 用: cmd → GUI (stderr もここに合流させる)
     HANDLE hStdoutRead = NULL, hStdoutWrite = NULL;
 
     SECURITY_ATTRIBUTES sa;
-    sa.nLength              = sizeof(sa);
+    sa.nLength = sizeof(sa);
     sa.lpSecurityDescriptor = NULL;
-    sa.bInheritHandle       = TRUE;   // 子プロセスに継承させる
+    sa.bInheritHandle = TRUE; // 子プロセスに継承させる
 
-    if (!CreatePipe(&hStdinRead,  &hStdinWrite,  &sa, 0)) return 0;
+    if (!CreatePipe(&hStdinRead, &hStdinWrite, &sa, 0))
+        return 0;
     if (!CreatePipe(&hStdoutRead, &hStdoutWrite, &sa, 0))
     {
-        CloseHandle(hStdinRead); CloseHandle(hStdinWrite);
+        CloseHandle(hStdinRead);
+        CloseHandle(hStdinWrite);
         return 0;
     }
 
     // 親側のハンドルは継承させない（子プロセスに見えないようにする）
-    SetHandleInformation(hStdinWrite,  HANDLE_FLAG_INHERIT, 0);
-    SetHandleInformation(hStdoutRead,  HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(hStdinWrite, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation(hStdoutRead, HANDLE_FLAG_INHERIT, 0);
 
     // cmd.exe を起動
     STARTUPINFOA si;
     ZeroMemory(&si, sizeof(si));
-    si.cb          = sizeof(si);
-    si.dwFlags     = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
-    si.wShowWindow = SW_HIDE;          // コンソールウィンドウを非表示
-    si.hStdInput   = hStdinRead;
-    si.hStdOutput  = hStdoutWrite;
-    si.hStdError   = hStdoutWrite;     // stderr も同じパイプへ
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE; // コンソールウィンドウを非表示
+    si.hStdInput = hStdinRead;
+    si.hStdOutput = hStdoutWrite;
+    si.hStdError = hStdoutWrite; // stderr も同じパイプへ
 
     PROCESS_INFORMATION pi;
     ZeroMemory(&pi, sizeof(pi));
 
-    char cmdline[] = "cmd.exe /Q";    // /Q: echo off（プロンプト重複を抑制）
+    char cmdline[] = "cmd.exe /Q"; // /Q: echo off（プロンプト重複を抑制）
     if (!CreateProcessA(NULL, cmdline, NULL, NULL,
-                        TRUE,          // bInheritHandles
+                        TRUE, // bInheritHandles
                         CREATE_NO_WINDOW,
                         NULL, NULL, &si, &pi))
     {
-        CloseHandle(hStdinRead);  CloseHandle(hStdinWrite);
-        CloseHandle(hStdoutRead); CloseHandle(hStdoutWrite);
+        CloseHandle(hStdinRead);
+        CloseHandle(hStdinWrite);
+        CloseHandle(hStdoutRead);
+        CloseHandle(hStdoutWrite);
         return 0;
     }
 
@@ -129,8 +134,8 @@ int cmd_proc_start(CmdOutputCallback cb)
     CloseHandle(hStdoutWrite);
     CloseHandle(pi.hThread);
 
-    s_hProc   = pi.hProcess;
-    s_hStdin  = hStdinWrite;
+    s_hProc = pi.hProcess;
+    s_hStdin = hStdinWrite;
     s_hStdout = hStdoutRead;
     s_running = TRUE;
 
@@ -145,14 +150,16 @@ int cmd_proc_start(CmdOutputCallback cb)
 // ---------------------------------------------------------------------------
 void cmd_proc_send(const char *line)
 {
-    if (s_hStdin == NULL || !s_running) return;
+    if (s_hStdin == NULL || !s_running)
+        return;
 
     char buf[1024];
     int len = _snprintf(buf, sizeof(buf) - 3, "%s", line);
-    if (len < 0) len = (int)sizeof(buf) - 3;
+    if (len < 0)
+        len = (int)sizeof(buf) - 3;
 
     // 末尾に \r\n を付与
-    buf[len]     = '\r';
+    buf[len] = '\r';
     buf[len + 1] = '\n';
     buf[len + 2] = '\0';
 
@@ -175,7 +182,8 @@ void cmd_proc_cd(const char *path)
 // ---------------------------------------------------------------------------
 void cmd_proc_stop(void)
 {
-    if (!s_running) return;
+    if (!s_running)
+        return;
     s_running = FALSE;
 
     // cmd に exit を送って正常終了させる
@@ -189,8 +197,16 @@ void cmd_proc_stop(void)
         s_hReadThread = NULL;
     }
 
-    if (s_hStdin)  { CloseHandle(s_hStdin);  s_hStdin  = NULL; }
-    if (s_hStdout) { CloseHandle(s_hStdout); s_hStdout = NULL; }
+    if (s_hStdin)
+    {
+        CloseHandle(s_hStdin);
+        s_hStdin = NULL;
+    }
+    if (s_hStdout)
+    {
+        CloseHandle(s_hStdout);
+        s_hStdout = NULL;
+    }
     if (s_hProc)
     {
         WaitForSingleObject(s_hProc, 2000);

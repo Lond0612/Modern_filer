@@ -37,7 +37,8 @@ static COLORREF parse_color(const char *hex, COLORREF fallback)
 {
     // "#RRGGBB" または "RRGGBB" の両方を受け付ける
     const char *p = hex;
-    if (*p == '#') p++;
+    if (*p == '#')
+        p++;
 
     unsigned int r = 0, g = 0, b = 0;
     if (strlen(p) >= 6 && sscanf(p, "%02x%02x%02x", &r, &g, &b) == 3)
@@ -63,18 +64,18 @@ static void config_set_defaults(void)
 {
     strncpy(g_config.font_name, "MS Gothic", sizeof(g_config.font_name) - 1);
     g_config.font_name[sizeof(g_config.font_name) - 1] = '\0';
-    g_config.font_size       = 14;
+    g_config.font_size = 14;
 
-    g_config.color_bg        = RGB(0xFF, 0xFF, 0xFF);  // 白
-    g_config.color_text      = RGB(0x00, 0x00, 0x00);  // 黒
-    g_config.color_log_bg    = RGB(0x1E, 0x1E, 0x1E);  // ダークグレー
-    g_config.color_log_text  = RGB(0xD4, 0xD4, 0xD4);  // ライトグレー
-    g_config.color_tree_bg   = RGB(0xF5, 0xF5, 0xF5);  // 薄グレー
-    g_config.color_sel_bg    = RGB(0x00, 0x78, 0xD7);  // Windowsブルー
-    g_config.color_sel_text  = RGB(0xFF, 0xFF, 0xFF);  // 白
+    g_config.color_bg = RGB(0xFF, 0xFF, 0xFF);       // 白
+    g_config.color_text = RGB(0x00, 0x00, 0x00);     // 黒
+    g_config.color_log_bg = RGB(0x1E, 0x1E, 0x1E);   // ダークグレー
+    g_config.color_log_text = RGB(0xD4, 0xD4, 0xD4); // ライトグレー
+    g_config.color_tree_bg = RGB(0xF5, 0xF5, 0xF5);  // 薄グレー
+    g_config.color_sel_bg = RGB(0x00, 0x78, 0xD7);   // Windowsブルー
+    g_config.color_sel_text = RGB(0xFF, 0xFF, 0xFF); // 白
 
-    g_config.tree_width      = 200;
-    g_config.console_height  = 180;
+    g_config.tree_width = 200;
+    g_config.console_height = 180;
 }
 
 // ---------------------------------------------------------------------------
@@ -94,7 +95,7 @@ static int read_int(const char *ini, const char *section,
 }
 
 static COLORREF read_color(const char *ini, const char *section,
-                            const char *key, COLORREF fallback)
+                           const char *key, COLORREF fallback)
 {
     char hex[16];
     char fallback_hex[16];
@@ -126,16 +127,16 @@ void config_load(void)
     g_config.font_size = read_int(ini, "Font", "Size", g_config.font_size);
 
     // [Color]
-    g_config.color_bg       = read_color(ini, "Color", "Background",    g_config.color_bg);
-    g_config.color_text     = read_color(ini, "Color", "Text",           g_config.color_text);
-    g_config.color_log_bg   = read_color(ini, "Color", "LogBackground",  g_config.color_log_bg);
-    g_config.color_log_text = read_color(ini, "Color", "LogText",        g_config.color_log_text);
-    g_config.color_tree_bg  = read_color(ini, "Color", "TreeBackground", g_config.color_tree_bg);
-    g_config.color_sel_bg   = read_color(ini, "Color", "SelectionBg",    g_config.color_sel_bg);
-    g_config.color_sel_text = read_color(ini, "Color", "SelectionText",  g_config.color_sel_text);
+    g_config.color_bg = read_color(ini, "Color", "Background", g_config.color_bg);
+    g_config.color_text = read_color(ini, "Color", "Text", g_config.color_text);
+    g_config.color_log_bg = read_color(ini, "Color", "LogBackground", g_config.color_log_bg);
+    g_config.color_log_text = read_color(ini, "Color", "LogText", g_config.color_log_text);
+    g_config.color_tree_bg = read_color(ini, "Color", "TreeBackground", g_config.color_tree_bg);
+    g_config.color_sel_bg = read_color(ini, "Color", "SelectionBg", g_config.color_sel_bg);
+    g_config.color_sel_text = read_color(ini, "Color", "SelectionText", g_config.color_sel_text);
 
     // [Layout]
-    g_config.tree_width     = read_int(ini, "Layout", "TreeWidth",     g_config.tree_width);
+    g_config.tree_width = read_int(ini, "Layout", "TreeWidth", g_config.tree_width);
     g_config.console_height = read_int(ini, "Layout", "ConsoleHeight", g_config.console_height);
 }
 
@@ -154,20 +155,20 @@ void config_save(void)
     _snprintf(val, sizeof(val) - 1, "%d", g_config.font_size);
     WritePrivateProfileStringA("Font", "Size", val, ini);
 
-    // [Color]
-    #define WRITE_COLOR(section, key, color) \
-        color_to_hex(color, val, sizeof(val)); \
-        WritePrivateProfileStringA(section, key, val, ini);
+// [Color]
+#define WRITE_COLOR(section, key, color)   \
+    color_to_hex(color, val, sizeof(val)); \
+    WritePrivateProfileStringA(section, key, val, ini);
 
-    WRITE_COLOR("Color", "Background",    g_config.color_bg)
-    WRITE_COLOR("Color", "Text",           g_config.color_text)
-    WRITE_COLOR("Color", "LogBackground",  g_config.color_log_bg)
-    WRITE_COLOR("Color", "LogText",        g_config.color_log_text)
+    WRITE_COLOR("Color", "Background", g_config.color_bg)
+    WRITE_COLOR("Color", "Text", g_config.color_text)
+    WRITE_COLOR("Color", "LogBackground", g_config.color_log_bg)
+    WRITE_COLOR("Color", "LogText", g_config.color_log_text)
     WRITE_COLOR("Color", "TreeBackground", g_config.color_tree_bg)
-    WRITE_COLOR("Color", "SelectionBg",    g_config.color_sel_bg)
-    WRITE_COLOR("Color", "SelectionText",  g_config.color_sel_text)
+    WRITE_COLOR("Color", "SelectionBg", g_config.color_sel_bg)
+    WRITE_COLOR("Color", "SelectionText", g_config.color_sel_text)
 
-    #undef WRITE_COLOR
+#undef WRITE_COLOR
 
     // [Layout]
     _snprintf(val, sizeof(val) - 1, "%d", g_config.tree_width);

@@ -4,9 +4,9 @@
 #include <windows.h>
 #include <commctrl.h>
 #include "gui.h"
-#include "cmd_proc.h"
-#include "filelist.h"
-#include "sort.h"
+#include "../proc/cmd_proc.h"
+#include "../core/filelist.h"
+#include "../core/sort.h"
 #include "config.h"
 
 // ---------------------------------------------------------------------------
