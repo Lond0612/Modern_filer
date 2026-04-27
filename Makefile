@@ -1,6 +1,6 @@
 CC      = gcc
 CFLAGS  = -Wall -Wextra -std=c11 -finput-charset=utf-8 -fexec-charset=cp932
-LDFLAGS = -mwindows -lshell32 -lcomctl32
+LDFLAGS = -mwindows -lshell32 -lcomctl32 -luxtheme
 
 TARGET  = filer.exe
 

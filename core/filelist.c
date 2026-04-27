@@ -34,6 +34,10 @@ int filelist_fetch(FileList *list, const char *path)
     do
     {
         FileEntry *e = &list->entries[list->count];
+
+        if (strcmp(findData.cFileName, ".") == 0 || strcmp(findData.cFileName, "..") == 0)
+            continue;
+
         strncpy(e->name, findData.cFileName, MAX_PATH - 1);
         e->name[MAX_PATH - 1] = '\0';
         e->attributes = findData.dwFileAttributes;
