@@ -5,7 +5,6 @@
 #include <commctrl.h>
 #include <shellapi.h>
 #include <uxtheme.h>
-#include <shlobj.h> // 【修正】CSIDL定数とSHGetSpecialFolderPathのために追加
 #include "gui.h"
 #include "../proc/cmd_proc.h"
 #include "../core/filelist.h"
@@ -21,19 +20,6 @@
 #define ID_TREEVIEW 107
 #define ID_ADDRESSBAR 108
 #define ID_BTN_TERMINAL 109
-#define ID_BTN_NEW 110    // 新規作成ボタン
-#define ID_BTN_VIEW 111   // 表示切替ボタン
-#define ID_STATUSBAR 112  // ステータスバー
-#define ID_CRUMB_BASE 200 // パンくずボタン 200〜219（最大20セグメント）
-#define ID_CRUMB_MAX 20
-
-// 新規作成メニュー
-#define IDM_NEW_FOLDER 301
-#define IDM_NEW_FILE 302
-
-// 表示切替メニュー
-#define IDM_VIEW_DETAIL 311
-#define IDM_VIEW_ICON 312
 
 #define WM_GUI_LOG (WM_USER + 1)
 
@@ -75,11 +61,6 @@ static HWND g_hBtnUp = NULL;
 static HWND g_hBtnRefresh = NULL;
 static HWND g_hBtnExec = NULL;
 static HWND g_hBtnTerminal = NULL;
-static HWND g_hBtnNew = NULL;           // 新規作成ボタン
-static HWND g_hBtnView = NULL;          // 表示切替ボタン
-static HWND g_hStatusBar = NULL;        // ステータスバー
-static HWND g_hCrumbBtns[ID_CRUMB_MAX]; // パンくずボタン配列
-static int g_crumb_count = 0;
 static HIMAGELIST g_hShellSmallIcons = NULL;
 static HBRUSH g_hBrushAppBg = NULL;
 static HBRUSH g_hBrushAddrBg = NULL;
@@ -103,18 +84,6 @@ static int g_cmd_history_count = 0;
 static int g_cmd_history_index = -1;
 static char g_cmd_draft[1024];
 
-// ③ ナビゲーション履歴
-#define NAV_HISTORY_MAX 64
-static char g_nav_history[NAV_HISTORY_MAX][MAX_PATH];
-static int g_nav_pos = -1;
-static int g_nav_top = -1;
-static BOOL g_nav_jumping = FALSE; // 履歴ジャンプ中は新規記録しない
-
-// ⑤ クイックアクセスのツリーアイテムハンドル
-static HTREEITEM g_hQuickAccess = NULL;
-
-// 【修正】関数の前方宣言を追加 (conflicting types および implicit declaration 対策)
-static HTREEITEM tree_add_item(HTREEITEM hParent, const char *label, const char *path, BOOL hasChildren);
 static void on_resize(int cx, int cy);
 
 static HFONT create_ui_font(void)
@@ -422,214 +391,6 @@ static void set_console_visible(BOOL visible)
         SetFocus(g_hInput);
 }
 
-// ---------------------------------------------------------------------------
-// ③ ナビゲーション履歴
-// ---------------------------------------------------------------------------
-static void nav_history_push(const char *path)
-{
-    if (g_nav_jumping)
-        return;
-    // 現在位置より前の履歴は切り捨て
-    g_nav_top = g_nav_pos + 1;
-    if (g_nav_top >= NAV_HISTORY_MAX)
-        g_nav_top = NAV_HISTORY_MAX - 1;
-    strncpy(g_nav_history[g_nav_top], path, MAX_PATH - 1);
-    g_nav_history[g_nav_top][MAX_PATH - 1] = '\0';
-    g_nav_pos = g_nav_top;
-}
-
-static void nav_update_buttons(void)
-{
-    if (g_hBtnUp == NULL)
-        return;
-    // ← ボタン（ID_BTN_UP を Back に転用せず専用IDは持たないため
-    //   ここでは ↑ ボタンの有効/無効のみ。← → は将来実装）
-    (void)0;
-}
-
-// ---------------------------------------------------------------------------
-// ② パンくずリストの更新
-// ---------------------------------------------------------------------------
-static void update_crumbs(const char *path)
-{
-    char seg[MAX_PATH];
-    char accum[MAX_PATH];
-    const char *p;
-    int i;
-    HINSTANCE hInst = GetModuleHandle(NULL);
-    RECT rc;
-    int x = 0;
-
-    // 既存のパンくずボタンを破棄
-    for (i = 0; i < g_crumb_count; i++)
-    {
-        if (g_hCrumbBtns[i])
-        {
-            DestroyWindow(g_hCrumbBtns[i]);
-            g_hCrumbBtns[i] = NULL;
-        }
-    }
-    g_crumb_count = 0;
-
-    if (g_hAddrBar == NULL)
-        return;
-    GetWindowRect(g_hAddrBar, &rc);
-
-    // パスをセグメントに分割して順にボタンを並べる
-    // 例: C:\Users\foo → ["C:"] [">" "Users"] [">" "foo"]
-    accum[0] = '\0';
-    p = path;
-
-    while (*p && g_crumb_count < ID_CRUMB_MAX)
-    {
-        // 次のセグメントを切り出す
-        const char *sep = strchr(p, '\\');
-        size_t len = sep ? (size_t)(sep - p) : strlen(p);
-        if (len == 0)
-        {
-            if (sep)
-                p = sep + 1;
-            else
-                break;
-            continue;
-        }
-        if (len >= sizeof(seg))
-            len = sizeof(seg) - 1;
-        strncpy(seg, p, len);
-        seg[len] = '\0';
-
-        // accumにパスを積む
-        if (accum[0] == '\0')
-            strncpy(accum, seg, sizeof(accum) - 1);
-        else
-        {
-            strncat(accum, "\\", sizeof(accum) - strlen(accum) - 1);
-            strncat(accum, seg, sizeof(accum) - strlen(accum) - 1);
-        }
-
-        {
-            // ボタン幅をテキスト長で概算（1文字≈8px）
-            int btn_w = (int)strlen(seg) * 8 + 16;
-            HWND hBtn;
-            char *path_copy;
-
-            hBtn = CreateWindowExA(0, "BUTTON", seg,
-                                   WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
-                                   x, 0, btn_w, BTN_H,
-                                   g_hAddrBar,
-                                   (HMENU)(INT_PTR)(ID_CRUMB_BASE + g_crumb_count),
-                                   hInst, NULL);
-            SendMessage(hBtn, WM_SETFONT, (WPARAM)g_hUiFont, TRUE);
-
-            // パスをウィンドウユーザーデータに格納
-            path_copy = _strdup(accum);
-            SetWindowLongPtrA(hBtn, GWLP_USERDATA, (LONG_PTR)path_copy);
-
-            g_hCrumbBtns[g_crumb_count++] = hBtn;
-            x += btn_w;
-
-            // 区切り "›"
-            if (sep)
-            {
-                HWND hSep = CreateWindowExA(0, "STATIC", ">",
-                                            WS_CHILD | WS_VISIBLE | SS_CENTER,
-                                            x, 2, 14, BTN_H - 4,
-                                            g_hAddrBar, NULL, hInst, NULL);
-                SendMessage(hSep, WM_SETFONT, (WPARAM)g_hUiFont, TRUE);
-                x += 14;
-            }
-        }
-
-        if (sep)
-            p = sep + 1;
-        else
-            break;
-    }
-}
-
-// ---------------------------------------------------------------------------
-// ④ ステータスバーの更新
-// ---------------------------------------------------------------------------
-static void update_statusbar(void)
-{
-    int total, sel;
-    char buf[128];
-    LVITEMA lvi;
-
-    if (g_hStatusBar == NULL)
-        return;
-
-    total = ListView_GetItemCount(g_hListView);
-    sel = ListView_GetSelectedCount(g_hListView);
-
-    if (sel > 0)
-    {
-        char name[MAX_PATH];
-        char size_str[32];
-        int idx = ListView_GetNextItem(g_hListView, -1, LVNI_SELECTED);
-
-        ZeroMemory(&lvi, sizeof(lvi));
-        ListView_GetItemText(g_hListView, idx, 0, name, MAX_PATH);
-        ListView_GetItemText(g_hListView, idx, 2, size_str, sizeof(size_str));
-
-        if (strcmp(size_str, "-") == 0)
-            _snprintf(buf, sizeof(buf) - 1, "  %d 個の項目  |  選択: %s", total, name);
-        else
-            _snprintf(buf, sizeof(buf) - 1, "  %d 個の項目  |  選択: %s  (%s bytes)", total, name, size_str);
-    }
-    else
-    {
-        _snprintf(buf, sizeof(buf) - 1, "  %d 個の項目", total);
-    }
-    buf[sizeof(buf) - 1] = '\0';
-
-    SendMessageA(g_hStatusBar, SB_SETTEXTA, 0, (LPARAM)buf);
-}
-
-// ---------------------------------------------------------------------------
-// ⑤ クイックアクセス（ツリーの先頭に固定フォルダを追加）
-// ---------------------------------------------------------------------------
-static void tree_add_quick_access(void)
-{
-    // SHGetKnownFolderPath の代わりに SHGetSpecialFolderPathA を使用（XP互換）
-    struct
-    {
-        int csidl;
-        const char *label;
-    } folders[] = {
-        {CSIDL_DESKTOPDIRECTORY, "デスクトップ"},
-        {CSIDL_PROFILE, "ホーム"},
-        {CSIDL_PERSONAL, "ドキュメント"},
-        {CSIDL_MYPICTURES, "ピクチャ"},
-        {CSIDL_MYMUSIC, "ミュージック"},
-        {CSIDL_MYVIDEO, "ビデオ"},
-        {CSIDL_MYDOCUMENTS, "ダウンロード"},
-    };
-    int n = sizeof(folders) / sizeof(folders[0]);
-    int i;
-    TVINSERTSTRUCTA tvis;
-
-    // 「クイックアクセス」ヘッダーアイテムを追加
-    ZeroMemory(&tvis, sizeof(tvis));
-    tvis.hParent = TVI_ROOT;
-    tvis.hInsertAfter = TVI_FIRST;
-    tvis.item.mask = TVIF_TEXT | TVIF_PARAM | TVIF_CHILDREN;
-    tvis.item.pszText = "クイックアクセス";
-    tvis.item.lParam = 0;
-    tvis.item.cChildren = 1;
-    g_hQuickAccess = (HTREEITEM)SendMessage(g_hTreeView, TVM_INSERTITEMA, 0, (LPARAM)&tvis);
-
-    for (i = 0; i < n; i++)
-    {
-        char path[MAX_PATH];
-        if (!SHGetSpecialFolderPathA(NULL, path, folders[i].csidl, FALSE))
-            continue;
-        tree_add_item(g_hQuickAccess, folders[i].label, path, FALSE);
-    }
-
-    TreeView_Expand(g_hTreeView, g_hQuickAccess, TVE_EXPAND);
-}
-
 static void update_addressbar(void)
 {
     char crumb[64];
@@ -650,9 +411,6 @@ static void update_addressbar(void)
     _snprintf(title, sizeof(title) - 1, "Filer - %s", path);
     title[sizeof(title) - 1] = '\0';
     SetWindowTextA(g_hwnd, title);
-
-    // ② パンくずリストを更新
-    update_crumbs(path);
 }
 
 static void navigate_to(const char *path)
@@ -666,10 +424,6 @@ static void navigate_to(const char *path)
         append_log(msg);
         return;
     }
-
-    // ③ 履歴に記録
-    nav_history_push(path);
-    nav_update_buttons();
 
     cmd_proc_cd(path);
     update_addressbar();
@@ -927,9 +681,6 @@ static void refresh_listview(void)
     }
 
     filelist_free(&list);
-
-    // ④ ステータスバーを更新
-    update_statusbar();
 }
 
 static void on_listview_dblclick(void)
@@ -1190,32 +941,8 @@ static void create_controls(HWND hwnd)
                                  hwnd, (HMENU)(INT_PTR)ID_BTN_EXEC, hInst, NULL);
     SendMessage(g_hBtnExec, WM_SETFONT, (WPARAM)g_hUiFont, TRUE);
 
-    // ① コマンドバー: 新規作成ボタン
-    g_hBtnNew = CreateWindowExA(0, "BUTTON", "＋ 新規作成",
-                                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
-                                0, 0, 0, 0,
-                                hwnd, (HMENU)(INT_PTR)ID_BTN_NEW, hInst, NULL);
-    SendMessage(g_hBtnNew, WM_SETFONT, (WPARAM)g_hUiFont, TRUE);
-
-    // ① コマンドバー: 表示切替ボタン
-    // 【修正】Unicode版 API と L"" を使用して Illegal byte sequence エラーを回避
-    g_hBtnView = CreateWindowExW(0, L"BUTTON", L"表示 ▾",
-                                 WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
-                                 0, 0, 0, 0,
-                                 hwnd, (HMENU)(INT_PTR)ID_BTN_VIEW, hInst, NULL);
-    SendMessage(g_hBtnView, WM_SETFONT, (WPARAM)g_hUiFont, TRUE);
-
-    // ④ ステータスバー
-    g_hStatusBar = CreateStatusWindowA(
-        WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP,
-        "準備完了", hwnd, ID_STATUSBAR);
-    SendMessage(g_hStatusBar, WM_SETFONT, (WPARAM)g_hUiFont, TRUE);
-
     apply_explorer_theme();
     update_terminal_button();
-
-    // ⑤ クイックアクセスをツリーの先頭に追加
-    tree_add_quick_access();
 }
 
 static void on_resize(int cx, int cy)
@@ -1247,24 +974,6 @@ static void on_resize(int cx, int cy)
     if (addr_w < 0)
         addr_w = 0;
     SetWindowPos(g_hAddrBar, NULL, addr_x, nav_y, addr_w, BTN_H, SWP_NOZORDER);
-
-    // ① コマンドバーボタン（アドレスバーの右端に配置）
-    {
-        int btn_new_w = 88;
-        int btn_view_w = 64;
-        int right_margin = BTN_MARGIN;
-        int bx = cx - right_margin - btn_view_w - BTN_MARGIN - btn_new_w;
-        if (bx > addr_x + addr_w + BTN_MARGIN)
-        {
-            // アドレスバー幅を縮めてボタン分のスペースを確保
-            addr_w = bx - addr_x - BTN_MARGIN;
-            if (addr_w < 60)
-                addr_w = 60;
-            SetWindowPos(g_hAddrBar, NULL, addr_x, nav_y, addr_w, BTN_H, SWP_NOZORDER);
-        }
-        SetWindowPos(g_hBtnNew, NULL, cx - right_margin - btn_view_w - BTN_MARGIN - btn_new_w, nav_y, btn_new_w, BTN_H, SWP_NOZORDER);
-        SetWindowPos(g_hBtnView, NULL, cx - right_margin - btn_view_w, nav_y, btn_view_w, BTN_H, SWP_NOZORDER);
-    }
 
     if (g_console_visible)
         console_block_h += g_config.console_height + INPUTBAR_H;
@@ -1588,102 +1297,6 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         case ID_BTN_EXEC:
             execute_input();
             break;
-
-        // ① 新規作成ポップアップ
-        case ID_BTN_NEW:
-        {
-            HMENU hMenu = CreatePopupMenu();
-            POINT pt;
-            RECT rc;
-            // 【修正】絵文字を含むため AppendMenuW と ワイド文字列を使用
-            AppendMenuW(hMenu, MF_STRING, IDM_NEW_FOLDER, L"📁  フォルダー");
-            AppendMenuW(hMenu, MF_STRING, IDM_NEW_FILE, L"📄  テキスト ファイル");
-            GetWindowRect(g_hBtnNew, &rc);
-            pt.x = rc.left;
-            pt.y = rc.bottom;
-            TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_TOPALIGN, pt.x, pt.y, 0, hwnd, NULL);
-            DestroyMenu(hMenu);
-            break;
-        }
-
-        case IDM_NEW_FOLDER:
-        {
-            char path[MAX_PATH];
-            char newdir[MAX_PATH];
-            GetCurrentDirectoryA(MAX_PATH, path);
-            _snprintf(newdir, sizeof(newdir) - 1, "%s\\新しいフォルダー", path);
-            if (!CreateDirectoryA(newdir, NULL))
-                append_log("フォルダーの作成に失敗しました。\r\n");
-            else
-                append_log("フォルダーを作成しました。\r\n");
-            refresh_listview();
-            break;
-        }
-
-        case IDM_NEW_FILE:
-        {
-            char path[MAX_PATH];
-            char newfile[MAX_PATH];
-            HANDLE hf;
-            GetCurrentDirectoryA(MAX_PATH, path);
-            _snprintf(newfile, sizeof(newfile) - 1, "%s\\新しいテキスト ドキュメント.txt", path);
-            hf = CreateFileA(newfile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-            if (hf == INVALID_HANDLE_VALUE)
-                append_log("ファイルの作成に失敗しました。\r\n");
-            else
-            {
-                CloseHandle(hf);
-                append_log("テキスト ファイルを作成しました。\r\n");
-            }
-            refresh_listview();
-            break;
-        }
-
-        // ① 表示切替ポップアップ
-        case ID_BTN_VIEW:
-        {
-            HMENU hMenu = CreatePopupMenu();
-            POINT pt;
-            RECT rc;
-            AppendMenuA(hMenu, MF_STRING, IDM_VIEW_DETAIL, "詳細");
-            AppendMenuA(hMenu, MF_STRING, IDM_VIEW_ICON, "大きいアイコン");
-            GetWindowRect(g_hBtnView, &rc);
-            pt.x = rc.left;
-            pt.y = rc.bottom;
-            TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_TOPALIGN, pt.x, pt.y, 0, hwnd, NULL);
-            DestroyMenu(hMenu);
-            break;
-        }
-
-        case IDM_VIEW_DETAIL:
-            SetWindowLongA(g_hListView, GWL_STYLE,
-                           (GetWindowLongA(g_hListView, GWL_STYLE) & ~LVS_TYPEMASK) | LVS_REPORT);
-            ListView_SetExtendedListViewStyle(g_hListView,
-                                              LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_LABELTIP);
-            break;
-
-        case IDM_VIEW_ICON:
-            SetWindowLongA(g_hListView, GWL_STYLE,
-                           (GetWindowLongA(g_hListView, GWL_STYLE) & ~LVS_TYPEMASK) | LVS_ICON);
-            break;
-
-        default:
-            // ② パンくずボタンのクリック
-            if (LOWORD(wp) >= ID_CRUMB_BASE &&
-                LOWORD(wp) < ID_CRUMB_BASE + ID_CRUMB_MAX)
-            {
-                int idx = LOWORD(wp) - ID_CRUMB_BASE;
-                if (idx < g_crumb_count && g_hCrumbBtns[idx])
-                {
-                    char *path = (char *)GetWindowLongPtrA(g_hCrumbBtns[idx], GWLP_USERDATA);
-                    if (path)
-                    {
-                        navigate_to(path);
-                        refresh_listview();
-                    }
-                }
-            }
-            break;
         }
         return 0;
 
@@ -1727,14 +1340,6 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
             return 0;
         }
 
-        // ④ ListView選択変更でステータスバーを更新
-        if (nm->idFrom == ID_LISTVIEW &&
-            (nm->code == LVN_ITEMCHANGED || nm->code == LVN_ITEMACTIVATE))
-        {
-            update_statusbar();
-            return 0;
-        }
-
         if (nm->idFrom == ID_TREEVIEW && nm->code == TVN_SELCHANGEDA)
         {
             NMTREEVIEWA *ntv = (NMTREEVIEWA *)lp;
@@ -1758,18 +1363,6 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 
     case WM_DESTROY:
         cmd_proc_stop();
-        // ② パンくずボタンのUserData（_strdupしたパス）を解放
-        {
-            int i;
-            for (i = 0; i < g_crumb_count; i++)
-            {
-                if (g_hCrumbBtns[i])
-                {
-                    char *p = (char *)GetWindowLongPtrA(g_hCrumbBtns[i], GWLP_USERDATA);
-                    free(p);
-                }
-            }
-        }
         if (g_hBrushAppBg != NULL)
             DeleteObject(g_hBrushAppBg);
         if (g_hBrushAddrBg != NULL)
@@ -1813,7 +1406,7 @@ int gui_run(HINSTANCE hInstance, int nCmdShow)
     SetThreadLocale(MAKELCID(MAKELANGID(LANG_JAPANESE, SUBLANG_DEFAULT), SORT_DEFAULT));
 
     icc.dwSize = sizeof(icc);
-    icc.dwICC = ICC_LISTVIEW_CLASSES | ICC_TREEVIEW_CLASSES | ICC_BAR_CLASSES;
+    icc.dwICC = ICC_LISTVIEW_CLASSES | ICC_TREEVIEW_CLASSES;
     InitCommonControlsEx(&icc);
 
     ZeroMemory(&wc, sizeof(wc));
