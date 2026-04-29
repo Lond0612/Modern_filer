@@ -5,6 +5,7 @@
 #include <commctrl.h>
 #include <shellapi.h>
 #include <uxtheme.h>
+#include <shlobj.h>
 #include "gui.h"
 #include "../proc/cmd_proc.h"
 #include "../core/filelist.h"
@@ -20,6 +21,11 @@
 #define ID_TREEVIEW 107
 #define ID_ADDRESSBAR 108
 #define ID_BTN_TERMINAL 109
+#define ID_BTN_NEW 110
+#define ID_BTN_VIEW 111
+#define ID_STATUSBAR 112
+#define ID_BTN_BACK 113
+#define ID_BTN_FORWARD 114
 
 #define WM_GUI_LOG (WM_USER + 1)
 
@@ -40,6 +46,7 @@
 #define TREE_W_MIN 160
 #define TIMER_ID_SYNC_CD 1
 #define CMD_HISTORY_MAX 100
+#define NAV_HISTORY_MAX 50
 
 static const char *CLASS_NAME = "FilerMainWindow";
 static const COLORREF COLOR_APP_BG = RGB(246, 247, 249);
@@ -61,7 +68,13 @@ static HWND g_hBtnUp = NULL;
 static HWND g_hBtnRefresh = NULL;
 static HWND g_hBtnExec = NULL;
 static HWND g_hBtnTerminal = NULL;
+static HWND g_hBtnNew = NULL;
+static HWND g_hBtnView = NULL;
+static HWND g_hStatusBar = NULL;
+static HWND g_hBtnBack = NULL;
+static HWND g_hBtnForward = NULL;
 static HIMAGELIST g_hShellSmallIcons = NULL;
+static HIMAGELIST g_hFolderIcons = NULL;
 static HBRUSH g_hBrushAppBg = NULL;
 static HBRUSH g_hBrushAddrBg = NULL;
 static HBRUSH g_hBrushInputBg = NULL;
@@ -69,6 +82,16 @@ static HFONT g_hUiFont = NULL;
 static HFONT g_hIconFont = NULL;
 static WNDPROC g_orig_input_proc = NULL;
 static WNDPROC g_orig_addr_proc = NULL;
+
+// ナビゲーション履歴
+static char *g_nav_history[NAV_HISTORY_MAX];
+static int g_nav_history_count = 0;
+static int g_nav_history_index = -1;
+
+// ステータスバー情報
+static int g_status_item_count = 0;
+static ULONGLONG g_status_selected_size = 0;
+static int g_status_selected_count = 0;
 
 static int g_tree_w = TREE_W_DEFAULT;
 static BOOL g_console_visible = TRUE;
@@ -413,9 +436,186 @@ static void update_addressbar(void)
     SetWindowTextA(g_hwnd, title);
 }
 
+static void update_nav_buttons(void)
+{
+    if (g_hBtnBack != NULL)
+        EnableWindow(g_hBtnBack, g_nav_history_index > 0);
+    if (g_hBtnForward != NULL)
+        EnableWindow(g_hBtnForward, g_nav_history_index < g_nav_history_count - 1);
+}
+
+static void navigate_back(void)
+{
+    if (g_nav_history_index > 0)
+    {
+        g_nav_history_index--;
+        navigate_to(g_nav_history[g_nav_history_index]);
+    }
+}
+
+static void navigate_forward(void)
+{
+    if (g_nav_history_index < g_nav_history_count - 1)
+    {
+        g_nav_history_index++;
+        navigate_to(g_nav_history[g_nav_history_index]);
+    }
+}
+
+static void update_status_bar(void)
+{
+    char text[256];
+
+    if (g_hStatusBar == NULL)
+        return;
+
+    if (g_status_selected_count > 0)
+    {
+        char size_str[64];
+        ULONGLONG size = g_status_selected_size;
+        if (size >= 1024ULL * 1024 * 1024)
+            _snprintf(size_str, sizeof(size_str) - 1, "%.2f GB", (double)size / (1024.0 * 1024.0 * 1024.0));
+        else if (size >= 1024 * 1024)
+            _snprintf(size_str, sizeof(size_str) - 1, "%.2f MB", (double)size / (1024.0 * 1024.0));
+        else if (size >= 1024)
+            _snprintf(size_str, sizeof(size_str) - 1, "%.2f KB", (double)size / 1024.0);
+        else
+            _snprintf(size_str, sizeof(size_str) - 1, "%llu bytes", size);
+        size_str[sizeof(size_str) - 1] = '\0';
+
+        _snprintf(text, sizeof(text) - 1, "%d items  |  %d selected (%s)", g_status_item_count, g_status_selected_count, size_str);
+    }
+    else
+    {
+        _snprintf(text, sizeof(text) - 1, "%d items", g_status_item_count);
+    }
+    text[sizeof(text) - 1] = '\0';
+
+    SendMessage(g_hStatusBar, SB_SETTEXTA, 0, (LPARAM)text);
+}
+
+static void create_folder_icons(void)
+{
+    SHFILEINFOA sfi;
+    int icon_idx;
+
+    g_hFolderIcons = ImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 4, 0);
+    if (g_hFolderIcons == NULL)
+        return;
+
+    // フォルダアイコン（開いている）
+    ZeroMemory(&sfi, sizeof(sfi));
+    SHGetFileInfoA("C:\\", FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi),
+                   SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES);
+    if (sfi.hIcon)
+    {
+        ImageList_AddIcon(g_hFolderIcons, sfi.hIcon);
+        DestroyIcon(sfi.hIcon);
+    }
+
+    // フォルダアイコン（閉じた状態）
+    ZeroMemory(&sfi, sizeof(sfi));
+    SHGetFileInfoA("C:\\Windows", FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi),
+                   SHGFI_ICON | SHGFI_SMALLICON);
+    if (sfi.hIcon)
+    {
+        ImageList_AddIcon(g_hFolderIcons, sfi.hIcon);
+        DestroyIcon(sfi.hIcon);
+    }
+
+    // デスクトップアイコン
+    ZeroMemory(&sfi, sizeof(sfi));
+    SHGetFileInfoA("C:\\Users\\Public\\Desktop", FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi),
+                   SHGFI_ICON | SHGFI_SMALLICON);
+    if (sfi.hIcon)
+    {
+        ImageList_AddIcon(g_hFolderIcons, sfi.hIcon);
+        DestroyIcon(sfi.hIcon);
+    }
+
+    // ダウンロードアイコン
+    ZeroMemory(&sfi, sizeof(sfi));
+    SHGetFileInfoA("C:\\Users\\Public\\Downloads", FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi),
+                   SHGFI_ICON | SHGFI_SMALLICON);
+    if (sfi.hIcon)
+    {
+        ImageList_AddIcon(g_hFolderIcons, sfi.hIcon);
+        DestroyIcon(sfi.hIcon);
+    }
+
+    // ドキュメントアイコン
+    ZeroMemory(&sfi, sizeof(sfi));
+    SHGetFileInfoA("C:\\Users\\Public\\Documents", FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi),
+                   SHGFI_ICON | SHGFI_SMALLICON);
+    if (sfi.hIcon)
+    {
+        ImageList_AddIcon(g_hFolderIcons, sfi.hIcon);
+        DestroyIcon(sfi.hIcon);
+    }
+
+    // ピクチャアイコン
+    ZeroMemory(&sfi, sizeof(sfi));
+    SHGetFileInfoA("C:\\Users\\Public\\Pictures", FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi),
+                   SHGFI_ICON | SHGFI_SMALLICON);
+    if (sfi.hIcon)
+    {
+        ImageList_AddIcon(g_hFolderIcons, sfi.hIcon);
+        DestroyIcon(sfi.hIcon);
+    }
+}
+
+static void populate_quick_access(void)
+{
+    HRESULT hr;
+    PWSTR path;
+    char ansi_path[MAX_PATH];
+    int icon_idx = 0;
+
+    // デスクトップ
+    hr = SHGetKnownFolderPath(&FOLDERID_Desktop, 0, NULL, &path);
+    if (SUCCEEDED(hr) && path != NULL)
+    {
+        WideCharToMultiByte(CP_ACP, 0, path, -1, ansi_path, sizeof(ansi_path) - 1, NULL, NULL);
+        ansi_path[sizeof(ansi_path) - 1] = '\0';
+        tree_add_item(TVI_ROOT, "Desktop", ansi_path, TRUE);
+        CoTaskMemFree(path);
+    }
+
+    // ダウンロード
+    hr = SHGetKnownFolderPath(&FOLDERID_Downloads, 0, NULL, &path);
+    if (SUCCEEDED(hr) && path != NULL)
+    {
+        WideCharToMultiByte(CP_ACP, 0, path, -1, ansi_path, sizeof(ansi_path) - 1, NULL, NULL);
+        ansi_path[sizeof(ansi_path) - 1] = '\0';
+        tree_add_item(TVI_ROOT, "Downloads", ansi_path, TRUE);
+        CoTaskMemFree(path);
+    }
+
+    // ドキュメント
+    hr = SHGetKnownFolderPath(&FOLDERID_Documents, 0, NULL, &path);
+    if (SUCCEEDED(hr) && path != NULL)
+    {
+        WideCharToMultiByte(CP_ACP, 0, path, -1, ansi_path, sizeof(ansi_path) - 1, NULL, NULL);
+        ansi_path[sizeof(ansi_path) - 1] = '\0';
+        tree_add_item(TVI_ROOT, "Documents", ansi_path, TRUE);
+        CoTaskMemFree(path);
+    }
+
+    // ピクチャ
+    hr = SHGetKnownFolderPath(&FOLDERID_Pictures, 0, NULL, &path);
+    if (SUCCEEDED(hr) && path != NULL)
+    {
+        WideCharToMultiByte(CP_ACP, 0, path, -1, ansi_path, sizeof(ansi_path) - 1, NULL, NULL);
+        ansi_path[sizeof(ansi_path) - 1] = '\0';
+        tree_add_item(TVI_ROOT, "Pictures", ansi_path, TRUE);
+        CoTaskMemFree(path);
+    }
+}
+
 static void navigate_to(const char *path)
 {
     char msg[MAX_PATH + 64];
+    char *copy;
 
     if (!SetCurrentDirectoryA(path))
     {
@@ -425,8 +625,31 @@ static void navigate_to(const char *path)
         return;
     }
 
+    // ナビゲーション履歴に追加
+    copy = _strdup(path);
+    if (copy != NULL)
+    {
+        // 現在の位置より新しい履歴を削除
+        while (g_nav_history_count > g_nav_history_index + 1)
+        {
+            free(g_nav_history[--g_nav_history_count]);
+        }
+
+        // 履歴が最大数に達したら古いものを削除
+        if (g_nav_history_count >= NAV_HISTORY_MAX)
+        {
+            free(g_nav_history[0]);
+            memmove(&g_nav_history[0], &g_nav_history[1], sizeof(g_nav_history[0]) * (NAV_HISTORY_MAX - 1));
+            g_nav_history_count--;
+        }
+
+        g_nav_history[g_nav_history_count++] = copy;
+        g_nav_history_index = g_nav_history_count - 1;
+    }
+
     cmd_proc_cd(path);
     update_addressbar();
+    update_nav_buttons();
 }
 
 static HTREEITEM tree_add_item(HTREEITEM hParent, const char *label,
@@ -641,6 +864,11 @@ static void refresh_listview(void)
     update_addressbar();
     ListView_DeleteAllItems(g_hListView);
 
+    // ④ ステータスバー情報のリセット
+    g_status_item_count = 0;
+    g_status_selected_size = 0;
+    g_status_selected_count = 0;
+
     list = filelist_create();
     if (filelist_fetch(&list, path) < 0)
     {
@@ -659,6 +887,9 @@ static void refresh_listview(void)
         char size_str[32];
         FileEntry *e = &list.entries[i];
         const char *kind = (e->attributes & FILE_ATTRIBUTE_DIRECTORY) ? "Folder" : "File";
+
+        // ④ 件数カウント
+        g_status_item_count++;
 
         _snprintf(fullpath, sizeof(fullpath) - 1, "%s\\%s", path, e->name);
         fullpath[sizeof(fullpath) - 1] = '\0';
@@ -681,6 +912,9 @@ static void refresh_listview(void)
     }
 
     filelist_free(&list);
+
+    // ④ ステータスバー更新
+    update_status_bar();
 }
 
 static void on_listview_dblclick(void)
@@ -941,14 +1175,59 @@ static void create_controls(HWND hwnd)
                                  hwnd, (HMENU)(INT_PTR)ID_BTN_EXEC, hInst, NULL);
     SendMessage(g_hBtnExec, WM_SETFONT, (WPARAM)g_hUiFont, TRUE);
 
+    // ① Win11風コマンドバー: 新規作成ボタン
+    g_hBtnNew = CreateWindowExW(0, L"BUTTON", L"\xE8A5",
+                                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
+                                BTN_MARGIN * 3 + ICON_BTN_W * 2, (NAVBAR_H - BTN_H) / 2, ICON_BTN_W + 8, BTN_H,
+                                hwnd, (HMENU)(INT_PTR)ID_BTN_NEW, hInst, NULL);
+    SendMessageW(g_hBtnNew, WM_SETFONT, (WPARAM)g_hIconFont, TRUE);
+
+    // ① Win11風コマンドバー: 表示切替ボタン
+    g_hBtnView = CreateWindowExW(0, L"BUTTON", L"\xE8A1",
+                                 WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
+                                 BTN_MARGIN * 4 + ICON_BTN_W * 2 + 8, (NAVBAR_H - BTN_H) / 2, ICON_BTN_W + 8, BTN_H,
+                                 hwnd, (HMENU)(INT_PTR)ID_BTN_VIEW, hInst, NULL);
+    SendMessageW(g_hBtnView, WM_SETFONT, (WPARAM)g_hIconFont, TRUE);
+
+    // ③ ナビゲーション履歴: 戻るボタン
+    g_hBtnBack = CreateWindowExW(0, L"BUTTON", L"\xE72B",
+                                 WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
+                                 BTN_MARGIN, (NAVBAR_H - BTN_H) / 2, ICON_BTN_W, BTN_H,
+                                 hwnd, (HMENU)(INT_PTR)ID_BTN_BACK, hInst, NULL);
+    SendMessageW(g_hBtnBack, WM_SETFONT, (WPARAM)g_hIconFont, TRUE);
+    EnableWindow(g_hBtnBack, FALSE);
+
+    // ③ ナビゲーション履歴: 進むボタン
+    g_hBtnForward = CreateWindowExW(0, L"BUTTON", L"\xE72A",
+                                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
+                                    BTN_MARGIN * 2 + ICON_BTN_W, (NAVBAR_H - BTN_H) / 2, ICON_BTN_W, BTN_H,
+                                    hwnd, (HMENU)(INT_PTR)ID_BTN_FORWARD, hInst, NULL);
+    SendMessageW(g_hBtnForward, WM_SETFONT, (WPARAM)g_hIconFont, TRUE);
+    EnableWindow(g_hBtnForward, FALSE);
+
+    // ④ ステータスバー
+    g_hStatusBar = CreateWindowExA(0, "STATUSBAR", "",
+                                   WS_CHILD | WS_VISIBLE,
+                                   0, 0, 0, 0,
+                                   hwnd, (HMENU)(INT_PTR)ID_STATUSBAR, hInst, NULL);
+    SendMessage(g_hStatusBar, WM_SETFONT, (WPARAM)g_hUiFont, TRUE);
+
+    // ⑥ フォルダアイコンリストを作成
+    create_folder_icons();
+
+    // ⑤ クイックアクセスを追加（ドライブの前に配置）
+    populate_quick_access();
+
     apply_explorer_theme();
     update_terminal_button();
+    update_status_bar();
 }
 
 static void on_resize(int cx, int cy)
 {
     int nav_y = (NAVBAR_H - BTN_H) / 2;
-    int crumb_x = BTN_MARGIN * 3 + ICON_BTN_W * 2 + 4;
+    // ③ ナビゲーション履歴ボタン配置に合わせる
+    int crumb_x = BTN_MARGIN * 5 + ICON_BTN_W * 3 + 8 + 8;
     int crumb_w = 120;
     int addr_x = crumb_x + crumb_w + 8;
     int addr_w;
@@ -965,9 +1244,18 @@ static void on_resize(int cx, int cy)
     int input_w;
     int input_y;
     int y_console_area;
+    int status_h = 24;
 
-    SetWindowPos(g_hBtnUp, NULL, BTN_MARGIN, nav_y, ICON_BTN_W, BTN_H, SWP_NOZORDER);
-    SetWindowPos(g_hBtnRefresh, NULL, BTN_MARGIN * 2 + ICON_BTN_W, nav_y, ICON_BTN_W, BTN_H, SWP_NOZORDER);
+    // ③ ナビゲーション履歴ボタン配置
+    SetWindowPos(g_hBtnBack, NULL, BTN_MARGIN, nav_y, ICON_BTN_W, BTN_H, SWP_NOZORDER);
+    SetWindowPos(g_hBtnForward, NULL, BTN_MARGIN * 2 + ICON_BTN_W, nav_y, ICON_BTN_W, BTN_H, SWP_NOZORDER);
+    SetWindowPos(g_hBtnUp, NULL, BTN_MARGIN * 3 + ICON_BTN_W * 2, nav_y, ICON_BTN_W, BTN_H, SWP_NOZORDER);
+    SetWindowPos(g_hBtnRefresh, NULL, BTN_MARGIN * 4 + ICON_BTN_W * 2, nav_y, ICON_BTN_W, BTN_H, SWP_NOZORDER);
+
+    // ① 新規作成・表示切替ボタン
+    SetWindowPos(g_hBtnNew, NULL, BTN_MARGIN * 5 + ICON_BTN_W * 2 + 8, nav_y, ICON_BTN_W + 8, BTN_H, SWP_NOZORDER);
+    SetWindowPos(g_hBtnView, NULL, BTN_MARGIN * 6 + ICON_BTN_W * 2 + 8 + ICON_BTN_W + 8, nav_y, ICON_BTN_W + 8, BTN_H, SWP_NOZORDER);
+
     SetWindowPos(g_hPathCrumb, NULL, crumb_x, nav_y + 2, crumb_w, BTN_H, SWP_NOZORDER);
 
     addr_w = cx - addr_x - BTN_MARGIN;
@@ -978,7 +1266,8 @@ static void on_resize(int cx, int cy)
     if (g_console_visible)
         console_block_h += g_config.console_height + INPUTBAR_H;
 
-    panel_h = cy - NAVBAR_H - CONTENT_MARGIN * 2 - console_block_h;
+    // ④ ステータスバー分を引く
+    panel_h = cy - NAVBAR_H - CONTENT_MARGIN * 2 - console_block_h - status_h;
     if (panel_h < 0)
         panel_h = 0;
 
@@ -1009,6 +1298,9 @@ static void on_resize(int cx, int cy)
     SetWindowPos(g_hListView, NULL, list_x, y_panel, list_w, panel_h, SWP_NOZORDER);
     SetWindowPos(g_hBtnTerminal, NULL, CONTENT_MARGIN, y_accordion,
                  cx - CONTENT_MARGIN * 2, ACCORDION_H, SWP_NOZORDER);
+
+    // ④ ステータスバー配置
+    SetWindowPos(g_hStatusBar, NULL, 0, cy - status_h, cx, status_h, SWP_NOZORDER);
 
     if (g_console_visible)
     {
@@ -1297,6 +1589,86 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         case ID_BTN_EXEC:
             execute_input();
             break;
+
+        // ① 新規作成ボタン
+        case ID_BTN_NEW:
+        {
+            HMENU hMenu, hSubMenu;
+            POINT pt;
+            RECT rc;
+
+            GetWindowRect(g_hBtnNew, &rc);
+            pt.x = rc.left;
+            pt.y = rc.bottom;
+
+            hMenu = CreatePopupMenu();
+            hSubMenu = CreatePopupMenu();
+
+            AppendMenuW(hSubMenu, MF_STRING, 1, L"新規フォルダ");
+            AppendMenuW(hSubMenu, MF_STRING, 2, L"テキストファイル");
+            AppendMenuW(hMenu, MF_POPUP | MF_STRING, (UINT_PTR)hSubMenu, L"新規作成");
+
+            TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_TOPALIGN, pt.x, pt.y, 0, g_hwnd, NULL);
+
+            // メニュー選択結果は WM_COMMAND で受け取る
+            break;
+        }
+
+        // ① 表示切替ボタン
+        case ID_BTN_VIEW:
+        {
+            HMENU hMenu;
+            POINT pt;
+            RECT rc;
+
+            GetWindowRect(g_hBtnView, &rc);
+            pt.x = rc.left;
+            pt.y = rc.bottom;
+
+            hMenu = CreatePopupMenu();
+            AppendMenuW(hMenu, MF_STRING, 10, L"詳細");
+            AppendMenuW(hMenu, MF_STRING, 11, L"アイコン");
+            AppendMenuW(hMenu, MF_STRING, 12, L"一覧");
+            AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+            AppendMenuW(hMenu, MF_STRING, 13, g_console_visible ? L"コンソールを隠す" : L"コンソールを表示");
+
+            TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_TOPALIGN, pt.x, pt.y, 0, g_hwnd, NULL);
+            break;
+        }
+
+        // ③ 戻るボタン
+        case ID_BTN_BACK:
+            navigate_back();
+            refresh_listview();
+            break;
+
+        // ③ 進むボタン
+        case ID_BTN_FORWARD:
+            navigate_forward();
+            refresh_listview();
+            break;
+
+        // ① メニュー選択結果
+        case 1: // 新規フォルダ
+            cmd_proc_send("mkdir NewFolder");
+            Sleep(200);
+            refresh_listview();
+            break;
+        case 2: // テキストファイル
+        {
+            FILE *f = fopen("NewTextFile.txt", "w");
+            if (f)
+                fclose(f);
+            refresh_listview();
+            break;
+        }
+        case 10: // 詳細表示
+        case 11: // アイコン表示
+        case 12: // 一覧表示
+            break;
+        case 13: // コンソール表示切替
+            set_console_visible(!g_console_visible);
+            break;
         }
         return 0;
 
@@ -1375,10 +1747,18 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
             DeleteObject(g_hIconFont);
         if (g_hHeaderFont != NULL)
             DeleteObject(g_hHeaderFont);
+        if (g_hFolderIcons != NULL)
+            ImageList_Destroy(g_hFolderIcons);
         {
             int i;
             for (i = 0; i < g_cmd_history_count; i++)
                 free(g_cmd_history[i]);
+        }
+        // ③ ナビゲーション履歴の解放
+        {
+            int i;
+            for (i = 0; i < g_nav_history_count; i++)
+                free(g_nav_history[i]);
         }
         {
             HTREEITEM h = (HTREEITEM)SendMessage(g_hTreeView, TVM_GETNEXTITEM, TVGN_ROOT, 0);
