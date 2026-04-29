@@ -30,8 +30,8 @@
 #define WM_GUI_LOG (WM_USER + 1)
 
 #define NAVBAR_H 44
-#define ICON_BTN_W 32
-#define BTN_H 28
+#define ICON_BTN_W 26
+#define BTN_H 26
 #define BTN_MARGIN 8
 #define CONTENT_MARGIN 8
 #define PANE_GAP 8
@@ -51,7 +51,7 @@
 static const char *CLASS_NAME = "FilerMainWindow";
 static const COLORREF COLOR_APP_BG = RGB(246, 247, 249);
 static const COLORREF COLOR_ADDR_BG = RGB(251, 251, 252);
-static const COLORREF COLOR_INPUT_BG = RGB(18, 18, 18);
+static const COLORREF COLOR_INPUT_BG = RGB(30, 30, 30);
 static const COLORREF COLOR_MUTED_TEXT = RGB(120, 120, 120);
 static const COLORREF COLOR_TREE_ROOT_BG = RGB(238, 241, 245);
 static const COLORREF COLOR_TREE_ROOT_SEL_BG = RGB(222, 232, 245);
@@ -108,6 +108,9 @@ static int g_cmd_history_index = -1;
 static char g_cmd_draft[1024];
 
 static void on_resize(int cx, int cy);
+static void do_navigate(const char *path);
+static void navigate_to(const char *path);
+static HTREEITEM tree_add_item(HTREEITEM hParent, const char *label, const char *path, BOOL hasChildren);
 
 static HFONT create_ui_font(void)
 {
@@ -169,7 +172,7 @@ static void apply_explorer_theme(void)
     }
 }
 
-static int get_shell_icon_index(const char *path, DWORD attributes)
+static int get_shell_icon_index(const char *path, DWORD attributes, BOOL isOpen)
 {
     SHFILEINFOA sfi;
     UINT flags = SHGFI_SYSICONINDEX | SHGFI_SMALLICON;
@@ -178,6 +181,9 @@ static int get_shell_icon_index(const char *path, DWORD attributes)
 
     if ((attributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
         flags |= SHGFI_USEFILEATTRIBUTES;
+
+    if (isOpen)
+        flags |= SHGFI_OPENICON;
 
     SHGetFileInfoA(path, attributes, &sfi, sizeof(sfi), flags);
     return sfi.iIcon;
@@ -444,12 +450,29 @@ static void update_nav_buttons(void)
         EnableWindow(g_hBtnForward, g_nav_history_index < g_nav_history_count - 1);
 }
 
+static void do_navigate(const char *path)
+{
+    char msg[MAX_PATH + 64];
+
+    if (!SetCurrentDirectoryA(path))
+    {
+        _snprintf(msg, sizeof(msg) - 1, "Cannot navigate to: %s\r\n", path);
+        msg[sizeof(msg) - 1] = '\0';
+        append_log(msg);
+        return;
+    }
+
+    cmd_proc_cd(path);
+    update_addressbar();
+    update_nav_buttons();
+}
+
 static void navigate_back(void)
 {
     if (g_nav_history_index > 0)
     {
         g_nav_history_index--;
-        navigate_to(g_nav_history[g_nav_history_index]);
+        do_navigate(g_nav_history[g_nav_history_index]);
     }
 }
 
@@ -458,7 +481,7 @@ static void navigate_forward(void)
     if (g_nav_history_index < g_nav_history_count - 1)
     {
         g_nav_history_index++;
-        navigate_to(g_nav_history[g_nav_history_index]);
+        do_navigate(g_nav_history[g_nav_history_index]);
     }
 }
 
@@ -494,82 +517,11 @@ static void update_status_bar(void)
     SendMessage(g_hStatusBar, SB_SETTEXTA, 0, (LPARAM)text);
 }
 
-static void create_folder_icons(void)
-{
-    SHFILEINFOA sfi;
-    int icon_idx;
-
-    g_hFolderIcons = ImageList_Create(16, 16, ILC_COLOR32 | ILC_MASK, 4, 0);
-    if (g_hFolderIcons == NULL)
-        return;
-
-    // フォルダアイコン（開いている）
-    ZeroMemory(&sfi, sizeof(sfi));
-    SHGetFileInfoA("C:\\", FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi),
-                   SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES);
-    if (sfi.hIcon)
-    {
-        ImageList_AddIcon(g_hFolderIcons, sfi.hIcon);
-        DestroyIcon(sfi.hIcon);
-    }
-
-    // フォルダアイコン（閉じた状態）
-    ZeroMemory(&sfi, sizeof(sfi));
-    SHGetFileInfoA("C:\\Windows", FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi),
-                   SHGFI_ICON | SHGFI_SMALLICON);
-    if (sfi.hIcon)
-    {
-        ImageList_AddIcon(g_hFolderIcons, sfi.hIcon);
-        DestroyIcon(sfi.hIcon);
-    }
-
-    // デスクトップアイコン
-    ZeroMemory(&sfi, sizeof(sfi));
-    SHGetFileInfoA("C:\\Users\\Public\\Desktop", FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi),
-                   SHGFI_ICON | SHGFI_SMALLICON);
-    if (sfi.hIcon)
-    {
-        ImageList_AddIcon(g_hFolderIcons, sfi.hIcon);
-        DestroyIcon(sfi.hIcon);
-    }
-
-    // ダウンロードアイコン
-    ZeroMemory(&sfi, sizeof(sfi));
-    SHGetFileInfoA("C:\\Users\\Public\\Downloads", FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi),
-                   SHGFI_ICON | SHGFI_SMALLICON);
-    if (sfi.hIcon)
-    {
-        ImageList_AddIcon(g_hFolderIcons, sfi.hIcon);
-        DestroyIcon(sfi.hIcon);
-    }
-
-    // ドキュメントアイコン
-    ZeroMemory(&sfi, sizeof(sfi));
-    SHGetFileInfoA("C:\\Users\\Public\\Documents", FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi),
-                   SHGFI_ICON | SHGFI_SMALLICON);
-    if (sfi.hIcon)
-    {
-        ImageList_AddIcon(g_hFolderIcons, sfi.hIcon);
-        DestroyIcon(sfi.hIcon);
-    }
-
-    // ピクチャアイコン
-    ZeroMemory(&sfi, sizeof(sfi));
-    SHGetFileInfoA("C:\\Users\\Public\\Pictures", FILE_ATTRIBUTE_DIRECTORY, &sfi, sizeof(sfi),
-                   SHGFI_ICON | SHGFI_SMALLICON);
-    if (sfi.hIcon)
-    {
-        ImageList_AddIcon(g_hFolderIcons, sfi.hIcon);
-        DestroyIcon(sfi.hIcon);
-    }
-}
-
 static void populate_quick_access(void)
 {
     HRESULT hr;
     PWSTR path;
     char ansi_path[MAX_PATH];
-    int icon_idx = 0;
 
     // デスクトップ
     hr = SHGetKnownFolderPath(&FOLDERID_Desktop, 0, NULL, &path);
@@ -614,16 +566,7 @@ static void populate_quick_access(void)
 
 static void navigate_to(const char *path)
 {
-    char msg[MAX_PATH + 64];
     char *copy;
-
-    if (!SetCurrentDirectoryA(path))
-    {
-        _snprintf(msg, sizeof(msg) - 1, "Cannot navigate to: %s\r\n", path);
-        msg[sizeof(msg) - 1] = '\0';
-        append_log(msg);
-        return;
-    }
 
     // ナビゲーション履歴に追加
     copy = _strdup(path);
@@ -647,16 +590,14 @@ static void navigate_to(const char *path)
         g_nav_history_index = g_nav_history_count - 1;
     }
 
-    cmd_proc_cd(path);
-    update_addressbar();
-    update_nav_buttons();
+    do_navigate(path);
 }
 
 static HTREEITEM tree_add_item(HTREEITEM hParent, const char *label,
                                const char *path, BOOL hasChildren)
 {
     TVINSERTSTRUCTA tvis;
-    int icon_index = get_shell_icon_index(path, FILE_ATTRIBUTE_DIRECTORY);
+    int icon_closed = get_shell_icon_index(path, FILE_ATTRIBUTE_DIRECTORY, FALSE);
 
     ZeroMemory(&tvis, sizeof(tvis));
     tvis.hParent = hParent;
@@ -665,8 +606,8 @@ static HTREEITEM tree_add_item(HTREEITEM hParent, const char *label,
     tvis.item.pszText = (LPSTR)label;
     tvis.item.lParam = (LPARAM)_strdup(path);
     tvis.item.cChildren = hasChildren ? 1 : 0;
-    tvis.item.iImage = icon_index;
-    tvis.item.iSelectedImage = icon_index;
+    tvis.item.iImage = icon_closed;
+    tvis.item.iSelectedImage = icon_closed;
     return (HTREEITEM)SendMessage(g_hTreeView, TVM_INSERTITEMA, 0, (LPARAM)&tvis);
 }
 
@@ -898,7 +839,7 @@ static void refresh_listview(void)
         lvi.iSubItem = 0;
         lvi.mask = LVIF_TEXT | LVIF_IMAGE;
         lvi.pszText = e->name;
-        lvi.iImage = get_shell_icon_index(fullpath, e->attributes);
+        lvi.iImage = get_shell_icon_index(fullpath, e->attributes, FALSE);
         SendMessage(g_hListView, LVM_INSERTITEMA, 0, (LPARAM)&lvi);
 
         ListView_SetItemText(g_hListView, i, 1, (LPSTR)kind);
@@ -1080,13 +1021,13 @@ static void create_controls(HWND hwnd)
     SHFILEINFOA sfi;
 
     g_hBtnUp = CreateWindowExW(0, L"BUTTON", L"\xE72B",
-                               WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
+                               WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
                                BTN_MARGIN, (NAVBAR_H - BTN_H) / 2, ICON_BTN_W, BTN_H,
                                hwnd, (HMENU)(INT_PTR)ID_BTN_UP, hInst, NULL);
     SendMessageW(g_hBtnUp, WM_SETFONT, (WPARAM)g_hIconFont, TRUE);
 
     g_hBtnRefresh = CreateWindowExW(0, L"BUTTON", L"\xE72C",
-                                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
+                                    WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
                                     BTN_MARGIN * 2 + ICON_BTN_W, (NAVBAR_H - BTN_H) / 2, ICON_BTN_W, BTN_H,
                                     hwnd, (HMENU)(INT_PTR)ID_BTN_REFRESH, hInst, NULL);
     SendMessageW(g_hBtnRefresh, WM_SETFONT, (WPARAM)g_hIconFont, TRUE);
@@ -1124,6 +1065,7 @@ static void create_controls(HWND hwnd)
     {
         TreeView_SetImageList(g_hTreeView, g_hShellSmallIcons, TVSIL_NORMAL);
     }
+    SetWindowTheme(g_hTreeView, L"Explorer", NULL);
     tree_populate_drives();
     tree_expand_root_level();
 
@@ -1177,21 +1119,21 @@ static void create_controls(HWND hwnd)
 
     // ① Win11風コマンドバー: 新規作成ボタン
     g_hBtnNew = CreateWindowExW(0, L"BUTTON", L"\xE8A5",
-                                WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
+                                WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
                                 BTN_MARGIN * 3 + ICON_BTN_W * 2, (NAVBAR_H - BTN_H) / 2, ICON_BTN_W + 8, BTN_H,
                                 hwnd, (HMENU)(INT_PTR)ID_BTN_NEW, hInst, NULL);
     SendMessageW(g_hBtnNew, WM_SETFONT, (WPARAM)g_hIconFont, TRUE);
 
     // ① Win11風コマンドバー: 表示切替ボタン
     g_hBtnView = CreateWindowExW(0, L"BUTTON", L"\xE8A1",
-                                 WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
+                                 WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
                                  BTN_MARGIN * 4 + ICON_BTN_W * 2 + 8, (NAVBAR_H - BTN_H) / 2, ICON_BTN_W + 8, BTN_H,
                                  hwnd, (HMENU)(INT_PTR)ID_BTN_VIEW, hInst, NULL);
     SendMessageW(g_hBtnView, WM_SETFONT, (WPARAM)g_hIconFont, TRUE);
 
     // ③ ナビゲーション履歴: 戻るボタン
     g_hBtnBack = CreateWindowExW(0, L"BUTTON", L"\xE72B",
-                                 WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
+                                 WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
                                  BTN_MARGIN, (NAVBAR_H - BTN_H) / 2, ICON_BTN_W, BTN_H,
                                  hwnd, (HMENU)(INT_PTR)ID_BTN_BACK, hInst, NULL);
     SendMessageW(g_hBtnBack, WM_SETFONT, (WPARAM)g_hIconFont, TRUE);
@@ -1199,21 +1141,15 @@ static void create_controls(HWND hwnd)
 
     // ③ ナビゲーション履歴: 進むボタン
     g_hBtnForward = CreateWindowExW(0, L"BUTTON", L"\xE72A",
-                                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
+                                    WS_CHILD | WS_VISIBLE | BS_OWNERDRAW,
                                     BTN_MARGIN * 2 + ICON_BTN_W, (NAVBAR_H - BTN_H) / 2, ICON_BTN_W, BTN_H,
                                     hwnd, (HMENU)(INT_PTR)ID_BTN_FORWARD, hInst, NULL);
     SendMessageW(g_hBtnForward, WM_SETFONT, (WPARAM)g_hIconFont, TRUE);
     EnableWindow(g_hBtnForward, FALSE);
 
     // ④ ステータスバー
-    g_hStatusBar = CreateWindowExA(0, "STATUSBAR", "",
-                                   WS_CHILD | WS_VISIBLE,
-                                   0, 0, 0, 0,
-                                   hwnd, (HMENU)(INT_PTR)ID_STATUSBAR, hInst, NULL);
+    g_hStatusBar = CreateStatusWindowA(WS_CHILD | WS_VISIBLE, "", hwnd, ID_STATUSBAR);
     SendMessage(g_hStatusBar, WM_SETFONT, (WPARAM)g_hUiFont, TRUE);
-
-    // ⑥ フォルダアイコンリストを作成
-    create_folder_icons();
 
     // ⑤ クイックアクセスを追加（ドライブの前に配置）
     populate_quick_access();
@@ -1363,6 +1299,29 @@ static BOOL is_on_hsplitter(int x, int y)
             y >= console_top - PANE_GAP &&
             y <= console_top + 2);
 }
+static void recalc_selected_status(void)
+{
+    int i;
+    int count = ListView_GetItemCount(g_hListView);
+
+    g_status_selected_count = 0;
+    g_status_selected_size = 0;
+
+    for (i = 0; i < count; i++)
+    {
+        if (ListView_GetItemState(g_hListView, i, LVIS_SELECTED) & LVIS_SELECTED)
+        {
+            char size_str[32];
+            g_status_selected_count++;
+            
+            ListView_GetItemText(g_hListView, i, 2, size_str, sizeof(size_str));
+            if (strcmp(size_str, "-") != 0)
+            {
+                g_status_selected_size += atoll(size_str);
+            }
+        }
+    }
+}
 
 static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
@@ -1460,6 +1419,39 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
             ReleaseCapture();
         }
         return 0;
+
+    case WM_DRAWITEM:
+    {
+        LPDRAWITEMSTRUCT dis = (LPDRAWITEMSTRUCT)lp;
+        if (dis->CtlType == ODT_BUTTON)
+        {
+            char text[32];
+            HBRUSH hBrush;
+            RECT rc = dis->rcItem;
+            int len = GetWindowTextA(dis->hwndItem, text, sizeof(text));
+            
+            if (dis->itemState & ODS_SELECTED)
+                hBrush = CreateSolidBrush(RGB(220, 225, 235));
+            else
+                hBrush = g_hBrushAppBg; 
+                
+            FillRect(dis->hDC, &rc, hBrush);
+            if (dis->itemState & ODS_SELECTED)
+                DeleteObject(hBrush);
+
+            if (len > 0)
+            {
+                HFONT hFont = (HFONT)SendMessage(dis->hwndItem, WM_GETFONT, 0, 0);
+                HFONT hOldFont = SelectObject(dis->hDC, hFont);
+                SetBkMode(dis->hDC, TRANSPARENT);
+                SetTextColor(dis->hDC, RGB(40, 40, 40));
+                DrawTextA(dis->hDC, text, len, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+                SelectObject(dis->hDC, hOldFont);
+            }
+            return TRUE;
+        }
+        break;
+    }
 
     case WM_SETCURSOR:
     {
@@ -1669,6 +1661,42 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
         case 13: // コンソール表示切替
             set_console_visible(!g_console_visible);
             break;
+        case 20: // クイックアクセスにピン留めする
+        {
+            int sel = ListView_GetNextItem(g_hListView, -1, LVNI_SELECTED);
+            char path[MAX_PATH];
+            char name[MAX_PATH];
+            char fullpath[MAX_PATH];
+
+            GetCurrentDirectoryA(MAX_PATH, path);
+
+            if (sel >= 0)
+            {
+                char kind[16];
+                ListView_GetItemText(g_hListView, sel, 0, name, MAX_PATH);
+                ListView_GetItemText(g_hListView, sel, 1, kind, sizeof(kind));
+                if (strcmp(kind, "Folder") == 0)
+                {
+                    _snprintf(fullpath, sizeof(fullpath) - 1, "%s\\%s", path, name);
+                    fullpath[sizeof(fullpath) - 1] = '\0';
+                }
+                else
+                {
+                    strncpy(fullpath, path, sizeof(fullpath) - 1);
+                    fullpath[sizeof(fullpath) - 1] = '\0';
+                    strcpy(name, strrchr(path, '\\') ? strrchr(path, '\\') + 1 : path);
+                }
+            }
+            else
+            {
+                strncpy(fullpath, path, sizeof(fullpath) - 1);
+                fullpath[sizeof(fullpath) - 1] = '\0';
+                strcpy(name, strrchr(path, '\\') ? strrchr(path, '\\') + 1 : path);
+            }
+
+            tree_add_item(TVI_ROOT, name, fullpath, TRUE);
+            break;
+        }
         }
         return 0;
 
@@ -1676,6 +1704,62 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
     {
         NMHDR *nm = (NMHDR *)lp;
         HWND hHeader = ListView_GetHeader(g_hListView);
+
+        if (nm->idFrom == ID_LISTVIEW && nm->code == LVN_ITEMCHANGED)
+        {
+            NMLISTVIEW *nmlv = (NMLISTVIEW *)lp;
+            if ((nmlv->uChanged & LVIF_STATE) && ((nmlv->uNewState ^ nmlv->uOldState) & LVIS_SELECTED))
+            {
+                recalc_selected_status();
+                update_status_bar();
+            }
+            return 0;
+        }
+
+        if (nm->idFrom == ID_LISTVIEW && nm->code == NM_RCLICK)
+        {
+            DWORD pos = GetMessagePos();
+            POINT pt;
+            LVHITTESTINFO lvht;
+            
+            pt.x = (short)LOWORD(pos);
+            pt.y = (short)HIWORD(pos);
+            
+            lvht.pt = pt;
+            ScreenToClient(nm->hwndFrom, &lvht.pt);
+            
+            if (ListView_HitTest(nm->hwndFrom, &lvht) != -1 && (lvht.flags & LVHT_ONITEM))
+            {
+                ListView_SetItemState(nm->hwndFrom, lvht.iItem, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+                HMENU hMenu = CreatePopupMenu();
+                AppendMenuW(hMenu, MF_STRING, 20, L"クイックアクセスにピン留めする");
+                TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_TOPALIGN, pt.x, pt.y, 0, g_hwnd, NULL);
+            }
+            return 0;
+        }
+
+        if (nm->idFrom == ID_TREEVIEW && nm->code == NM_RCLICK)
+        {
+            DWORD pos = GetMessagePos();
+            POINT pt;
+            TVHITTESTINFO ht;
+            
+            pt.x = (short)LOWORD(pos);
+            pt.y = (short)HIWORD(pos);
+            
+            ht.pt = pt;
+            ScreenToClient(nm->hwndFrom, &ht.pt);
+            
+            if (TreeView_HitTest(nm->hwndFrom, &ht) && (ht.flags & TVHT_ONITEM))
+            {
+                TreeView_SelectItem(nm->hwndFrom, ht.hItem);
+                
+                HMENU hMenu = CreatePopupMenu();
+                AppendMenuW(hMenu, MF_STRING, 20, L"クイックアクセスにピン留めする");
+                TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_TOPALIGN, pt.x, pt.y, 0, g_hwnd, NULL);
+            }
+            return 0;
+        }
 
         if (nm->hwndFrom == hHeader && nm->code == NM_CUSTOMDRAW)
         {
@@ -1727,6 +1811,32 @@ static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
                 if (tree_is_root_item(ntv->itemNew.hItem))
                     tree_collapse_other_roots(ntv->itemNew.hItem);
                 on_treeview_expand(ntv->itemNew.hItem);
+            }
+            return 0;
+        }
+
+        if (nm->idFrom == ID_TREEVIEW && nm->code == TVN_ITEMEXPANDEDA)
+        {
+            NMTREEVIEWA *ntv = (NMTREEVIEWA *)lp;
+            const char* path = (const char*)ntv->itemNew.lParam;
+            if (path)
+            {
+                int icon_open = get_shell_icon_index(path, FILE_ATTRIBUTE_DIRECTORY, TRUE);
+                int icon_closed = get_shell_icon_index(path, FILE_ATTRIBUTE_DIRECTORY, FALSE);
+                TVITEMA tvi;
+                tvi.mask = TVIF_IMAGE | TVIF_SELECTEDIMAGE;
+                tvi.hItem = ntv->itemNew.hItem;
+                if (ntv->action == TVE_EXPAND)
+                {
+                    tvi.iImage = icon_open;
+                    tvi.iSelectedImage = icon_open;
+                }
+                else if (ntv->action == TVE_COLLAPSE)
+                {
+                    tvi.iImage = icon_closed;
+                    tvi.iSelectedImage = icon_closed;
+                }
+                TreeView_SetItem(nm->hwndFrom, &tvi);
             }
             return 0;
         }

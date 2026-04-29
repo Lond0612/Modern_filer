@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Explorer</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Titlebar drag region for borderless window -->
+    <div class="titlebar"></div>
+
+    <div class="app-container">
+        <!-- Sidebar: Drives and Quick Access -->
+        <aside class="sidebar glass">
+            <div class="sidebar-header">
+                <h2>Explorer</h2>
+            </div>
+            <div class="sidebar-section">
+                <h3>Quick Access</h3>
+                <ul id="quick-access-list">
+                    <li data-path="C:\">Drive C:\</li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h3>Drives</h3>
+                <ul id="drives-list">
+                    <!-- Loaded dynamically -->
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Navigation Bar -->
+            <nav class="navbar glass">
+                <div class="nav-buttons">
+                    <button id="btn-back" class="nav-btn" aria-label="Back">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <button id="btn-forward" class="nav-btn" aria-label="Forward">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+                    <button id="btn-refresh" class="nav-btn" aria-label="Refresh">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.44l5.46 5.46"/></svg>
+                    </button>
+                </div>
+                <div class="address-bar-container">
+                    <div class="address-bar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                        <input type="text" id="address-input" value="C:\">
+                    </div>
+                </div>
+            </nav>
+
+            <!-- File List -->
+            <div class="file-list-container">
+                <table class="file-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Size</th>
+                        </tr>
+                    </thead>
+                    <tbody id="file-list-body">
+                        <!-- Loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Terminal Pane -->
+            <div class="terminal-pane glass">
+                <div class="terminal-header">
+                    <span>Terminal Output</span>
+                    <button id="btn-clear-term" class="nav-btn">Clear</button>
+                </div>
+                <div class="terminal-output" id="terminal-output">
+                    <div>Welcome to the integrated terminal.</div>
+                </div>
+                <div class="terminal-input-container">
+                    <span>&gt;</span>
+                    <input type="text" id="terminal-input" placeholder="Type a command...">
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="context-menu glass" style="display: none;">
+        <ul>
+            <li id="menu-open">Open</li>
+            <li id="menu-pin">Pin to Quick Access</li>
+            <li class="separator"></li>
+            <li id="menu-properties">Properties</li>
+        </ul>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>
