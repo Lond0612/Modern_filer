@@ -11,6 +11,8 @@ const btnRefresh = document.getElementById('btn-refresh');
 let currentPath = "C:\\";
 let currentFiles = [];
 let selectedPath = null;
+let clipboardPath = null; // Path to cut/copy
+let clipboardAction = null; // 'CUT' or 'COPY'
 let pathHistory = ["C:\\"];
 let historyIndex = 0;
 
@@ -134,8 +136,8 @@ window.api.onBackendResponse((data) => {
                     if (type === 'D') {
                         loadPath(currentPath + name + '\\', true);
                     } else {
-                        // Just a visual selection for files, since we don't have default run logic in the backend yet
-                        appendTerminal(`Opening file not supported yet: ${name}`, '#f87171');
+                        const fullPath = currentPath + name;
+                        window.api.sendCommand(`OPEN|${fullPath}`);
                     }
                 });
                 
@@ -156,6 +158,23 @@ window.api.onBackendResponse((data) => {
         }
     } else if (data.type === 'CMD_OUT') {
         appendTerminal(data.line);
+    } else if (data.type === 'MOVE_OK' || data.type === 'DELETE_OK' || data.type === 'OPEN_OK') {
+        if (data.type !== 'OPEN_OK') {
+            loadPath(currentPath, false); // Refresh list
+        }
+        if (data.type === 'MOVE_OK') clipboardPath = null;
+    } else if (data.type === 'SYNC_PATH') {
+        let newPath = data.path;
+        if (!newPath.endsWith('\\')) newPath += '\\';
+        
+        // Use loose comparison or normalization if needed
+        if (newPath.toLowerCase() === currentPath.toLowerCase()) {
+            loadPath(currentPath, false); // Refresh
+        } else {
+            loadPath(newPath, true); // Navigate
+        }
+    } else if (data.type.startsWith('ERROR')) {
+        appendTerminal(data.line, '#f87171');
     }
 });
 
@@ -174,10 +193,45 @@ document.getElementById('quick-access-list').addEventListener('click', (e) => {
 // Context Menu Actions
 document.getElementById('menu-pin').addEventListener('click', () => {
     if (selectedPath) {
-        const name = selectedPath.split('\\').filter(Boolean).pop();
+        const name = selectedPath.split('\\').filter(Boolean).pop() || selectedPath;
         const li = document.createElement('li');
         li.textContent = name;
         li.dataset.path = selectedPath;
         document.getElementById('quick-access-list').appendChild(li);
+    }
+});
+
+document.getElementById('menu-open').addEventListener('click', () => {
+    if (selectedPath) {
+        if (selectedPath.endsWith('\\')) {
+            loadPath(selectedPath, true);
+        } else {
+            window.api.sendCommand(`OPEN|${selectedPath}`);
+        }
+    }
+});
+
+document.getElementById('menu-cut').addEventListener('click', () => {
+    if (selectedPath) {
+        clipboardPath = selectedPath;
+        clipboardAction = 'CUT';
+        appendTerminal(`Cut: ${selectedPath}`);
+    }
+});
+
+document.getElementById('menu-paste').addEventListener('click', () => {
+    if (clipboardPath && clipboardAction === 'CUT') {
+        const name = clipboardPath.split('\\').filter(Boolean).pop();
+        const destPath = currentPath + name;
+        window.api.sendCommand(`MOVE|${clipboardPath}|${destPath}`);
+        appendTerminal(`Moving ${clipboardPath} to ${destPath}...`);
+    }
+});
+
+document.getElementById('menu-delete').addEventListener('click', () => {
+    if (selectedPath) {
+        if (confirm(`Are you sure you want to delete ${selectedPath}?`)) {
+            window.api.sendCommand(`DELETE|${selectedPath}`);
+        }
     }
 });

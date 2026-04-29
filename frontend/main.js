@@ -28,14 +28,17 @@ function createWindow() {
   const serverPath = path.join(__dirname, '..', 'filer_server.exe');
   filerServer = spawn(serverPath);
 
+  const { StringDecoder } = require('string_decoder');
+  const decoder = new StringDecoder('utf8');
   let buffer = '';
+  
   filerServer.stdout.on('data', (data) => {
-    buffer += data.toString('utf-8');
+    buffer += decoder.write(data);
     let lines = buffer.split('\n');
-    buffer = lines.pop(); // Keep the incomplete line in the buffer
+    buffer = lines.pop();
     
-    for (let line of lines) {
-      if (line.trim().length === 0) continue;
+    lines.forEach(line => {
+      if (!line) return;
       
       if (line.startsWith('START_LIST')) {
         mainWindow.webContents.send('backend-response', { type: 'START_LIST' });
@@ -49,8 +52,18 @@ function createWindow() {
         mainWindow.webContents.send('backend-response', { type: 'DATA', line: line.trim() });
       } else if (line.startsWith('CMD_OUT|')) {
         mainWindow.webContents.send('backend-response', { type: 'CMD_OUT', line: line.substring(8) });
+      } else if (line.startsWith('MOVE_OK')) {
+        mainWindow.webContents.send('backend-response', { type: 'MOVE_OK' });
+      } else if (line.startsWith('DELETE_OK')) {
+        mainWindow.webContents.send('backend-response', { type: 'DELETE_OK' });
+      } else if (line.startsWith('OPEN_OK')) {
+        mainWindow.webContents.send('backend-response', { type: 'OPEN_OK' });
+      } else if (line.startsWith('SYNC_PATH|')) {
+        mainWindow.webContents.send('backend-response', { type: 'SYNC_PATH', path: line.substring(10).trim() });
+      } else if (line.startsWith('ERROR|')) {
+        mainWindow.webContents.send('backend-response', { type: 'ERROR', line: line.substring(6) });
       }
-    }
+    });
   });
 
   filerServer.stderr.on('data', (data) => {

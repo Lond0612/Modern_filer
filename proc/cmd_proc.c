@@ -20,7 +20,7 @@ static volatile BOOL s_running = FALSE;
 static DWORD WINAPI read_thread(LPVOID _unused)
 {
     (void)_unused;
-    char buf[4096];
+    char buf[8192];
     DWORD read;
 
     while (s_running)
@@ -50,7 +50,7 @@ static DWORD WINAPI read_thread(LPVOID _unused)
 
         // \n を \r\n に正規化してコールバックへ
         // (Edit コントロールは \r\n が必要)
-        char norm[8192];
+        char norm[16384];
         int ni = 0;
         for (DWORD i = 0; i < read && ni < (int)sizeof(norm) - 3; i++)
         {
@@ -153,7 +153,7 @@ void cmd_proc_send(const char *line)
     if (s_hStdin == NULL || !s_running)
         return;
 
-    char buf[1024];
+    char buf[4096];
     int len = _snprintf(buf, sizeof(buf) - 3, "%s", line);
     if (len < 0)
         len = (int)sizeof(buf) - 3;
@@ -164,7 +164,11 @@ void cmd_proc_send(const char *line)
     buf[len + 2] = '\0';
 
     DWORD written;
-    WriteFile(s_hStdin, buf, len + 2, &written, NULL);
+    if (!WriteFile(s_hStdin, buf, len + 2, &written, NULL)) {
+        fprintf(stderr, "ERROR|WriteFile to cmd stdin failed: %lu\n", GetLastError());
+    } else if (written < (DWORD)(len + 2)) {
+        fprintf(stderr, "ERROR|WriteFile incomplete: %lu/%d\n", written, len + 2);
+    }
 }
 
 // ---------------------------------------------------------------------------
