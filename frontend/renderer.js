@@ -26,12 +26,9 @@ window.api.onBackendResponse((obj) => {
             break;
             
         case 'SYNC_PATH':
-            const newPath = obj.content.endsWith('\\') ? obj.content : obj.content + '\\';
-            if (newPath.toLowerCase() !== currentPath.toLowerCase()) {
-                currentPath = newPath;
-                addressInput.value = currentPath;
-                window.api.sendCommand(`LIST|${currentPath}`);
-            }
+            currentPath = obj.content.endsWith('\\') ? obj.content : obj.content + '\\';
+            addressInput.value = currentPath;
+            window.api.sendCommand(`LIST|${currentPath}`);
             break;
             
         case 'CMD_OUT':
@@ -44,11 +41,16 @@ window.api.onBackendResponse((obj) => {
     }
 });
 
-function loadPath(path) {
+function loadPath(path, isUserClick = false) {
     if (!path.endsWith('\\')) path += '\\';
     currentPath = path;
     addressInput.value = currentPath;
-    window.api.sendCommand(`LIST|${currentPath}`);
+    
+    if (isUserClick) {
+        window.api.sendCommand(`CD|${currentPath}`);
+    } else {
+        window.api.sendCommand(`LIST|${currentPath}`);
+    }
 }
 
 function addFileRow(data) {
@@ -68,7 +70,7 @@ function addFileRow(data) {
     
     tr.onclick = () => {
         if (type === 'D') {
-            loadPath(currentPath + name + '\\');
+            loadPath(currentPath + name + '\\', true);
         } else {
             window.api.sendCommand(`OPEN|${currentPath}${name}`);
         }
@@ -108,6 +110,6 @@ terminalInput.addEventListener('keydown', (e) => {
 // アドレスバー入力
 addressInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-        loadPath(addressInput.value.trim());
+        loadPath(addressInput.value.trim(), true);
     }
 });

@@ -34,14 +34,31 @@ function startServer() {
     let lines = serverBuffer.split('\n');
     serverBuffer = lines.pop();
 
+    let batchedCmdOut = '';
+    
     for (let line of lines) {
-      if (!line.trim()) continue;
+      if (!line.includes('{')) continue;
       try {
         const obj = JSON.parse(line);
-        mainWindow.webContents.send('backend-response', obj);
+        
+        if (obj.type === 'CMD_OUT') {
+          batchedCmdOut += obj.content;
+        } else {
+          // If we have accumulated CMD_OUT, send them first
+          if (batchedCmdOut) {
+            mainWindow.webContents.send('backend-response', { type: 'CMD_OUT', content: batchedCmdOut });
+            batchedCmdOut = '';
+          }
+          mainWindow.webContents.send('backend-response', obj);
+        }
       } catch (e) {
         console.error('Failed to parse JSON:', line, e);
       }
+    }
+    
+    // Final flush of batched content
+    if (batchedCmdOut) {
+      mainWindow.webContents.send('backend-response', { type: 'CMD_OUT', content: batchedCmdOut });
     }
   });
 
@@ -51,6 +68,7 @@ function startServer() {
 
   filerServer.on('close', (code) => {
     console.log(`Backend process exited with code ${code}`);
+    app.quit();
   });
 }
 

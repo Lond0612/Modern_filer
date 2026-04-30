@@ -76,7 +76,7 @@ void handle_list(const char* path) {
     filelist_fetch(&list, path);
     filelist_sort(&list, (SortContext){SORT_NAME, SORT_ASC});
     
-    cmd_proc_cd(path); // cmd.exeのパスも同期
+    // REMOVED: cmd_proc_cd(path); // Don't fight with terminal!
 
     send_json("START_LIST", path);
     for (int i = 0; i < list.count; i++) {
@@ -93,13 +93,20 @@ void handle_list(const char* path) {
 }
 
 void on_cmd_output(const char* text) {
-    // ターミナル出力の中にパス同期マーカーがあるかチェック
-    const char* marker = strstr(text, "__CWD__:");
+    char* marker = strstr(text, "__CWD__:");
     if (marker) {
-        // パスを抽出
+        // 1. Process prefix
+        if (marker > text) {
+            char* prefix = _strdup(text);
+            prefix[marker - text] = '\0';
+            send_json("CMD_OUT", prefix);
+            free(prefix);
+        }
+        
+        // 2. Process marker and path
         char path[MAX_PATH];
-        const char* start = marker + 8;
-        const char* end = strpbrk(start, "\r\n");
+        char* start = marker + 8;
+        char* end = strpbrk(start, "\r\n");
         size_t len = end ? (size_t)(end - start) : strlen(start);
         if (len > 0 && len < MAX_PATH) {
             strncpy(path, start, len);
@@ -107,15 +114,12 @@ void on_cmd_output(const char* text) {
             send_json("SYNC_PATH", path);
         }
         
-        // マーカーより前の部分を出力
-        if (marker > text) {
-            char* prefix = _strdup(text);
-            prefix[marker - text] = '\0';
-            send_json("CMD_OUT", prefix);
-            free(prefix);
+        // 3. Process suffix (anything after the marker line)
+        if (end) {
+            on_cmd_output(end + strspn(end, "\r\n"));
         }
     } else {
-        // 通常の出力
+        // No marker, just send the whole chunk
         send_json("CMD_OUT", text);
     }
 }
@@ -147,9 +151,12 @@ int main(void) {
             handle_list(cp932_line + 5);
         } else if (strncmp(cp932_line, "EXEC|", 5) == 0) {
             char cmd[4096];
-            // 実行後に必ずパスを出力させるプロンプトを付加
             _snprintf(cmd, sizeof(cmd)-1, "%s & echo __CWD__:%%cd%%", cp932_line + 5);
             cmd_proc_send(cmd);
+        } else if (strncmp(cp932_line, "CD|", 3) == 0) {
+            // New command specifically for UI-driven navigation
+            cmd_proc_cd(cp932_line + 3);
+            handle_list(cp932_line + 3);
         } else if (strncmp(cp932_line, "OPEN|", 5) == 0) {
             ShellExecuteA(NULL, "open", cp932_line + 5, NULL, NULL, SW_SHOWNORMAL);
         } else if (strcmp(cp932_line, "QUIT") == 0) {
