@@ -23,11 +23,14 @@ void utf8_to_cp932(const char* utf8, char* cp932, size_t cp932_size) {
 void cp932_to_utf8(const char* cp932, char* utf8, size_t utf8_size) {
     if (!cp932 || !utf8 || utf8_size == 0) return;
     wchar_t wbuf[16384];
+    // Use MB_ERR_INVALID_CHARS to be strict, or 0 to be lenient
     int wlen = MultiByteToWideChar(932, 0, cp932, -1, wbuf, 16384);
     if (wlen > 0) {
         WideCharToMultiByte(CP_UTF8, 0, wbuf, -1, utf8, (int)utf8_size, NULL, NULL);
     } else {
-        utf8[0] = '\0';
+        // Fallback: If conversion fails, copy as much as possible as ASCII/Raw
+        strncpy(utf8, cp932, utf8_size - 1);
+        utf8[utf8_size - 1] = '\0';
     }
 }
 
@@ -154,6 +157,9 @@ void handle_drives() {
 void on_cmd_output(const char* text) {
     debug_log("CMD_RAW_CHUNK: %s", text);
     
+    EnterCriticalSection(&g_stdout_cs); // Hold CS for the entire processing
+
+    // Append to global buffer
     size_t text_len = strlen(text);
     if (g_cmd_buffer_len + text_len >= sizeof(g_cmd_buffer)) {
         g_cmd_buffer_len = 0; 
@@ -166,62 +172,78 @@ void on_cmd_output(const char* text) {
     while (1) {
         char* marker = strstr(current, "__CWD__:");
         if (marker) {
-            // Found marker. Must have newline to be complete.
             char* path_end = strpbrk(marker + 8, "\r\n");
             if (path_end) {
-                // Flush everything BEFORE the marker
+                // Print prefix before marker
                 if (marker > current) {
                     char saved = *marker;
                     *marker = '\0';
-                    safe_print_output("CMD_OUT", current);
+                    // We don't use safe_print_output here to avoid nested CS
+                    char utf8_prefix[32768];
+                    cp932_to_utf8(current, utf8_prefix, sizeof(utf8_prefix));
+                    printf("CMD_OUT|%s\n", utf8_prefix);
                     *marker = saved;
                 }
                 
+                // Extract and print path
                 char path[MAX_PATH];
+                char utf8_path[MAX_PATH * 3];
                 size_t path_len = path_end - (marker + 8);
                 if (path_len < MAX_PATH) {
                     memcpy(path, marker + 8, path_len);
                     path[path_len] = '\0';
-                    safe_print_output("SYNC_PATH", path);
+                    cp932_to_utf8(path, utf8_path, sizeof(utf8_path));
+                    printf("SYNC_PATH|%s\n", utf8_path);
                 }
                 
                 current = path_end;
                 while (*current == '\r' || *current == '\n') current++;
                 continue;
             } else {
-                // Marker found but path is incomplete. Wait for more data.
                 break;
             }
         } else {
-            // No marker in current buffer.
-            // We can safely flush everything EXCEPT the potential start of a marker at the end.
-            // "__CWD__:" is 8 chars. If the buffer ends with "__CWD", it might be a marker.
-            size_t len = strlen(current);
-            if (len > 8) {
-                size_t flush_len = len - 8;
-                char saved = current[flush_len];
-                current[flush_len] = '\0';
-                safe_print_output("CMD_OUT", current);
-                current[flush_len] = saved;
-                current += flush_len;
+            char* newline = strpbrk(current, "\r\n");
+            if (newline) {
+                char* next = newline;
+                while (*next == '\r' || *next == '\n') next++;
+                
+                char saved = *next;
+                *next = '\0';
+                char utf8_line[32768];
+                cp932_to_utf8(current, utf8_line, sizeof(utf8_line));
+                printf("CMD_OUT|%s\n", utf8_line);
+                *next = saved;
+                
+                current = next;
+                continue;
             } else {
-                // Buffer is short. If it doesn't look like a marker start, just flush it.
-                if (strstr(current, "_") == NULL) {
-                   safe_print_output("CMD_OUT", current);
-                   current += len;
+                size_t len = strlen(current);
+                if (len > 8) {
+                    size_t flush_len = len - 8;
+                    char saved = current[flush_len];
+                    current[flush_len] = '\0';
+                    char utf8_chunk[32768];
+                    cp932_to_utf8(current, utf8_chunk, sizeof(utf8_chunk));
+                    printf("CMD_OUT|%s\n", utf8_chunk);
+                    current[flush_len] = saved;
+                    current += flush_len;
                 }
                 break;
             }
-            break;
         }
     }
 
+    // Shift remaining data
     size_t remaining = (g_cmd_buffer + g_cmd_buffer_len) - current;
     if (remaining > 0) {
         memmove(g_cmd_buffer, current, remaining);
     }
     g_cmd_buffer_len = remaining;
     g_cmd_buffer[g_cmd_buffer_len] = '\0';
+
+    fflush(stdout);
+    LeaveCriticalSection(&g_stdout_cs);
 }
 
 int main(void) {

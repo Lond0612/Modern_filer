@@ -1,5 +1,5 @@
 CC      = gcc
-CFLAGS  = -Wall -Wextra -std=c11 -finput-charset=utf-8 -fexec-charset=cp932
+CFLAGS  = -Wall -Wextra -std=c11 -finput-charset=utf-8
 LDFLAGS = -lshell32
 
 TARGET_SERVER = filer_server.exe

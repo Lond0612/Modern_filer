@@ -39,6 +39,7 @@ function createWindow() {
     
     lines.forEach(line => {
       if (!line) return;
+      console.log(`[BACKEND] ${line}`);
       
       if (line.startsWith('START_LIST')) {
         mainWindow.webContents.send('backend-response', { type: 'START_LIST' });
