@@ -4,9 +4,6 @@ LDFLAGS = -lshell32
 
 TARGET_SERVER = filer_server.exe
 
-# ---------------------------------------------------------------------------
-# ソースファイル
-# ---------------------------------------------------------------------------
 SRCS_SERVER = \
     server.c            \
     core/filelist.c     \
@@ -16,9 +13,6 @@ SRCS_SERVER = \
 
 OBJS_SERVER = $(SRCS_SERVER:.c=.o)
 
-# ---------------------------------------------------------------------------
-# ビルドターゲット
-# ---------------------------------------------------------------------------
 all: server
 
 server: $(OBJS_SERVER)
@@ -28,13 +22,4 @@ server: $(OBJS_SERVER)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	del /Q $(subst /,\,$(OBJS_SERVER)) $(TARGET_SERVER) 2>nul || true
-
-# ---------------------------------------------------------------------------
-# 依存関係
-# ---------------------------------------------------------------------------
-server.o:           server.c core/filelist.h core/sort.h proc/cmd_proc.h
-core/filelist.o:    core/filelist.c core/filelist.h
-core/sort.o:        core/sort.c core/sort.h core/filelist.h
-core/search.o:      core/search.c core/search.h core/filelist.h
-proc/cmd_proc.o:    proc/cmd_proc.c proc/cmd_proc.h
+	del /Q $(subst /,\,$(OBJS_SERVER)) $(TARGET_SERVER) 2>nul || exit 0
