@@ -26,6 +26,9 @@ void cmd_proc_send(const char *line);
 // プロセスを終了して全リソースを解放する
 void cmd_proc_stop(void);
 
+// プロセスが起動中かどうかを返す
+int cmd_proc_is_alive(void);
+
 // カレントディレクトリを GUI と cmd で同期する
 // GUI 側でディレクトリ移動した際に呼ぶ
 void cmd_proc_cd(const char *path);

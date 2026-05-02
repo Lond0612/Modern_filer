@@ -18,10 +18,12 @@ body {
     padding: 10px;
     background: #2d2d2d;
     border-bottom: 1px solid #444;
+    display: flex;
+    gap: 10px;
 }
 
 #address-input {
-    width: 100%;
+    flex: 1;
     background: #3c3c3c;
     border: 1px solid #555;
     color: #fff;
@@ -69,6 +71,11 @@ body {
 
 #file-table tr:hover {
     background: #333;
+}
+
+#file-table tr.selected {
+    background: #005a9e;
+    color: #fff;
 }
 
 #terminal-output {

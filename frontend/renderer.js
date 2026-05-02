@@ -6,8 +6,19 @@ const terminalInput = document.getElementById('terminal-input');
 
 // 初期化
 window.onload = () => {
-    // サーバーがREADYになるのを待つか、自ら要求する
+    // 起動時はバックエンドのREADYを待つ
 };
+
+// 更新ボタン
+const refreshBtn = document.getElementById('refresh-btn');
+if (refreshBtn) {
+    refreshBtn.onclick = () => {
+        if (currentPath) {
+            console.log('Refreshing:', currentPath);
+            window.api.sendCommand(`LIST|${currentPath}`);
+        }
+    };
+}
 
 // バックエンドからのレスポンス処理
 window.api.onBackendResponse((obj) => {
@@ -16,25 +27,26 @@ window.api.onBackendResponse((obj) => {
             currentPath = obj.content;
             loadPath(currentPath);
             break;
-            
+
         case 'START_LIST':
             fileListBody.innerHTML = '';
             break;
-            
+
         case 'DATA':
             addFileRow(obj.content);
             break;
-            
+
         case 'SYNC_PATH':
             currentPath = obj.content.endsWith('\\') ? obj.content : obj.content + '\\';
             addressInput.value = currentPath;
+            // バックエンド側での自動更新を停止したため、フロントから明示的にリクエスト
             window.api.sendCommand(`LIST|${currentPath}`);
             break;
-            
+
         case 'CMD_OUT':
             appendTerminal(obj.content);
             break;
-            
+
         case 'ERROR':
             appendTerminal(`ERROR: ${obj.content}`, 'error');
             break;
@@ -45,7 +57,7 @@ function loadPath(path, isUserClick = false) {
     if (!path.endsWith('\\')) path += '\\';
     currentPath = path;
     addressInput.value = currentPath;
-    
+
     if (isUserClick) {
         window.api.sendCommand(`CD|${currentPath}`);
     } else {
@@ -56,26 +68,33 @@ function loadPath(path, isUserClick = false) {
 function addFileRow(data) {
     const parts = data.split('|');
     if (parts.length < 3) return;
-    
+
     const type = parts[0];
     const name = parts[1];
     const size = parts[2];
-    
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td class="file-name">${type === 'D' ? '📁' : '📄'} ${name}</td>
         <td>${type === 'D' ? 'Folder' : 'File'}</td>
         <td>${size === '-' ? '-' : formatSize(size)}</td>
     `;
-    
+
+    // シングルクリック：選択
     tr.onclick = () => {
+        document.querySelectorAll('#file-list-body tr').forEach(r => r.classList.remove('selected'));
+        tr.classList.add('selected');
+    };
+
+    // ダブルクリック：移動または開く
+    tr.ondblclick = () => {
         if (type === 'D') {
             loadPath(currentPath + name + '\\', true);
         } else {
             window.api.sendCommand(`OPEN|${currentPath}${name}`);
         }
     };
-    
+
     fileListBody.appendChild(tr);
 }
 
@@ -110,6 +129,6 @@ terminalInput.addEventListener('keydown', (e) => {
 // アドレスバー入力
 addressInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-        loadPath(addressInput.value.trim(), true);
+        loadPath(addressInput.value.trim());
     }
 });

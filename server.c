@@ -76,8 +76,6 @@ void handle_list(const char* path) {
     filelist_fetch(&list, path);
     filelist_sort(&list, (SortContext){SORT_NAME, SORT_ASC});
     
-    // REMOVED: cmd_proc_cd(path); // Don't fight with terminal!
-
     send_json("START_LIST", path);
     for (int i = 0; i < list.count; i++) {
         FileEntry *e = &list.entries[i];
@@ -95,7 +93,7 @@ void handle_list(const char* path) {
 void on_cmd_output(const char* text) {
     char* marker = strstr(text, "__CWD__:");
     if (marker) {
-        // 1. Process prefix
+        // 1. Prefix
         if (marker > text) {
             char* prefix = _strdup(text);
             prefix[marker - text] = '\0';
@@ -103,7 +101,7 @@ void on_cmd_output(const char* text) {
             free(prefix);
         }
         
-        // 2. Process marker and path
+        // 2. Path Sync & Auto-List
         char path[MAX_PATH];
         char* start = marker + 8;
         char* end = strpbrk(start, "\r\n");
@@ -114,13 +112,14 @@ void on_cmd_output(const char* text) {
             send_json("SYNC_PATH", path);
         }
         
-        // 3. Process suffix (anything after the marker line)
+        // 3. Suffix
         if (end) {
             on_cmd_output(end + strspn(end, "\r\n"));
         }
     } else {
-        // No marker, just send the whole chunk
-        send_json("CMD_OUT", text);
+        if (strlen(text) > 0) {
+            send_json("CMD_OUT", text);
+        }
     }
 }
 
@@ -151,14 +150,14 @@ int main(void) {
             handle_list(cp932_line + 5);
         } else if (strncmp(cp932_line, "EXEC|", 5) == 0) {
             char cmd[4096];
-            _snprintf(cmd, sizeof(cmd)-1, "%s & echo __CWD__:%%cd%%", cp932_line + 5);
+            // コマンド実行後に確実に改行を入れてからマーカーを出力
+            _snprintf(cmd, sizeof(cmd)-1, "%s & echo. & echo __CWD__:%%cd%%", cp932_line + 5);
             cmd_proc_send(cmd);
         } else if (strncmp(cp932_line, "CD|", 3) == 0) {
-            // New command specifically for UI-driven navigation
             cmd_proc_cd(cp932_line + 3);
             handle_list(cp932_line + 3);
         } else if (strncmp(cp932_line, "OPEN|", 5) == 0) {
-            ShellExecuteA(NULL, "open", cp932_line + 5, NULL, NULL, SW_SHOWNORMAL);
+            ShellExecuteA(NULL, "open", cp932_line + 5, NULL, NULL, SW_SHOWDEFAULT);
         } else if (strcmp(cp932_line, "QUIT") == 0) {
             break;
         }

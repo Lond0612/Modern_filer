@@ -69,6 +69,9 @@ static DWORD WINAPI read_thread(LPVOID _unused)
         if (s_callback)
             s_callback(norm);
     }
+    
+    // Pipe closed, cmd.exe is gone. Kill the server too.
+    ExitProcess(0);
     return 0;
 }
 
@@ -217,4 +220,12 @@ void cmd_proc_stop(void)
         CloseHandle(s_hProc);
         s_hProc = NULL;
     }
+}
+
+int cmd_proc_is_alive(void) {
+    DWORD exitCode;
+    if (s_hProc && GetExitCodeProcess(s_hProc, &exitCode)) {
+        return exitCode == STILL_ACTIVE;
+    }
+    return 0;
 }
