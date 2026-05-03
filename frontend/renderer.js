@@ -27,8 +27,6 @@ window.api.onBackendResponse((obj) => {
             currentPath = obj.content;
             if (!currentPath.endsWith('\\')) currentPath += '\\';
             addressInput.value = currentPath;
-            // 初期表示を要求
-            window.api.sendCommand(`LIST|${currentPath}`);
             break;
 
         case 'START_LIST':
@@ -44,8 +42,6 @@ window.api.onBackendResponse((obj) => {
             if (!newPath.endsWith('\\')) newPath += '\\';
             currentPath = newPath;
             addressInput.value = currentPath;
-            // パスが変わったら必ずリストを要求
-            window.api.sendCommand(`LIST|${currentPath}`);
             break;
 
         case 'CMD_OUT':
@@ -136,6 +132,6 @@ terminalInput.addEventListener('keydown', (e) => {
 // アドレスバー入力
 addressInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-        loadPath(addressInput.value.trim());
+        loadPath(addressInput.value.trim(), true);
     }
 });

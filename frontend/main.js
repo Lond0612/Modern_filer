@@ -7,6 +7,9 @@ let mainWindow;
 let filerServer;
 const decoder = new StringDecoder('utf8');
 let serverBuffer = '';
+let batchedCmdOut = '';
+let messageQueue = [];
+let isWindowReady = false;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -21,6 +24,14 @@ function createWindow() {
   });
 
   mainWindow.loadFile('index.html');
+  
+  mainWindow.webContents.on('did-finish-load', () => {
+    isWindowReady = true;
+    for (const msg of messageQueue) {
+        mainWindow.webContents.send('backend-response', msg);
+    }
+    messageQueue = [];
+  });
   // mainWindow.webContents.openDevTools();
 }
 
@@ -35,12 +46,15 @@ function startServer() {
     let lines = serverBuffer.split('\n');
     serverBuffer = lines.pop();
 
-    let batchedCmdOut = '';
-    
     for (let line of lines) {
       if (!line.includes('{')) continue;
       try {
         const obj = JSON.parse(line);
+        
+        if (!isWindowReady) {
+            messageQueue.push(obj);
+            continue;
+        }
         
         if (obj.type === 'CMD_OUT') {
           batchedCmdOut += obj.content;
@@ -58,8 +72,9 @@ function startServer() {
     }
     
     // Final flush of batched content
-    if (batchedCmdOut) {
+    if (batchedCmdOut && isWindowReady) {
       mainWindow.webContents.send('backend-response', { type: 'CMD_OUT', content: batchedCmdOut });
+      batchedCmdOut = '';
     }
   });
 

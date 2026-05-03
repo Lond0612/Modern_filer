@@ -110,6 +110,10 @@ void on_cmd_output(const char* text) {
             strncpy(path, start, len);
             path[len] = '\0';
             send_json("SYNC_PATH", path);
+            
+            // Windowsの状態更新を待ち、確実に最新リストを取得する
+            Sleep(50);
+            handle_list(path);
         }
         
         // 3. Suffix
@@ -136,10 +140,11 @@ int main(void) {
         return 1;
     }
 
-    // 初期化完了通知
+    // 初期化完了通知と最初のリスト送信
     char initial_path[MAX_PATH];
     GetCurrentDirectoryA(MAX_PATH, initial_path);
     send_json("READY", initial_path);
+    handle_list(initial_path);
 
     while (fgets(line, sizeof(line), stdin)) {
         char cp932_line[4096];
@@ -153,8 +158,8 @@ int main(void) {
             _snprintf(cmd, sizeof(cmd)-1, "%s & echo. & echo __CWD__:%%cd%%", cp932_line + 5);
             cmd_proc_send(cmd);
         } else if (strncmp(cp932_line, "CD|", 3) == 0) {
-            // ここでは移動のみ。リストはこれに続くSYNC_PATHを受けてフロントが要求する
             cmd_proc_cd(cp932_line + 3);
+            handle_list(cp932_line + 3);
         } else if (strncmp(cp932_line, "OPEN|", 5) == 0) {
             ShellExecuteA(NULL, "open", cp932_line + 5, NULL, NULL, SW_SHOWNORMAL);
         } else if (strcmp(cp932_line, "QUIT") == 0) {
