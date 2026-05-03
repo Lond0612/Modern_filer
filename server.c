@@ -92,67 +92,118 @@ void handle_list(const char* path) {
     filelist_free(&list);
 }
 
+// ---------------------------------------------------------------------------
 // BFS（幅優先探索）による再帰検索：現在地から近い順に結果を返す
+// ---------------------------------------------------------------------------
 #define SEARCH_MAX_RESULTS 50
-#define SEARCH_QUEUE_MAX   4096
+#define SEARCH_QUEUE_MAX   512    // 探索するディレクトリの上限
+#define SPATH_MAX          1024   // フルパスの最大長（バッファ溢れ防止）
 
-void handle_search(const char* root, const char* keyword) {
-    // BFSキュー（ディレクトリのパスを積む）
-    char (*queue)[MAX_PATH] = malloc(SEARCH_QUEUE_MAX * MAX_PATH);
+// 指定されたディレクトリ(root)内をBFS検索する。ただし skip_name という名前のサブディレクトリは探索しない。
+static void handle_search_level(const char* root, const char* keyword, const char* skip_name, int* result_count) {
+    char (*queue)[SPATH_MAX] = (char(*)[SPATH_MAX])malloc((size_t)SEARCH_QUEUE_MAX * SPATH_MAX);
     if (!queue) return;
     int head = 0, tail = 0;
 
-    strncpy(queue[tail++], root, MAX_PATH - 1);
+    strncpy(queue[tail], root, SPATH_MAX - 1);
+    queue[tail][SPATH_MAX - 1] = '\0';
+    tail++;
 
-    int result_count = 0;
     char kw_lower[MAX_PATH];
     strncpy(kw_lower, keyword, MAX_PATH - 1);
     kw_lower[MAX_PATH - 1] = '\0';
     for (char *p = kw_lower; *p; p++) *p = (char)tolower((unsigned char)*p);
 
-    send_json("START_SEARCH", keyword);
-
-    while (head < tail && result_count < SEARCH_MAX_RESULTS) {
-        char current[MAX_PATH];
-        strncpy(current, queue[head++], MAX_PATH - 1);
+    while (head < tail && *result_count < SEARCH_MAX_RESULTS) {
+        char current[SPATH_MAX];
+        strncpy(current, queue[head], SPATH_MAX - 1);
+        current[SPATH_MAX - 1] = '\0';
+        head++;
 
         FileList list = filelist_create();
         filelist_fetch(&list, current);
 
-        for (int i = 0; i < list.count && result_count < SEARCH_MAX_RESULTS; i++) {
+        for (int i = 0; i < list.count && *result_count < SEARCH_MAX_RESULTS; i++) {
             FileEntry *e = &list.entries[i];
             int is_dir = (e->attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
-            // ファイル名を小文字変換して部分一致
+            // 上から来た場合、今まさに探索してきた元のディレクトリはスキップする
+            if (head == 1 && skip_name && _stricmp(e->name, skip_name) == 0) continue;
+
+            // 部分一致判定
             char name_lower[MAX_PATH];
             strncpy(name_lower, e->name, MAX_PATH - 1);
             name_lower[MAX_PATH - 1] = '\0';
             for (char *p = name_lower; *p; p++) *p = (char)tolower((unsigned char)*p);
 
             if (strstr(name_lower, kw_lower)) {
-                char full_path[MAX_PATH * 2];
+                char full_path[SPATH_MAX + MAX_PATH + 8];
                 _snprintf(full_path, sizeof(full_path) - 1, "%s|%s|%s",
-                    is_dir ? "D" : "F",
-                    e->name,
-                    current);
+                    is_dir ? "D" : "F", e->name, current);
+                full_path[sizeof(full_path) - 1] = '\0';
                 send_json("SEARCH_RESULT", full_path);
-                result_count++;
+                (*result_count)++;
             }
 
-            // サブディレクトリをキューに追加
             if (is_dir && tail < SEARCH_QUEUE_MAX) {
-                char sub[MAX_PATH];
-                _snprintf(sub, sizeof(sub) - 1, "%s%s\\", current, e->name);
-                strncpy(queue[tail++], sub, MAX_PATH - 1);
+                size_t cur_len = strlen(current);
+                size_t name_len = strlen(e->name);
+                if (cur_len + name_len + 2 < SPATH_MAX) {
+                    _snprintf(queue[tail], SPATH_MAX - 1, "%s%s\\", current, e->name);
+                    queue[tail][SPATH_MAX - 1] = '\0';
+                    tail++;
+                }
             }
         }
         filelist_free(&list);
     }
 
-    send_json("END_SEARCH", keyword);
     free(queue);
 }
 
+void handle_search(const char* start_root, const char* keyword) {
+    int result_count = 0;
+    send_json("START_SEARCH", keyword);
+
+    char current_search_root[SPATH_MAX];
+    strncpy(current_search_root, start_root, SPATH_MAX - 1);
+    current_search_root[SPATH_MAX - 1] = '\0';
+
+    char last_searched_child[MAX_PATH] = "";
+
+    // 1. 現在地から下を探し、その後親に登りながら枝を広げていく
+    while (result_count < SEARCH_MAX_RESULTS) {
+        handle_search_level(current_search_root, keyword, last_searched_child[0] ? last_searched_child : NULL, &result_count);
+
+        if (result_count >= SEARCH_MAX_RESULTS) break;
+
+        // 親ディレクトリへ移動
+        char parent[SPATH_MAX];
+        strncpy(parent, current_search_root, SPATH_MAX - 1);
+        parent[SPATH_MAX - 1] = '\0';
+
+        size_t len = strlen(parent);
+        if (len <= 3) break; // C:\ などに到達
+        
+        // 末尾の \ を除去して親ディレクトリ名とパスを特定
+        if (parent[len-1] == '\\') parent[len-1] = '\0';
+        char* last_slash = strrchr(parent, '\\');
+        if (!last_slash) break;
+
+        // 自分がどのディレクトリから登ってきたかを記録（再検索防止）
+        strncpy(last_searched_child, last_slash + 1, MAX_PATH - 1);
+        
+        // 親パスを確定（末尾に \ を付ける）
+        last_slash[1] = '\0';
+        strncpy(current_search_root, parent, SPATH_MAX - 1);
+    }
+
+    send_json("END_SEARCH", keyword);
+}
+
+// ---------------------------------------------------------------------------
+// ターミナル出力ハンドラ
+// ---------------------------------------------------------------------------
 void on_cmd_output(const char* text) {
     char* marker = strstr(text, "__CWD__:");
     if (marker) {
@@ -172,6 +223,7 @@ void on_cmd_output(const char* text) {
         if (len > 0 && len < MAX_PATH) {
             strncpy(path, start, len);
             path[len] = '\0';
+
             // グローバルのカレントパスを更新（検索に使用）
             strncpy(currentPath, path, MAX_PATH - 1);
             if (currentPath[strlen(currentPath)-1] != '\\') {
@@ -210,6 +262,13 @@ int main(void) {
     // 初期化完了通知と最初のリスト送信
     char initial_path[MAX_PATH];
     GetCurrentDirectoryA(MAX_PATH, initial_path);
+    
+    // グローバルのカレントパスを初期化（検索で使用）
+    strncpy(currentPath, initial_path, MAX_PATH - 1);
+    if (currentPath[strlen(currentPath)-1] != '\\') {
+        strncat(currentPath, "\\", MAX_PATH - strlen(currentPath) - 1);
+    }
+    
     send_json("READY", initial_path);
     handle_list(initial_path);
 
@@ -221,12 +280,14 @@ int main(void) {
         if (strncmp(cp932_line, "LIST|", 5) == 0) {
             handle_list(cp932_line + 5);
         } else if (strncmp(cp932_line, "SEARCH|", 7) == 0) {
-            // SEARCH|keyword  → 現在パスからBFS検索
+            // SEARCH|keyword → 現在パスからBFS検索
             if (currentPath[0] != '\0') {
                 handle_search(currentPath, cp932_line + 7);
             }
         } else if (strncmp(cp932_line, "EXEC|", 5) == 0) {
+            // 1. ユーザーのコマンドを送信
             cmd_proc_send(cp932_line + 5);
+            // 2. 同期用の隠し命令を送信
             cmd_proc_send("@echo __CWD__:%cd%");
         } else if (strncmp(cp932_line, "CD|", 3) == 0) {
             cmd_proc_cd(cp932_line + 3);

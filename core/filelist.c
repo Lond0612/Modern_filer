@@ -33,10 +33,20 @@ int filelist_fetch(FileList *list, const char *path)
 
     do
     {
-        FileEntry *e = &list->entries[list->count];
-
         if (strcmp(findData.cFileName, ".") == 0 || strcmp(findData.cFileName, "..") == 0)
             continue;
+
+        // 容量が足りなければ2倍に拡張
+        if (list->count >= list->capacity)
+        {
+            int new_cap = list->capacity * 2;
+            FileEntry *new_entries = (FileEntry *)realloc(list->entries, new_cap * sizeof(FileEntry));
+            if (new_entries == NULL) break; // メモリ不足時は途中終了
+            list->entries   = new_entries;
+            list->capacity  = new_cap;
+        }
+
+        FileEntry *e = &list->entries[list->count];
 
         strncpy(e->name, findData.cFileName, MAX_PATH - 1);
         e->name[MAX_PATH - 1] = '\0';
