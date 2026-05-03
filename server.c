@@ -111,8 +111,8 @@ void on_cmd_output(const char* text) {
             path[len] = '\0';
             send_json("SYNC_PATH", path);
             
-            // Windowsの状態更新を待ち、確実に最新リストを取得する
-            Sleep(50);
+            // 確実にコマンド完了後の状態を拾うため、ごくわずかだけ待機
+            Sleep(100);
             handle_list(path);
         }
         
@@ -154,9 +154,8 @@ int main(void) {
         if (strncmp(cp932_line, "LIST|", 5) == 0) {
             handle_list(cp932_line + 5);
         } else if (strncmp(cp932_line, "EXEC|", 5) == 0) {
-            char cmd[4096];
-            _snprintf(cmd, sizeof(cmd)-1, "%s & echo. & echo __CWD__:%%cd%%", cp932_line + 5);
-            cmd_proc_send(cmd);
+            cmd_proc_send(cp932_line + 5);
+            cmd_proc_send("@echo __CWD__:%cd%");
         } else if (strncmp(cp932_line, "CD|", 3) == 0) {
             cmd_proc_cd(cp932_line + 3);
             handle_list(cp932_line + 3);

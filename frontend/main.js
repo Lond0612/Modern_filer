@@ -105,6 +105,10 @@ app.on('window-all-closed', () => {
 
 ipcMain.on('send-command', (event, command) => {
   if (filerServer && !filerServer.killed) {
+    // ファイルを開くときは、背面に隠れないように自らフォーカスを外す
+    if (command.startsWith('OPEN|') && mainWindow) {
+      mainWindow.blur();
+    }
     filerServer.stdin.write(command + '\n');
   }
 });
