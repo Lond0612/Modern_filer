@@ -161,6 +161,21 @@ static void handle_search_level(const char* root, const char* keyword, const cha
     free(queue);
 }
 
+void handle_tree_list(const char* path) {
+    FileList list = filelist_create();
+    filelist_fetch(&list, path);
+    // フォルダのみを抽出して送信
+    send_json("START_TREE", path);
+    for (int i = 0; i < list.count; i++) {
+        FileEntry *e = &list.entries[i];
+        if (e->attributes & FILE_ATTRIBUTE_DIRECTORY) {
+            send_json("TREE_DATA", e->name);
+        }
+    }
+    send_json("END_TREE", path);
+    filelist_free(&list);
+}
+
 void handle_search(const char* start_root, const char* keyword) {
     int result_count = 0;
     send_json("START_SEARCH", keyword);
@@ -279,6 +294,8 @@ int main(void) {
 
         if (strncmp(cp932_line, "LIST|", 5) == 0) {
             handle_list(cp932_line + 5);
+        } else if (strncmp(cp932_line, "TREE_LIST|", 10) == 0) {
+            handle_tree_list(cp932_line + 10);
         } else if (strncmp(cp932_line, "SEARCH|", 7) == 0) {
             // SEARCH|keyword → 現在パスからBFS検索
             if (currentPath[0] != '\0') {

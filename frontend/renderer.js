@@ -71,6 +71,8 @@ window.api.onBackendResponse((obj) => {
             if (!currentPath.endsWith('\\')) currentPath += '\\';
             addressInput.value = currentPath;
             updateNavButtons(); // パスが確定してから更新
+            initTree(currentPath); // ツリーの初期化
+            updateTreeActiveState();
             break;
 
         case 'START_LIST':
@@ -86,6 +88,7 @@ window.api.onBackendResponse((obj) => {
             if (!newPath.endsWith('\\')) newPath += '\\';
             currentPath = newPath;
             addressInput.value = currentPath;
+            updateTreeActiveState(); // 同期
             break;
 
         case 'CMD_OUT':
@@ -109,6 +112,24 @@ window.api.onBackendResponse((obj) => {
             if (searchResults.querySelector('.search-searching')) {
                 searchResults.innerHTML = '<div class="search-searching">見つかりませんでした</div>';
             }
+            break;
+
+        case 'START_TREE':
+            // ツリーデータの受信開始（特定のフォルダノードに対して）
+            const node = findTreeNode(obj.content);
+            if (node) {
+                const childrenContainer = node.querySelector('.tree-children');
+                childrenContainer.innerHTML = '';
+            }
+            break;
+
+        case 'TREE_DATA':
+            // フォルダ名が届くのでノードを追加
+            addTreeItem(obj.content);
+            break;
+
+        case 'END_TREE':
+            // 受信完了
             break;
     }
 });
@@ -198,6 +219,7 @@ function loadPath(path, isUserClick = false) {
     currentPath = path;
     addressInput.value = currentPath;
     updateNavButtons();
+    updateTreeActiveState();
 
     if (isUserClick) {
         window.api.sendCommand(`CD|${currentPath}`);
@@ -212,6 +234,7 @@ function navigateTo(path, addToHistory = true) {
     currentPath = path;
     addressInput.value = currentPath;
     updateNavButtons();
+    updateTreeActiveState();
     window.api.sendCommand(`CD|${currentPath}`);
 }
 
@@ -282,3 +305,166 @@ addressInput.addEventListener('keydown', (e) => {
         loadPath(addressInput.value.trim(), true);
     }
 });
+
+// ---------------------------------------------------------------------------
+// ツリービュー
+// ---------------------------------------------------------------------------
+const treeView = document.getElementById('tree-view');
+let treeLoadingPath = ''; // 現在ロード中のツリーの親パス
+
+function initTree(rootPath) {
+    treeView.innerHTML = '';
+    // ルート（ドライブ）を追加
+    const drive = rootPath.substring(0, 3); // "C:\"
+    createTreeNode(drive, treeView, true);
+}
+
+function createTreeNode(fullPath, container, isRoot = false) {
+    const name = isRoot ? fullPath : fullPath.split('\\').filter(Boolean).pop();
+    
+    const node = document.createElement('div');
+    node.className = 'tree-node';
+    node.dataset.path = fullPath.endsWith('\\') ? fullPath : fullPath + '\\';
+
+    const item = document.createElement('div');
+    item.className = 'tree-item';
+    
+    const expander = document.createElement('span');
+    expander.className = 'tree-expander';
+    expander.innerHTML = '▶';
+    
+    const icon = document.createElement('span');
+    icon.className = 'tree-icon';
+    icon.innerHTML = '📁';
+
+    const label = document.createElement('span');
+    label.className = 'tree-label';
+    label.textContent = name;
+
+    item.appendChild(expander);
+    item.appendChild(icon);
+    item.appendChild(label);
+    node.appendChild(item);
+
+    const children = document.createElement('div');
+    children.className = 'tree-children';
+    node.appendChild(children);
+
+    // ▶ アイコン：展開/折りたたみのみ
+    expander.onclick = (e) => {
+        e.stopPropagation();
+        const isExpanded = children.classList.contains('visible');
+        if (isExpanded) {
+            children.classList.remove('visible');
+            expander.classList.remove('expanded');
+        } else {
+            children.classList.add('visible');
+            expander.classList.add('expanded');
+            if (children.innerHTML === '') {
+                treeLoadingPath = node.dataset.path;
+                window.api.sendCommand(`TREE_LIST|${treeLoadingPath}`);
+            }
+        }
+    };
+
+    // 項目シングルクリック：選択のみ
+    item.onclick = (e) => {
+        e.stopPropagation();
+        // ここでは移動せず、ハイライトだけ手動で切り替える
+        document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
+        item.classList.add('active');
+    };
+
+    // 項目ダブルクリック：ディレクトリ移動
+    item.ondblclick = (e) => {
+        e.stopPropagation();
+        loadPath(node.dataset.path, true);
+    };
+
+    container.appendChild(node);
+    return node;
+}
+
+// ---------------------------------------------------------------------------
+// リサイズ機能
+// ---------------------------------------------------------------------------
+function initResizers() {
+    const sidebar = document.querySelector('.sidebar');
+    const filePane = document.querySelector('.file-pane');
+    const terminalPane = document.querySelector('.terminal-pane');
+    
+    const resizerSidebar = document.getElementById('resizer-sidebar');
+    const resizerTerminal = document.getElementById('resizer-terminal');
+
+    function setupResizer(resizer, leftElem, rightElem) {
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+            // ドラッグ中のテキスト選択を防止
+            document.body.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const containerRect = document.querySelector('.main-layout').getBoundingClientRect();
+            const leftRect = leftElem.getBoundingClientRect();
+            
+            // マウス位置に基づいて新しい幅を計算
+            const newWidth = e.clientX - leftRect.left;
+            
+            // 最小幅の制限
+            if (newWidth > 50 && newWidth < (containerRect.width - 100)) {
+                leftElem.style.width = `${newWidth}px`;
+                leftElem.style.flex = 'none'; // flexを無効にして固定幅にする
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = 'default';
+                document.body.style.userSelect = 'auto';
+            }
+        });
+    }
+
+    setupResizer(resizerSidebar, sidebar, filePane);
+    setupResizer(resizerTerminal, filePane, terminalPane);
+}
+
+// 初期化時に実行
+initResizers();
+
+function addTreeItem(folderName) {
+    const parentNode = findTreeNode(treeLoadingPath);
+    if (parentNode) {
+        const childrenContainer = parentNode.querySelector('.tree-children');
+        createTreeNode(treeLoadingPath + folderName, childrenContainer);
+    }
+}
+
+function findTreeNode(path) {
+    const p = path.endsWith('\\') ? path : path + '\\';
+    return treeView.querySelector(`.tree-node[data-path="${p.replace(/\\/g, '\\\\')}"]`);
+}
+
+function updateTreeActiveState() {
+    document.querySelectorAll('.tree-item').forEach(item => {
+        const node = item.closest('.tree-node');
+        if (node.dataset.path === currentPath) {
+            item.classList.add('active');
+            // 親を辿って展開
+            let p = node.parentElement.closest('.tree-node');
+            while (p) {
+                p.querySelector('.tree-children').classList.add('visible');
+                p.querySelector('.tree-expander').classList.add('expanded');
+                p = p.parentElement.closest('.tree-node');
+            }
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}

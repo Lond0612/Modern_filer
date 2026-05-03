@@ -167,6 +167,106 @@ body {
     overflow: hidden;
 }
 
+/* リサイズバー */
+.resizer {
+    width: 4px;
+    background: #000;
+    cursor: col-resize;
+    transition: background 0.2s;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.resizer:hover, .resizer:active {
+    background: #007acc;
+}
+
+/* サイドバー */
+.sidebar {
+    width: 240px;
+    background: #252525;
+    border-right: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.sidebar-title {
+    padding: 10px 15px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #666;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #333;
+}
+
+.tree-view {
+    flex: 1;
+    overflow-y: auto;
+    padding: 5px 0;
+}
+
+/* ツリー項目 */
+.tree-node {
+    user-select: none;
+}
+
+.tree-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #ccc;
+    white-space: nowrap;
+    border-left: 3px solid transparent;
+}
+
+.tree-item:hover {
+    background: #2d2d2d;
+    color: #fff;
+}
+
+.tree-item.active {
+    background: #37373d;
+    color: #fff;
+    border-left-color: #007acc;
+}
+
+.tree-expander {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 4px;
+    transition: transform 0.1s;
+    color: #666;
+}
+
+.tree-expander.expanded {
+    transform: rotate(90deg);
+}
+
+.tree-expander:empty {
+    visibility: hidden;
+}
+
+.tree-icon {
+    margin-right: 6px;
+    font-size: 14px;
+}
+
+.tree-children {
+    display: none;
+    padding-left: 15px;
+}
+
+.tree-children.visible {
+    display: block;
+}
+
 .file-pane {
     flex: 2;
     overflow-y: auto;
