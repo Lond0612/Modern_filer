@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 #include <windows.h>
 #include <stdarg.h>
 #include "core/filelist.h"
@@ -10,6 +12,7 @@
 // グローバル定義
 // ---------------------------------------------------------------------------
 CRITICAL_SECTION g_stdout_cs;
+static char currentPath[MAX_PATH] = {0}; // 検索で使う現在パス
 
 // UTF-8への変換（Electron用）
 void cp932_to_utf8(const char* cp932, char* utf8, size_t utf8_size) {
@@ -86,8 +89,68 @@ void handle_list(const char* path) {
         send_json("DATA", line);
     }
     send_json("END_LIST", path);
-    
     filelist_free(&list);
+}
+
+// BFS（幅優先探索）による再帰検索：現在地から近い順に結果を返す
+#define SEARCH_MAX_RESULTS 50
+#define SEARCH_QUEUE_MAX   4096
+
+void handle_search(const char* root, const char* keyword) {
+    // BFSキュー（ディレクトリのパスを積む）
+    char (*queue)[MAX_PATH] = malloc(SEARCH_QUEUE_MAX * MAX_PATH);
+    if (!queue) return;
+    int head = 0, tail = 0;
+
+    strncpy(queue[tail++], root, MAX_PATH - 1);
+
+    int result_count = 0;
+    char kw_lower[MAX_PATH];
+    strncpy(kw_lower, keyword, MAX_PATH - 1);
+    kw_lower[MAX_PATH - 1] = '\0';
+    for (char *p = kw_lower; *p; p++) *p = (char)tolower((unsigned char)*p);
+
+    send_json("START_SEARCH", keyword);
+
+    while (head < tail && result_count < SEARCH_MAX_RESULTS) {
+        char current[MAX_PATH];
+        strncpy(current, queue[head++], MAX_PATH - 1);
+
+        FileList list = filelist_create();
+        filelist_fetch(&list, current);
+
+        for (int i = 0; i < list.count && result_count < SEARCH_MAX_RESULTS; i++) {
+            FileEntry *e = &list.entries[i];
+            int is_dir = (e->attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+
+            // ファイル名を小文字変換して部分一致
+            char name_lower[MAX_PATH];
+            strncpy(name_lower, e->name, MAX_PATH - 1);
+            name_lower[MAX_PATH - 1] = '\0';
+            for (char *p = name_lower; *p; p++) *p = (char)tolower((unsigned char)*p);
+
+            if (strstr(name_lower, kw_lower)) {
+                char full_path[MAX_PATH * 2];
+                _snprintf(full_path, sizeof(full_path) - 1, "%s|%s|%s",
+                    is_dir ? "D" : "F",
+                    e->name,
+                    current);
+                send_json("SEARCH_RESULT", full_path);
+                result_count++;
+            }
+
+            // サブディレクトリをキューに追加
+            if (is_dir && tail < SEARCH_QUEUE_MAX) {
+                char sub[MAX_PATH];
+                _snprintf(sub, sizeof(sub) - 1, "%s%s\\", current, e->name);
+                strncpy(queue[tail++], sub, MAX_PATH - 1);
+            }
+        }
+        filelist_free(&list);
+    }
+
+    send_json("END_SEARCH", keyword);
+    free(queue);
 }
 
 void on_cmd_output(const char* text) {
@@ -109,9 +172,13 @@ void on_cmd_output(const char* text) {
         if (len > 0 && len < MAX_PATH) {
             strncpy(path, start, len);
             path[len] = '\0';
+            // グローバルのカレントパスを更新（検索に使用）
+            strncpy(currentPath, path, MAX_PATH - 1);
+            if (currentPath[strlen(currentPath)-1] != '\\') {
+                strncat(currentPath, "\\", MAX_PATH - strlen(currentPath) - 1);
+            }
             send_json("SYNC_PATH", path);
             
-            // 確実にコマンド完了後の状態を拾うため、ごくわずかだけ待機
             Sleep(100);
             handle_list(path);
         }
@@ -153,6 +220,11 @@ int main(void) {
 
         if (strncmp(cp932_line, "LIST|", 5) == 0) {
             handle_list(cp932_line + 5);
+        } else if (strncmp(cp932_line, "SEARCH|", 7) == 0) {
+            // SEARCH|keyword  → 現在パスからBFS検索
+            if (currentPath[0] != '\0') {
+                handle_search(currentPath, cp932_line + 7);
+            }
         } else if (strncmp(cp932_line, "EXEC|", 5) == 0) {
             cmd_proc_send(cp932_line + 5);
             cmd_proc_send("@echo __CWD__:%cd%");

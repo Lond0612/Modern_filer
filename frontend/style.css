@@ -31,6 +31,136 @@ body {
     border-radius: 4px;
 }
 
+.nav-buttons {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.nav-btn {
+    background: transparent;
+    border: none;
+    color: #ccc;
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.nav-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: #4a4a4a;
+    color: #fff;
+}
+
+.nav-btn:disabled {
+    color: #555;
+    cursor: default;
+}
+
+/* 検索バー */
+.search-container {
+    position: relative;
+    flex-shrink: 0;
+    width: 220px;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    background: #3c3c3c;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 0 8px;
+    gap: 6px;
+}
+
+.search-icon {
+    width: 14px;
+    height: 14px;
+    color: #888;
+    flex-shrink: 0;
+}
+
+#search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #fff;
+    outline: none;
+    padding: 5px 0;
+    font-size: 13px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+#search-input::placeholder {
+    color: #666;
+}
+
+.search-results {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #252525;
+    border: 1px solid #555;
+    border-radius: 4px;
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #333;
+    font-size: 12px;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background: #2d5a8e;
+}
+
+.search-result-name {
+    font-weight: 500;
+    color: #e0e0e0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-result-path {
+    color: #777;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-searching {
+    padding: 10px;
+    color: #888;
+    text-align: center;
+    font-size: 12px;
+}
+
 .main-layout {
     display: flex;
     flex: 1;
