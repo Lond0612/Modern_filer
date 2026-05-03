@@ -25,7 +25,10 @@ window.api.onBackendResponse((obj) => {
     switch (obj.type) {
         case 'READY':
             currentPath = obj.content;
-            loadPath(currentPath);
+            if (!currentPath.endsWith('\\')) currentPath += '\\';
+            addressInput.value = currentPath;
+            // 初期表示を要求
+            window.api.sendCommand(`LIST|${currentPath}`);
             break;
 
         case 'START_LIST':
@@ -37,9 +40,11 @@ window.api.onBackendResponse((obj) => {
             break;
 
         case 'SYNC_PATH':
-            currentPath = obj.content.endsWith('\\') ? obj.content : obj.content + '\\';
+            let newPath = obj.content;
+            if (!newPath.endsWith('\\')) newPath += '\\';
+            currentPath = newPath;
             addressInput.value = currentPath;
-            // バックエンド側での自動更新を停止したため、フロントから明示的にリクエスト
+            // パスが変わったら必ずリストを要求
             window.api.sendCommand(`LIST|${currentPath}`);
             break;
 
@@ -59,8 +64,10 @@ function loadPath(path, isUserClick = false) {
     addressInput.value = currentPath;
 
     if (isUserClick) {
+        // GUIでのクリック時は、まずCDを送り、その後のSYNC_PATHでLISTが走る
         window.api.sendCommand(`CD|${currentPath}`);
     } else {
+        // 直接入力などは即座にLISTを要求
         window.api.sendCommand(`LIST|${currentPath}`);
     }
 }

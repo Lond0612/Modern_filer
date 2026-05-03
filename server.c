@@ -150,14 +150,13 @@ int main(void) {
             handle_list(cp932_line + 5);
         } else if (strncmp(cp932_line, "EXEC|", 5) == 0) {
             char cmd[4096];
-            // コマンド実行後に確実に改行を入れてからマーカーを出力
             _snprintf(cmd, sizeof(cmd)-1, "%s & echo. & echo __CWD__:%%cd%%", cp932_line + 5);
             cmd_proc_send(cmd);
         } else if (strncmp(cp932_line, "CD|", 3) == 0) {
+            // ここでは移動のみ。リストはこれに続くSYNC_PATHを受けてフロントが要求する
             cmd_proc_cd(cp932_line + 3);
-            handle_list(cp932_line + 3);
         } else if (strncmp(cp932_line, "OPEN|", 5) == 0) {
-            ShellExecuteA(NULL, "open", cp932_line + 5, NULL, NULL, SW_SHOWDEFAULT);
+            ShellExecuteA(NULL, "open", cp932_line + 5, NULL, NULL, SW_SHOWNORMAL);
         } else if (strcmp(cp932_line, "QUIT") == 0) {
             break;
         }
