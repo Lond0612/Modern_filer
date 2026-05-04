@@ -250,7 +250,7 @@ function addFileRow(data) {
     tr.innerHTML = `
         <td class="file-name">${type === 'D' ? '📁' : '📄'} ${name}</td>
         <td>${type === 'D' ? 'Folder' : 'File'}</td>
-        <td>${size === '-' ? '-' : formatSize(size)}</td>
+        <td>${type === 'D' ? '' : formatSize(size)}</td>
     `;
 
     // シングルクリック：選択
@@ -390,35 +390,38 @@ function createTreeNode(fullPath, container, isRoot = false) {
 // ---------------------------------------------------------------------------
 function initResizers() {
     const sidebar = document.querySelector('.sidebar');
-    const filePane = document.querySelector('.file-pane');
     const terminalPane = document.querySelector('.terminal-pane');
     
     const resizerSidebar = document.getElementById('resizer-sidebar');
     const resizerTerminal = document.getElementById('resizer-terminal');
 
-    function setupResizer(resizer, leftElem, rightElem) {
+    function setupResizer(resizer, targetElem, axis) {
         let isResizing = false;
 
         resizer.addEventListener('mousedown', (e) => {
             isResizing = true;
-            document.body.style.cursor = 'col-resize';
-            // ドラッグ中のテキスト選択を防止
+            document.body.style.cursor = axis === 'h' ? 'col-resize' : 'row-resize';
             document.body.style.userSelect = 'none';
         });
 
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
 
-            const containerRect = document.querySelector('.main-layout').getBoundingClientRect();
-            const leftRect = leftElem.getBoundingClientRect();
-            
-            // マウス位置に基づいて新しい幅を計算
-            const newWidth = e.clientX - leftRect.left;
-            
-            // 最小幅の制限
-            if (newWidth > 50 && newWidth < (containerRect.width - 100)) {
-                leftElem.style.width = `${newWidth}px`;
-                leftElem.style.flex = 'none'; // flexを無効にして固定幅にする
+            if (axis === 'h') {
+                const targetRect = targetElem.getBoundingClientRect();
+                const newWidth = e.clientX - targetRect.left;
+                if (newWidth > 100 && newWidth < 600) {
+                    targetElem.style.width = `${newWidth}px`;
+                    targetElem.style.flex = 'none';
+                }
+            } else {
+                const containerRect = document.querySelector('.main-layout').getBoundingClientRect();
+                // 下からの距離で高さを計算
+                const newHeight = containerRect.bottom - e.clientY;
+                if (newHeight > 50 && newHeight < (containerRect.height - 100)) {
+                    targetElem.style.height = `${newHeight}px`;
+                    targetElem.style.flex = 'none';
+                }
             }
         });
 
@@ -431,8 +434,8 @@ function initResizers() {
         });
     }
 
-    setupResizer(resizerSidebar, sidebar, filePane);
-    setupResizer(resizerTerminal, filePane, terminalPane);
+    setupResizer(resizerSidebar, sidebar, 'h');
+    setupResizer(resizerTerminal, terminalPane, 'v');
 }
 
 // 初期化時に実行

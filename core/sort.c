@@ -21,6 +21,14 @@ static int file_entry_compare(const void *a, const void *b)
     const FileEntry *eb = (const FileEntry *)b;
     int result = 0;
 
+    // --- 1. ディレクトリを優先して上に表示するロジック ---
+    int a_is_dir = (ea->attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+    int b_is_dir = (eb->attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+
+    if (a_is_dir && !b_is_dir) return -1; // aがディレクトリなら上へ
+    if (!a_is_dir && b_is_dir) return 1;  // bがディレクトリなら下へ
+
+    // --- 2. 同じカテゴリ（両方フォルダ or 両方ファイル）内でのソート ---
     switch (s_ctx.key)
     {
     case SORT_NAME:
@@ -34,7 +42,6 @@ static int file_entry_compare(const void *a, const void *b)
         break;
     case SORT_EXTENSION:
         result = _stricmp(ea->extension, eb->extension);
-        // 拡張子が同じならさらに名前順
         if (result == 0)
             result = _stricmp(ea->name, eb->name);
         break;

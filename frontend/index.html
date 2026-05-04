@@ -44,30 +44,32 @@
         </div>
         
         <div class="main-layout">
-            <div class="sidebar">
-                <div class="sidebar-title">FOLDERS</div>
-                <div id="tree-view" class="tree-view">
-                    <!-- Tree items will be generated here -->
+            <div class="top-section">
+                <div class="sidebar">
+                    <div class="sidebar-title">FOLDERS</div>
+                    <div id="tree-view" class="tree-view">
+                        <!-- Tree items will be generated here -->
+                    </div>
+                </div>
+                
+                <div class="resizer-h" id="resizer-sidebar"></div>
+
+                <div class="file-pane">
+                    <table id="file-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Size</th>
+                            </tr>
+                        </thead>
+                        <tbody id="file-list-body">
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            
-            <div class="resizer" id="resizer-sidebar"></div>
 
-            <div class="file-pane">
-                <table id="file-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Size</th>
-                        </tr>
-                    </thead>
-                    <tbody id="file-list-body">
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="resizer" id="resizer-terminal"></div>
+            <div class="resizer-v" id="resizer-terminal"></div>
             
             <div class="terminal-pane">
                 <div id="terminal-output"></div>
