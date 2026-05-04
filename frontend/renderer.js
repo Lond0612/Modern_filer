@@ -316,7 +316,13 @@ function initTree(rootPath) {
     treeView.innerHTML = '';
     // ルート（ドライブ）を追加
     const drive = rootPath.substring(0, 3); // "C:\"
-    createTreeNode(drive, treeView, true);
+    const rootNode = createTreeNode(drive, treeView, true);
+    
+    // 自動で1段目を開く
+    const expander = rootNode.querySelector('.tree-expander');
+    if (expander) {
+        expander.click();
+    }
 }
 
 function createTreeNode(fullPath, container, isRoot = false) {
