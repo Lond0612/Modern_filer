@@ -6,8 +6,8 @@
 // --- ファイル情報 ---
 typedef struct
 {
-    char name[MAX_PATH];
-    char extension[16]; // 拡張子（種類ソート用）
+    wchar_t name[MAX_PATH];
+    wchar_t extension[16]; // 拡張子（種類ソート用）
     DWORD attributes;
     LONGLONG size;
     FILETIME created_at; // 作成日時

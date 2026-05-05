@@ -12,9 +12,9 @@
 // グローバル定義
 // ---------------------------------------------------------------------------
 CRITICAL_SECTION g_stdout_cs;
-static char currentPath[MAX_PATH] = {0}; // 検索で使う現在パス
+static char currentPath[MAX_PATH] = {0}; // 検索で使う現在パス (UTF-8)
 
-// UTF-8への変換（Electron用）
+// UTF-8への変換
 void cp932_to_utf8(const char* cp932, char* utf8, size_t utf8_size) {
     if (!cp932 || !utf8 || utf8_size == 0) return;
     wchar_t wbuf[16384];
@@ -27,7 +27,7 @@ void cp932_to_utf8(const char* cp932, char* utf8, size_t utf8_size) {
     }
 }
 
-// CP932への変換（cmd.exe用）
+// CP932への変換
 void utf8_to_cp932(const char* utf8, char* cp932, size_t cp932_size) {
     if (!utf8 || !cp932 || cp932_size == 0) return;
     wchar_t wbuf[8192];
@@ -39,7 +39,7 @@ void utf8_to_cp932(const char* utf8, char* cp932, size_t cp932_size) {
     }
 }
 
-// JSONエスケープ（簡易版）
+// JSONエスケープ
 void json_escape(const char* input, char* output, size_t out_size) {
     size_t j = 0;
     for (size_t i = 0; input[i] != '\0' && j < out_size - 5; i++) {
@@ -57,14 +57,10 @@ void json_escape(const char* input, char* output, size_t out_size) {
     output[j] = '\0';
 }
 
-// 共通JSON送信関数（これが通信の生命線）
-void send_json(const char* type, const char* content) {
-    char utf8_content[32768];
+// 共通JSON送信関数 (UTF-8)
+void send_json_utf8(const char* type, const char* content_utf8) {
     char escaped[65536];
-    
-    cp932_to_utf8(content ? content : "", utf8_content, sizeof(utf8_content));
-    json_escape(utf8_content, escaped, sizeof(escaped));
-
+    json_escape(content_utf8 ? content_utf8 : "", escaped, sizeof(escaped));
     EnterCriticalSection(&g_stdout_cs);
     printf("{\"type\":\"%s\",\"content\":\"%s\"}\n", type, escaped);
     fflush(stdout);
@@ -74,195 +70,230 @@ void send_json(const char* type, const char* content) {
 // ---------------------------------------------------------------------------
 // 各種ハンドラ
 // ---------------------------------------------------------------------------
-void handle_list(const char* path) {
+void handle_list(const char* path_utf8) {
     FileList list = filelist_create();
-    filelist_fetch(&list, path);
+    if (filelist_fetch(&list, path_utf8) < 0) {
+        send_json_utf8("ERROR", "Failed to list directory");
+        filelist_free(&list);
+        return;
+    }
     filelist_sort(&list, (SortContext){SORT_NAME, SORT_ASC});
     
-    send_json("START_LIST", path);
+    send_json_utf8("START_LIST", path_utf8);
     for (int i = 0; i < list.count; i++) {
         FileEntry *e = &list.entries[i];
-        char line[MAX_PATH + 64];
+        char name_utf8[MAX_PATH * 4];
+        WideCharToMultiByte(CP_UTF8, 0, e->name, -1, name_utf8, sizeof(name_utf8), NULL, NULL);
+
+        char line[MAX_PATH * 4 + 64];
         _snprintf(line, sizeof(line)-1, "%s|%s|%lld", 
             (e->attributes & FILE_ATTRIBUTE_DIRECTORY) ? "D" : "F", 
-            e->name, (long long)e->size);
-        send_json("DATA", line);
+            name_utf8, (long long)e->size);
+        send_json_utf8("DATA", line);
     }
-    send_json("END_LIST", path);
+    send_json_utf8("END_LIST", path_utf8);
+    filelist_free(&list);
+}
+
+void handle_tree_list(const char* path_utf8) {
+    FileList list = filelist_create();
+    filelist_fetch(&list, path_utf8);
+    send_json_utf8("START_TREE", path_utf8);
+    for (int i = 0; i < list.count; i++) {
+        FileEntry *e = &list.entries[i];
+        if (e->attributes & FILE_ATTRIBUTE_DIRECTORY) {
+            char name_utf8[MAX_PATH * 4];
+            WideCharToMultiByte(CP_UTF8, 0, e->name, -1, name_utf8, sizeof(name_utf8), NULL, NULL);
+            send_json_utf8("TREE_DATA", name_utf8);
+        }
+    }
+    send_json_utf8("END_TREE", path_utf8);
     filelist_free(&list);
 }
 
 // ---------------------------------------------------------------------------
-// BFS（幅優先探索）による再帰検索：現在地から近い順に結果を返す
+// 検索ロジック (WCHAR化)
 // ---------------------------------------------------------------------------
 #define SEARCH_MAX_RESULTS 50
-#define SEARCH_QUEUE_MAX   512    // 探索するディレクトリの上限
-#define SPATH_MAX          1024   // フルパスの最大長（バッファ溢れ防止）
+#define SEARCH_QUEUE_MAX   512
+#define SPATH_MAX          1024
 
-// 指定されたディレクトリ(root)内をBFS検索する。ただし skip_name という名前のサブディレクトリは探索しない。
-static void handle_search_level(const char* root, const char* keyword, const char* skip_name, int* result_count) {
+static void handle_search_level(const char* root_utf8, const char* keyword_utf8, const char* skip_name_utf8, int* result_count) {
     char (*queue)[SPATH_MAX] = (char(*)[SPATH_MAX])malloc((size_t)SEARCH_QUEUE_MAX * SPATH_MAX);
     if (!queue) return;
     int head = 0, tail = 0;
 
-    strncpy(queue[tail], root, SPATH_MAX - 1);
+    strncpy(queue[tail], root_utf8, SPATH_MAX - 1);
     queue[tail][SPATH_MAX - 1] = '\0';
     tail++;
 
-    char kw_lower[MAX_PATH];
-    strncpy(kw_lower, keyword, MAX_PATH - 1);
-    kw_lower[MAX_PATH - 1] = '\0';
-    for (char *p = kw_lower; *p; p++) *p = (char)tolower((unsigned char)*p);
+    // キーワードを小文字のWCHARに変換
+    wchar_t kw_w[MAX_PATH];
+    MultiByteToWideChar(CP_UTF8, 0, keyword_utf8, -1, kw_w, MAX_PATH);
+    for (wchar_t *p = kw_w; *p; p++) *p = towlower(*p);
+
+    wchar_t skip_w[MAX_PATH] = L"";
+    if (skip_name_utf8) MultiByteToWideChar(CP_UTF8, 0, skip_name_utf8, -1, skip_w, MAX_PATH);
 
     while (head < tail && *result_count < SEARCH_MAX_RESULTS) {
-        char current[SPATH_MAX];
-        strncpy(current, queue[head], SPATH_MAX - 1);
-        current[SPATH_MAX - 1] = '\0';
+        char current_utf8[SPATH_MAX];
+        strncpy(current_utf8, queue[head], SPATH_MAX - 1);
+        current_utf8[SPATH_MAX - 1] = '\0';
         head++;
 
         FileList list = filelist_create();
-        filelist_fetch(&list, current);
+        filelist_fetch(&list, current_utf8);
 
         for (int i = 0; i < list.count && *result_count < SEARCH_MAX_RESULTS; i++) {
             FileEntry *e = &list.entries[i];
             int is_dir = (e->attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
-            // 上から来た場合、今まさに探索してきた元のディレクトリはスキップする
-            if (head == 1 && skip_name && _stricmp(e->name, skip_name) == 0) continue;
+            if (head == 1 && skip_w[0] && _wcsicmp(e->name, skip_w) == 0) continue;
 
-            // 部分一致判定
-            char name_lower[MAX_PATH];
-            strncpy(name_lower, e->name, MAX_PATH - 1);
-            name_lower[MAX_PATH - 1] = '\0';
-            for (char *p = name_lower; *p; p++) *p = (char)tolower((unsigned char)*p);
+            wchar_t name_lower[MAX_PATH];
+            wcscpy(name_lower, e->name);
+            for (wchar_t *p = name_lower; *p; p++) *p = towlower(*p);
 
-            if (strstr(name_lower, kw_lower)) {
-                char full_path[SPATH_MAX + MAX_PATH + 8];
-                _snprintf(full_path, sizeof(full_path) - 1, "%s|%s|%s",
-                    is_dir ? "D" : "F", e->name, current);
-                full_path[sizeof(full_path) - 1] = '\0';
-                send_json("SEARCH_RESULT", full_path);
+            if (wcsstr(name_lower, kw_w)) {
+                char name_utf8[MAX_PATH * 4];
+                WideCharToMultiByte(CP_UTF8, 0, e->name, -1, name_utf8, sizeof(name_utf8), NULL, NULL);
+                
+                char result_line[SPATH_MAX + MAX_PATH * 4 + 8];
+                _snprintf(result_line, sizeof(result_line) - 1, "%s|%s|%s",
+                    is_dir ? "D" : "F", name_utf8, current_utf8);
+                send_json_utf8("SEARCH_RESULT", result_line);
                 (*result_count)++;
             }
 
             if (is_dir && tail < SEARCH_QUEUE_MAX) {
-                size_t cur_len = strlen(current);
-                size_t name_len = strlen(e->name);
-                if (cur_len + name_len + 2 < SPATH_MAX) {
-                    _snprintf(queue[tail], SPATH_MAX - 1, "%s%s\\", current, e->name);
-                    queue[tail][SPATH_MAX - 1] = '\0';
-                    tail++;
-                }
+                char next_dir[SPATH_MAX];
+                char name_utf8[MAX_PATH * 4];
+                WideCharToMultiByte(CP_UTF8, 0, e->name, -1, name_utf8, sizeof(name_utf8), NULL, NULL);
+                _snprintf(next_dir, sizeof(next_dir)-1, "%s%s\\", current_utf8, name_utf8);
+                strncpy(queue[tail], next_dir, SPATH_MAX - 1);
+                tail++;
             }
         }
         filelist_free(&list);
     }
-
     free(queue);
 }
 
-void handle_tree_list(const char* path) {
-    FileList list = filelist_create();
-    filelist_fetch(&list, path);
-    // フォルダのみを抽出して送信
-    send_json("START_TREE", path);
-    for (int i = 0; i < list.count; i++) {
-        FileEntry *e = &list.entries[i];
-        if (e->attributes & FILE_ATTRIBUTE_DIRECTORY) {
-            send_json("TREE_DATA", e->name);
-        }
-    }
-    send_json("END_TREE", path);
-    filelist_free(&list);
-}
-
-void handle_search(const char* start_root, const char* keyword) {
+void handle_search(const char* start_root_utf8, const char* keyword_utf8) {
     int result_count = 0;
-    send_json("START_SEARCH", keyword);
+    send_json_utf8("START_SEARCH", keyword_utf8);
 
-    char current_search_root[SPATH_MAX];
-    strncpy(current_search_root, start_root, SPATH_MAX - 1);
-    current_search_root[SPATH_MAX - 1] = '\0';
+    char current_root[SPATH_MAX];
+    strncpy(current_root, start_root_utf8, SPATH_MAX - 1);
+    current_root[SPATH_MAX - 1] = '\0';
 
     char last_searched_child[MAX_PATH] = "";
 
-    // 1. 現在地から下を探し、その後親に登りながら枝を広げていく
     while (result_count < SEARCH_MAX_RESULTS) {
-        handle_search_level(current_search_root, keyword, last_searched_child[0] ? last_searched_child : NULL, &result_count);
-
+        handle_search_level(current_root, keyword_utf8, last_searched_child[0] ? last_searched_child : NULL, &result_count);
         if (result_count >= SEARCH_MAX_RESULTS) break;
 
-        // 親ディレクトリへ移動
-        char parent[SPATH_MAX];
-        strncpy(parent, current_search_root, SPATH_MAX - 1);
-        parent[SPATH_MAX - 1] = '\0';
-
-        size_t len = strlen(parent);
-        if (len <= 3) break; // C:\ などに到達
+        size_t len = strlen(current_root);
+        if (len <= 3) break; 
         
-        // 末尾の \ を除去して親ディレクトリ名とパスを特定
-        if (parent[len-1] == '\\') parent[len-1] = '\0';
-        char* last_slash = strrchr(parent, '\\');
+        if (current_root[len-1] == '\\') current_root[len-1] = '\0';
+        char* last_slash = strrchr(current_root, '\\');
         if (!last_slash) break;
 
-        // 自分がどのディレクトリから登ってきたかを記録（再検索防止）
         strncpy(last_searched_child, last_slash + 1, MAX_PATH - 1);
-        
-        // 親パスを確定（末尾に \ を付ける）
         last_slash[1] = '\0';
-        strncpy(current_search_root, parent, SPATH_MAX - 1);
     }
-
-    send_json("END_SEARCH", keyword);
+    send_json_utf8("END_SEARCH", keyword_utf8);
 }
 
 // ---------------------------------------------------------------------------
-// ターミナル出力ハンドラ
+// ターミナル同期
 // ---------------------------------------------------------------------------
-void on_cmd_output(const char* text) {
-    char* marker = strstr(text, "__CWD__:");
+void on_cmd_output(const char* text_cp932) {
+    char* marker = strstr(text_cp932, "__CWD__:");
     if (marker) {
-        // 1. Prefix
-        if (marker > text) {
-            char* prefix = _strdup(text);
-            prefix[marker - text] = '\0';
-            send_json("CMD_OUT", prefix);
+        if (marker > text_cp932) {
+            char* prefix = _strdup(text_cp932);
+            prefix[marker - text_cp932] = '\0';
+            char prefix_utf8[16384];
+            cp932_to_utf8(prefix, prefix_utf8, sizeof(prefix_utf8));
+            send_json_utf8("CMD_OUT", prefix_utf8);
             free(prefix);
         }
         
-        // 2. Path Sync & Auto-List
-        char path[MAX_PATH];
+        char path_cp932[MAX_PATH];
         char* start = marker + 8;
         char* end = strpbrk(start, "\r\n");
         size_t len = end ? (size_t)(end - start) : strlen(start);
         if (len > 0 && len < MAX_PATH) {
-            strncpy(path, start, len);
-            path[len] = '\0';
+            strncpy(path_cp932, start, len);
+            path_cp932[len] = '\0';
 
-            // グローバルのカレントパスを更新（検索に使用）
-            strncpy(currentPath, path, MAX_PATH - 1);
+            char path_utf8[MAX_PATH * 4];
+            cp932_to_utf8(path_cp932, path_utf8, sizeof(path_utf8));
+
+            strncpy(currentPath, path_utf8, MAX_PATH - 1);
             if (currentPath[strlen(currentPath)-1] != '\\') {
                 strncat(currentPath, "\\", MAX_PATH - strlen(currentPath) - 1);
             }
-            send_json("SYNC_PATH", path);
-            
+            send_json_utf8("SYNC_PATH", path_utf8);
             Sleep(100);
-            handle_list(path);
+            handle_list(path_utf8);
         }
-        
-        // 3. Suffix
-        if (end) {
-            on_cmd_output(end + strspn(end, "\r\n"));
-        }
+        if (end) on_cmd_output(end + strspn(end, "\r\n"));
     } else {
-        if (strlen(text) > 0) {
-            send_json("CMD_OUT", text);
+        if (strlen(text_cp932) > 0) {
+            char text_utf8[32768];
+            cp932_to_utf8(text_cp932, text_utf8, sizeof(text_utf8));
+            send_json_utf8("CMD_OUT", text_utf8);
         }
     }
 }
 
 // ---------------------------------------------------------------------------
-// メインループ
+// CRUD
+// ---------------------------------------------------------------------------
+void handle_mkdir(const char* path_utf8) {
+    wchar_t wpath[MAX_PATH];
+    MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
+    if (CreateDirectoryW(wpath, NULL)) {
+        send_json_utf8("CREATED", path_utf8);
+    } else {
+        char msg[256];
+        _snprintf(msg, sizeof(msg), "Failed to create directory: %lu", GetLastError());
+        send_json_utf8("ERROR", msg);
+    }
+}
+
+void handle_new_file(const char* path_utf8) {
+    wchar_t wpath[MAX_PATH];
+    MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
+    HANDLE hFile = CreateFileW(wpath, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile != INVALID_HANDLE_VALUE) {
+        CloseHandle(hFile);
+        send_json_utf8("CREATED", path_utf8);
+    } else {
+        char msg[256];
+        _snprintf(msg, sizeof(msg), "Failed to create file: %lu", GetLastError());
+        send_json_utf8("ERROR", msg);
+    }
+}
+
+void handle_rename(const char* old_path_utf8, const char* new_path_utf8) {
+    wchar_t wold[MAX_PATH], wnew[MAX_PATH];
+    MultiByteToWideChar(CP_UTF8, 0, old_path_utf8, -1, wold, MAX_PATH);
+    MultiByteToWideChar(CP_UTF8, 0, new_path_utf8, -1, wnew, MAX_PATH);
+    if (MoveFileW(wold, wnew)) {
+        send_json_utf8("RENAMED", new_path_utf8);
+    } else {
+        char msg[256];
+        _snprintf(msg, sizeof(msg), "Failed to rename: %lu", GetLastError());
+        send_json_utf8("ERROR", msg);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// メイン
 // ---------------------------------------------------------------------------
 int main(void) {
     char line[4096];
@@ -270,50 +301,53 @@ int main(void) {
     setvbuf(stdout, NULL, _IONBF, 0);
 
     if (!cmd_proc_start(on_cmd_output)) {
-        send_json("ERROR", "Failed to start cmd.exe");
+        send_json_utf8("ERROR", "Failed to start cmd.exe");
         return 1;
     }
 
-    // 初期化完了通知と最初のリスト送信
-    char initial_path[MAX_PATH];
-    GetCurrentDirectoryA(MAX_PATH, initial_path);
+    char initial_path_a[MAX_PATH];
+    GetCurrentDirectoryA(MAX_PATH, initial_path_a);
+    char initial_path_utf8[MAX_PATH * 4];
+    cp932_to_utf8(initial_path_a, initial_path_utf8, sizeof(initial_path_utf8));
     
-    // グローバルのカレントパスを初期化（検索で使用）
-    strncpy(currentPath, initial_path, MAX_PATH - 1);
+    strncpy(currentPath, initial_path_utf8, MAX_PATH - 1);
     if (currentPath[strlen(currentPath)-1] != '\\') {
         strncat(currentPath, "\\", MAX_PATH - strlen(currentPath) - 1);
     }
     
-    send_json("READY", initial_path);
-    handle_list(initial_path);
+    send_json_utf8("READY", initial_path_utf8);
+    handle_list(initial_path_utf8);
 
     while (fgets(line, sizeof(line), stdin)) {
-        char cp932_line[4096];
-        utf8_to_cp932(line, cp932_line, sizeof(cp932_line));
-        cp932_line[strcspn(cp932_line, "\r\n")] = 0;
-
-        if (strncmp(cp932_line, "LIST|", 5) == 0) {
-            handle_list(cp932_line + 5);
-        } else if (strncmp(cp932_line, "TREE_LIST|", 10) == 0) {
-            handle_tree_list(cp932_line + 10);
-        } else if (strncmp(cp932_line, "SEARCH|", 7) == 0) {
-            // SEARCH|keyword → 現在パスからBFS検索
-            if (currentPath[0] != '\0') {
-                handle_search(currentPath, cp932_line + 7);
-            }
-        } else if (strncmp(cp932_line, "EXEC|", 5) == 0) {
-            // 1. ユーザーのコマンドを送信
-            cmd_proc_send(cp932_line + 5);
-            // 2. 同期用の隠し命令を送信
-            cmd_proc_send("@echo __CWD__:%cd%");
-        } else if (strncmp(cp932_line, "CD|", 3) == 0) {
-            cmd_proc_cd(cp932_line + 3);
-            handle_list(cp932_line + 3);
-        } else if (strncmp(cp932_line, "OPEN|", 5) == 0) {
-            ShellExecuteA(NULL, "open", cp932_line + 5, NULL, NULL, SW_SHOWNORMAL);
-        } else if (strcmp(cp932_line, "QUIT") == 0) {
-            break;
+        line[strcspn(line, "\r\n")] = 0;
+        if (strncmp(line, "LIST|", 5) == 0) handle_list(line + 5);
+        else if (strncmp(line, "TREE_LIST|", 10) == 0) handle_tree_list(line + 10);
+        else if (strncmp(line, "SEARCH|", 7) == 0) handle_search(currentPath, line + 7);
+        else if (strncmp(line, "MKDIR|", 6) == 0) handle_mkdir(line + 6);
+        else if (strncmp(line, "NEW_FILE|", 9) == 0) handle_new_file(line + 9);
+        else if (strncmp(line, "RENAME|", 7) == 0) {
+            char *old_p = line + 7;
+            char *new_p = strchr(old_p, '|');
+            if (new_p) { *new_p = '\0'; handle_rename(old_p, new_p + 1); }
         }
+        else if (strncmp(line, "EXEC|", 5) == 0) {
+            char cmd_cp932[4096];
+            utf8_to_cp932(line + 5, cmd_cp932, sizeof(cmd_cp932));
+            cmd_proc_send(cmd_cp932);
+            cmd_proc_send("@echo __CWD__:%cd%");
+        }
+        else if (strncmp(line, "CD|", 3) == 0) {
+            char path_cp932[MAX_PATH];
+            utf8_to_cp932(line + 3, path_cp932, sizeof(path_cp932));
+            cmd_proc_cd(path_cp932);
+            handle_list(line + 3);
+        }
+        else if (strncmp(line, "OPEN|", 5) == 0) {
+            wchar_t wpath[MAX_PATH];
+            MultiByteToWideChar(CP_UTF8, 0, line + 5, -1, wpath, MAX_PATH);
+            ShellExecuteW(NULL, L"open", wpath, NULL, NULL, SW_SHOWNORMAL);
+        }
+        else if (strcmp(line, "QUIT") == 0) break;
     }
 
     cmd_proc_stop();

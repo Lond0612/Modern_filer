@@ -32,7 +32,7 @@ static int file_entry_compare(const void *a, const void *b)
     switch (s_ctx.key)
     {
     case SORT_NAME:
-        result = _stricmp(ea->name, eb->name);
+        result = _wcsicmp(ea->name, eb->name);
         break;
     case SORT_CREATED_AT:
         result = compare_filetime(&ea->created_at, &eb->created_at);
@@ -41,9 +41,9 @@ static int file_entry_compare(const void *a, const void *b)
         result = compare_filetime(&ea->updated_at, &eb->updated_at);
         break;
     case SORT_EXTENSION:
-        result = _stricmp(ea->extension, eb->extension);
+        result = _wcsicmp(ea->extension, eb->extension);
         if (result == 0)
-            result = _stricmp(ea->name, eb->name);
+            result = _wcsicmp(ea->name, eb->name);
         break;
     case SORT_SIZE:
         if (ea->size != eb->size)

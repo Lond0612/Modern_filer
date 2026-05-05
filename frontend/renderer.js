@@ -2,6 +2,8 @@
 // 状態変数
 // ---------------------------------------------------------------------------
 let currentPath = '';
+let pendingRename = null; // 作成直後のリネーム待ちファイル名
+
 const addressInput = document.getElementById('address-input');
 const fileListBody = document.getElementById('file-list-body');
 const terminalOutput = document.getElementById('terminal-output');
@@ -23,6 +25,13 @@ const btnPaste   = document.getElementById('btn-paste');
 const btnDelete  = document.getElementById('btn-delete');
 const newMenu    = document.getElementById('new-menu');
 
+// ---------------------------------------------------------------------------
+// 初期化
+// ---------------------------------------------------------------------------
+window.onload = () => {
+    // 起動時はバックエンドのREADYを待つ
+};
+
 // アクションボタンのイベントリスナー
 btnNew.onclick = (e) => {
     e.stopPropagation();
@@ -33,8 +42,22 @@ btnNew.onclick = (e) => {
 document.querySelectorAll('.menu-item').forEach(item => {
     item.onclick = (e) => {
         const type = item.dataset.type;
-        const label = item.querySelector('span').textContent;
-        appendTerminal(`Action: Create ${label} selected (${type})`, 'command-echo');
+        let defaultName = '';
+        let command = '';
+
+        if (type === 'directory') {
+            defaultName = '新しいフォルダ';
+            command = 'MKDIR';
+        } else if (type === 'text') {
+            defaultName = '新規メモ.txt';
+            command = 'NEW_FILE';
+        } else if (type === 'other') {
+            defaultName = '新規ファイル';
+            command = 'NEW_FILE';
+        }
+
+        pendingRename = defaultName;
+        window.api.sendCommand(`${command}|${currentPath}${defaultName}`);
         newMenu.classList.remove('visible');
     };
 });
@@ -62,27 +85,22 @@ btnDelete.onclick = () => {
     appendTerminal('Action: Delete (Not implemented)', 'command-echo');
 };
 
-// ボタンの有効/無効を更新
+// ---------------------------------------------------------------------------
+// ナビゲーション
+// ---------------------------------------------------------------------------
 function updateNavButtons() {
     btnBack.disabled    = historyBack.length === 0;
     btnForward.disabled = historyForward.length === 0;
     btnUp.disabled      = !currentPath || currentPath.split('\\').filter(Boolean).length <= 1;
 }
 
-// 初期化
-window.onload = () => {
-    // 起動時はバックエンドのREADYを待つ
-};
-
-// 戻るボタン
 btnBack.onclick = () => {
     if (historyBack.length === 0) return;
     historyForward.push(currentPath);
     const prev = historyBack.pop();
-    navigateTo(prev, false); // 履歴を汚さずに移動
+    navigateTo(prev, false);
 };
 
-// 進むボタン
 btnForward.onclick = () => {
     if (historyForward.length === 0) return;
     historyBack.push(currentPath);
@@ -90,10 +108,8 @@ btnForward.onclick = () => {
     navigateTo(next, false);
 };
 
-// 上へボタン
 btnUp.onclick = () => {
     if (!currentPath) return;
-    // 末尾の \ を除いた状態で親を取得
     const trimmed = currentPath.endsWith('\\') ? currentPath.slice(0, -1) : currentPath;
     const parent = trimmed.substring(0, trimmed.lastIndexOf('\\') + 1);
     if (parent && parent !== currentPath) {
@@ -101,22 +117,49 @@ btnUp.onclick = () => {
     }
 };
 
-// 更新ボタン
 btnRefresh.onclick = () => {
     if (currentPath) {
         window.api.sendCommand(`LIST|${currentPath}`);
     }
 };
 
-// バックエンドからのレスポンス処理
+function loadPath(path, isUserClick = false) {
+    if (!path.endsWith('\\')) path += '\\';
+    if (isUserClick && currentPath && currentPath !== path) {
+        historyBack.push(currentPath);
+        historyForward = [];
+    }
+    currentPath = path;
+    addressInput.value = currentPath;
+    updateNavButtons();
+    updateTreeActiveState();
+    if (isUserClick) {
+        window.api.sendCommand(`CD|${currentPath}`);
+    } else {
+        window.api.sendCommand(`LIST|${currentPath}`);
+    }
+}
+
+function navigateTo(path) {
+    if (!path.endsWith('\\')) path += '\\';
+    currentPath = path;
+    addressInput.value = currentPath;
+    updateNavButtons();
+    updateTreeActiveState();
+    window.api.sendCommand(`CD|${currentPath}`);
+}
+
+// ---------------------------------------------------------------------------
+// バックエンド通信
+// ---------------------------------------------------------------------------
 window.api.onBackendResponse((obj) => {
     switch (obj.type) {
         case 'READY':
             currentPath = obj.content;
             if (!currentPath.endsWith('\\')) currentPath += '\\';
             addressInput.value = currentPath;
-            updateNavButtons(); // パスが確定してから更新
-            initTree(currentPath); // ツリーの初期化
+            updateNavButtons();
+            initTree(currentPath);
             updateTreeActiveState();
             break;
 
@@ -128,12 +171,21 @@ window.api.onBackendResponse((obj) => {
             addFileRow(obj.content);
             break;
 
+        case 'CREATED':
+            window.api.sendCommand(`LIST|${currentPath}`);
+            break;
+
+        case 'RENAMED':
+            appendTerminal(`Renamed to: ${obj.content}`, 'command-echo');
+            window.api.sendCommand(`LIST|${currentPath}`);
+            break;
+
         case 'SYNC_PATH':
             let newPath = obj.content;
             if (!newPath.endsWith('\\')) newPath += '\\';
             currentPath = newPath;
             addressInput.value = currentPath;
-            updateTreeActiveState(); // 同期
+            updateTreeActiveState();
             break;
 
         case 'CMD_OUT':
@@ -142,6 +194,7 @@ window.api.onBackendResponse((obj) => {
 
         case 'ERROR':
             appendTerminal(`ERROR: ${obj.content}`, 'error');
+            pendingRename = null;
             break;
 
         case 'START_SEARCH':
@@ -160,7 +213,6 @@ window.api.onBackendResponse((obj) => {
             break;
 
         case 'START_TREE':
-            // ツリーデータの受信開始（特定のフォルダノードに対して）
             const node = findTreeNode(obj.content);
             if (node) {
                 const childrenContainer = node.querySelector('.tree-children');
@@ -169,15 +221,110 @@ window.api.onBackendResponse((obj) => {
             break;
 
         case 'TREE_DATA':
-            // フォルダ名が届くのでノードを追加
             addTreeItem(obj.content);
             break;
 
         case 'END_TREE':
-            // 受信完了
             break;
     }
 });
+
+// ---------------------------------------------------------------------------
+// ファイルリスト表示
+// ---------------------------------------------------------------------------
+function addFileRow(data) {
+    const parts = data.split('|');
+    if (parts.length < 3) return;
+
+    const type = parts[0];
+    const name = parts[1];
+    const size = parts[2];
+
+    const tr = document.createElement('tr');
+    tr.dataset.name = name;
+    tr.innerHTML = `
+        <td class="file-name">${type === 'D' ? '📁' : '📄'} ${name}</td>
+        <td>${type === 'D' ? 'Folder' : 'File'}</td>
+        <td>${type === 'D' ? '' : formatSize(size)}</td>
+    `;
+
+    tr.onclick = () => {
+        document.querySelectorAll('#file-list-body tr').forEach(r => r.classList.remove('selected'));
+        tr.classList.add('selected');
+    };
+
+    tr.ondblclick = () => {
+        if (type === 'D') {
+            loadPath(currentPath + name + '\\', true);
+        } else {
+            window.api.sendCommand(`OPEN|${currentPath}${name}`);
+        }
+    };
+
+    fileListBody.appendChild(tr);
+
+    if (pendingRename && name === pendingRename) {
+        pendingRename = null;
+        setTimeout(() => startRename(tr), 100);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// リネーム機能
+// ---------------------------------------------------------------------------
+function startRename(tr) {
+    const nameCell = tr.querySelector('.file-name');
+    const typeIcon = nameCell.textContent.startsWith('📁') ? '📁' : '📄';
+    const oldName = nameCell.textContent.substring(typeIcon.length + 1);
+    const isDir = typeIcon === '📁';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'rename-input';
+    input.value = oldName;
+
+    nameCell.innerHTML = `${typeIcon} `;
+    nameCell.appendChild(input);
+    input.focus();
+
+    let dotIndex = oldName.lastIndexOf('.');
+    if (isDir || dotIndex <= 0) {
+        input.select();
+    } else {
+        input.setSelectionRange(0, dotIndex);
+    }
+
+    const finishRename = (cancel = false) => {
+        let newName = input.value.trim();
+        if (cancel || !newName || newName === oldName) {
+            nameCell.textContent = `${typeIcon} ${oldName}`;
+            return;
+        }
+
+        if (!isDir && !newName.includes('.') && oldName === '新規ファイル') {
+            newName += '.txt';
+        }
+
+        window.api.sendCommand(`RENAME|${currentPath}${oldName}|${currentPath}${newName}`);
+        nameCell.textContent = `${typeIcon} ${newName}`;
+    };
+
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            input.blur();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            finishRename(true);
+        }
+    };
+
+    input.onblur = () => {
+        if (input.parentElement) {
+            finishRename();
+        }
+    };
+}
 
 // ---------------------------------------------------------------------------
 // 検索バー
@@ -193,7 +340,6 @@ searchInput.addEventListener('input', () => {
         searchResults.style.display = 'none';
         return;
     }
-    // 500ms 入力が止まったら検索開始
     searchTimer = setTimeout(() => {
         window.api.sendCommand(`SEARCH|${kw}`);
     }, 500);
@@ -211,7 +357,6 @@ searchInput.addEventListener('keydown', (e) => {
     }
 });
 
-// 検索バー以外をクリックしたら閉じる
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.search-container')) {
         searchResults.style.display = 'none';
@@ -219,15 +364,14 @@ document.addEventListener('click', (e) => {
 });
 
 function addSearchResult(data) {
-    // 「検索中...」を消す
     const placeholder = searchResults.querySelector('.search-searching');
     if (placeholder) placeholder.remove();
 
     const parts = data.split('|');
     if (parts.length < 3) return;
-    const type    = parts[0]; // D or F
+    const type    = parts[0];
     const name    = parts[1];
-    const dirPath = parts.slice(2).join('|'); // パスに | が入る場合を考慮
+    const dirPath = parts.slice(2).join('|');
 
     const item = document.createElement('div');
     item.className = 'search-result-item';
@@ -252,70 +396,9 @@ function addSearchResult(data) {
     searchResults.appendChild(item);
 }
 
-// ユーザー操作による移動（履歴を積む）
-function loadPath(path, isUserClick = false) {
-    if (!path.endsWith('\\')) path += '\\';
-    
-    if (isUserClick && currentPath && currentPath !== path) {
-        historyBack.push(currentPath);
-        historyForward = []; // 新しい移動で「進む」履歴はクリア
-    }
-
-    currentPath = path;
-    addressInput.value = currentPath;
-    updateNavButtons();
-    updateTreeActiveState();
-
-    if (isUserClick) {
-        window.api.sendCommand(`CD|${currentPath}`);
-    } else {
-        window.api.sendCommand(`LIST|${currentPath}`);
-    }
-}
-
-// 戻る・進む専用の移動（履歴を積まない）
-function navigateTo(path, addToHistory = true) {
-    if (!path.endsWith('\\')) path += '\\';
-    currentPath = path;
-    addressInput.value = currentPath;
-    updateNavButtons();
-    updateTreeActiveState();
-    window.api.sendCommand(`CD|${currentPath}`);
-}
-
-function addFileRow(data) {
-    const parts = data.split('|');
-    if (parts.length < 3) return;
-
-    const type = parts[0];
-    const name = parts[1];
-    const size = parts[2];
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td class="file-name">${type === 'D' ? '📁' : '📄'} ${name}</td>
-        <td>${type === 'D' ? 'Folder' : 'File'}</td>
-        <td>${type === 'D' ? '' : formatSize(size)}</td>
-    `;
-
-    // シングルクリック：選択
-    tr.onclick = () => {
-        document.querySelectorAll('#file-list-body tr').forEach(r => r.classList.remove('selected'));
-        tr.classList.add('selected');
-    };
-
-    // ダブルクリック：移動または開く
-    tr.ondblclick = () => {
-        if (type === 'D') {
-            loadPath(currentPath + name + '\\', true);
-        } else {
-            window.api.sendCommand(`OPEN|${currentPath}${name}`);
-        }
-    };
-
-    fileListBody.appendChild(tr);
-}
-
+// ---------------------------------------------------------------------------
+// ユーティリティ
+// ---------------------------------------------------------------------------
 function appendTerminal(text, className = '') {
     const div = document.createElement('div');
     if (className) div.className = className;
@@ -332,7 +415,6 @@ function formatSize(bytes) {
     return (b / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-// ターミナル入力
 terminalInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         const cmd = terminalInput.value.trim();
@@ -344,7 +426,6 @@ terminalInput.addEventListener('keydown', (e) => {
     }
 });
 
-// アドレスバー入力
 addressInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         loadPath(addressInput.value.trim(), true);
@@ -355,39 +436,30 @@ addressInput.addEventListener('keydown', (e) => {
 // ツリービュー
 // ---------------------------------------------------------------------------
 const treeView = document.getElementById('tree-view');
-let treeLoadingPath = ''; // 現在ロード中のツリーの親パス
+let treeLoadingPath = '';
 
 function initTree(rootPath) {
     treeView.innerHTML = '';
-    // ルート（ドライブ）を追加
-    const drive = rootPath.substring(0, 3); // "C:\"
+    const drive = rootPath.substring(0, 3);
     const rootNode = createTreeNode(drive, treeView, true);
-    
-    // 自動で1段目を開く
     const expander = rootNode.querySelector('.tree-expander');
-    if (expander) {
-        expander.click();
-    }
+    if (expander) expander.click();
 }
 
 function createTreeNode(fullPath, container, isRoot = false) {
     const name = isRoot ? fullPath : fullPath.split('\\').filter(Boolean).pop();
-    
     const node = document.createElement('div');
     node.className = 'tree-node';
     node.dataset.path = fullPath.endsWith('\\') ? fullPath : fullPath + '\\';
 
     const item = document.createElement('div');
     item.className = 'tree-item';
-    
     const expander = document.createElement('span');
     expander.className = 'tree-expander';
     expander.innerHTML = '▶';
-    
     const icon = document.createElement('span');
     icon.className = 'tree-icon';
     icon.innerHTML = '📁';
-
     const label = document.createElement('span');
     label.className = 'tree-label';
     label.textContent = name;
@@ -401,7 +473,6 @@ function createTreeNode(fullPath, container, isRoot = false) {
     children.className = 'tree-children';
     node.appendChild(children);
 
-    // ▶ アイコン：展開/折りたたみのみ
     expander.onclick = (e) => {
         e.stopPropagation();
         const isExpanded = children.classList.contains('visible');
@@ -418,15 +489,12 @@ function createTreeNode(fullPath, container, isRoot = false) {
         }
     };
 
-    // 項目シングルクリック：選択のみ
     item.onclick = (e) => {
         e.stopPropagation();
-        // ここでは移動せず、ハイライトだけ手動で切り替える
         document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
         item.classList.add('active');
     };
 
-    // 項目ダブルクリック：ディレクトリ移動
     item.ondblclick = (e) => {
         e.stopPropagation();
         loadPath(node.dataset.path, true);
@@ -436,19 +504,47 @@ function createTreeNode(fullPath, container, isRoot = false) {
     return node;
 }
 
+function addTreeItem(folderName) {
+    const parentNode = findTreeNode(treeLoadingPath);
+    if (parentNode) {
+        const childrenContainer = parentNode.querySelector('.tree-children');
+        createTreeNode(treeLoadingPath + folderName, childrenContainer);
+    }
+}
+
+function findTreeNode(path) {
+    const p = path.endsWith('\\') ? path : path + '\\';
+    return treeView.querySelector(`.tree-node[data-path="${p.replace(/\\/g, '\\\\')}"]`);
+}
+
+function updateTreeActiveState() {
+    document.querySelectorAll('.tree-item').forEach(item => {
+        const node = item.closest('.tree-node');
+        if (node.dataset.path === currentPath) {
+            item.classList.add('active');
+            let p = node.parentElement.closest('.tree-node');
+            while (p) {
+                p.querySelector('.tree-children').classList.add('visible');
+                p.querySelector('.tree-expander').classList.add('expanded');
+                p = p.parentElement.closest('.tree-node');
+            }
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
 // ---------------------------------------------------------------------------
 // リサイズ機能
 // ---------------------------------------------------------------------------
 function initResizers() {
     const sidebar = document.querySelector('.sidebar');
     const terminalPane = document.querySelector('.terminal-pane');
-    
     const resizerSidebar = document.getElementById('resizer-sidebar');
     const resizerTerminal = document.getElementById('resizer-terminal');
 
     function setupResizer(resizer, targetElem, axis) {
         let isResizing = false;
-
         resizer.addEventListener('mousedown', (e) => {
             isResizing = true;
             document.body.style.cursor = axis === 'h' ? 'col-resize' : 'row-resize';
@@ -457,7 +553,6 @@ function initResizers() {
 
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
-
             if (axis === 'h') {
                 const targetRect = targetElem.getBoundingClientRect();
                 const newWidth = e.clientX - targetRect.left;
@@ -467,7 +562,6 @@ function initResizers() {
                 }
             } else {
                 const containerRect = document.querySelector('.main-layout').getBoundingClientRect();
-                // 下からの距離で高さを計算
                 const newHeight = containerRect.bottom - e.clientY;
                 if (newHeight > 50 && newHeight < (containerRect.height - 100)) {
                     targetElem.style.height = `${newHeight}px`;
@@ -489,36 +583,4 @@ function initResizers() {
     setupResizer(resizerTerminal, terminalPane, 'v');
 }
 
-// 初期化時に実行
 initResizers();
-
-function addTreeItem(folderName) {
-    const parentNode = findTreeNode(treeLoadingPath);
-    if (parentNode) {
-        const childrenContainer = parentNode.querySelector('.tree-children');
-        createTreeNode(treeLoadingPath + folderName, childrenContainer);
-    }
-}
-
-function findTreeNode(path) {
-    const p = path.endsWith('\\') ? path : path + '\\';
-    return treeView.querySelector(`.tree-node[data-path="${p.replace(/\\/g, '\\\\')}"]`);
-}
-
-function updateTreeActiveState() {
-    document.querySelectorAll('.tree-item').forEach(item => {
-        const node = item.closest('.tree-node');
-        if (node.dataset.path === currentPath) {
-            item.classList.add('active');
-            // 親を辿って展開
-            let p = node.parentElement.closest('.tree-node');
-            while (p) {
-                p.querySelector('.tree-children').classList.add('visible');
-                p.querySelector('.tree-expander').classList.add('expanded');
-                p = p.parentElement.closest('.tree-node');
-            }
-        } else {
-            item.classList.remove('active');
-        }
-    });
-}
