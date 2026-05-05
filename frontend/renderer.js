@@ -14,16 +14,16 @@ let historyBack = [];   // 戻るスタック
 let historyForward = []; // 進むスタック
 
 // ナビゲーションボタン
-const btnBack    = document.getElementById('btn-back');
+const btnBack = document.getElementById('btn-back');
 const btnForward = document.getElementById('btn-forward');
-const btnUp      = document.getElementById('btn-up');
+const btnUp = document.getElementById('btn-up');
 const btnRefresh = document.getElementById('btn-refresh');
-const btnNew     = document.getElementById('btn-new');
-const btnCut     = document.getElementById('btn-cut');
-const btnCopy    = document.getElementById('btn-copy');
-const btnPaste   = document.getElementById('btn-paste');
-const btnDelete  = document.getElementById('btn-delete');
-const newMenu    = document.getElementById('new-menu');
+const btnNew = document.getElementById('btn-new');
+const btnCut = document.getElementById('btn-cut');
+const btnCopy = document.getElementById('btn-copy');
+const btnPaste = document.getElementById('btn-paste');
+const btnDelete = document.getElementById('btn-delete');
+const newMenu = document.getElementById('new-menu');
 
 // ---------------------------------------------------------------------------
 // 初期化
@@ -52,7 +52,7 @@ document.querySelectorAll('.menu-item').forEach(item => {
             defaultName = '新規メモ.txt';
             command = 'NEW_FILE';
         } else if (type === 'other') {
-            defaultName = '新規ファイル';
+            defaultName = '新規メモ';
             command = 'NEW_FILE';
         }
 
@@ -89,9 +89,9 @@ btnDelete.onclick = () => {
 // ナビゲーション
 // ---------------------------------------------------------------------------
 function updateNavButtons() {
-    btnBack.disabled    = historyBack.length === 0;
+    btnBack.disabled = historyBack.length === 0;
     btnForward.disabled = historyForward.length === 0;
-    btnUp.disabled      = !currentPath || currentPath.split('\\').filter(Boolean).length <= 1;
+    btnUp.disabled = !currentPath || currentPath.split('\\').filter(Boolean).length <= 1;
 }
 
 btnBack.onclick = () => {
@@ -175,7 +175,7 @@ window.api.onBackendResponse((obj) => {
             // サーバーが生成した実際のパス（重複回避後の名前）を取得
             const createdPath = obj.content;
             const parts = createdPath.split('\\');
-            const actualName = parts[parts.length - 1] || parts[parts.length - 2]; 
+            const actualName = parts[parts.length - 1] || parts[parts.length - 2];
             pendingRename = actualName;
 
             window.api.sendCommand(`LIST|${currentPath}`);
@@ -302,19 +302,21 @@ function startRename(tr) {
 
     const finishRename = (cancel = false) => {
         let newName = input.value.trim();
-        
+
         // キャンセルまたは空入力
         if (cancel || !newName) {
             nameCell.textContent = `${typeIcon} ${oldName}`;
             return;
         }
 
-        // 「その他ファイル」（初期名：新規ファイル）の拡張子補完
-        // 1. 入力名にドットが含まれていない
-        // 2. 作成時のデフォルト名（新規ファイル）からのリネームである
-        if (!isDir && !newName.includes('.') && oldName === '新規ファイル') {
+        // 「その他ファイル」（初期名：新規メモ）の拡張子補完
+        // 入力名にドットが含まれていない場合、.txt を付与する
+        if (!isDir && !newName.includes('.') && oldName.startsWith('新規メモ')) {
             newName += '.txt';
         }
+
+        // リネーム後の名前が既存ファイルと衝突しないかチェック
+        newName = resolveNameConflict(newName, oldName);
 
         // 変更がない場合は何もしない
         if (newName === oldName) {
@@ -343,10 +345,33 @@ function startRename(tr) {
     };
 }
 
+// 現在のファイルリストに同名エントリがあれば、連番を付けてユニークな名前を返す
+// skipName: 現在リネーム対象のファイル（自分自身は除外する）
+function resolveNameConflict(name, skipName) {
+    const existing = new Set();
+    document.querySelectorAll('#file-list-body tr').forEach(row => {
+        const n = row.dataset.name;
+        if (n && n !== skipName) existing.add(n);
+    });
+
+    if (!existing.has(name)) return name;
+
+    // 拡張子とベース名を分離して連番を付ける
+    const dotIndex = name.lastIndexOf('.');
+    const base = dotIndex > 0 ? name.slice(0, dotIndex) : name;
+    const ext  = dotIndex > 0 ? name.slice(dotIndex)   : '';
+
+    for (let i = 2; i < 1000; i++) {
+        const candidate = `${base} (${i})${ext}`;
+        if (!existing.has(candidate)) return candidate;
+    }
+    return name;
+}
+
 // ---------------------------------------------------------------------------
 // 検索バー
 // ---------------------------------------------------------------------------
-const searchInput   = document.getElementById('search-input');
+const searchInput = document.getElementById('search-input');
 const searchResults = document.getElementById('search-results');
 let searchTimer = null;
 
@@ -386,8 +411,8 @@ function addSearchResult(data) {
 
     const parts = data.split('|');
     if (parts.length < 3) return;
-    const type    = parts[0];
-    const name    = parts[1];
+    const type = parts[0];
+    const name = parts[1];
     const dirPath = parts.slice(2).join('|');
 
     const item = document.createElement('div');
