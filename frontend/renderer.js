@@ -172,6 +172,12 @@ window.api.onBackendResponse((obj) => {
             break;
 
         case 'CREATED':
+            // サーバーが生成した実際のパス（重複回避後の名前）を取得
+            const createdPath = obj.content;
+            const parts = createdPath.split('\\');
+            const actualName = parts[parts.length - 1] || parts[parts.length - 2]; 
+            pendingRename = actualName;
+
             window.api.sendCommand(`LIST|${currentPath}`);
             break;
 
@@ -296,13 +302,24 @@ function startRename(tr) {
 
     const finishRename = (cancel = false) => {
         let newName = input.value.trim();
-        if (cancel || !newName || newName === oldName) {
+        
+        // キャンセルまたは空入力
+        if (cancel || !newName) {
             nameCell.textContent = `${typeIcon} ${oldName}`;
             return;
         }
 
+        // 「その他ファイル」（初期名：新規ファイル）の拡張子補完
+        // 1. 入力名にドットが含まれていない
+        // 2. 作成時のデフォルト名（新規ファイル）からのリネームである
         if (!isDir && !newName.includes('.') && oldName === '新規ファイル') {
             newName += '.txt';
+        }
+
+        // 変更がない場合は何もしない
+        if (newName === oldName) {
+            nameCell.textContent = `${typeIcon} ${oldName}`;
+            return;
         }
 
         window.api.sendCommand(`RENAME|${currentPath}${oldName}|${currentPath}${newName}`);

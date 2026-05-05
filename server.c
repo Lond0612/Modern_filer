@@ -251,13 +251,41 @@ void on_cmd_output(const char* text_cp932) {
 }
 
 // ---------------------------------------------------------------------------
+// ユニークなファイル名生成
+// ---------------------------------------------------------------------------
+void get_unique_path_w(const wchar_t* path, wchar_t* out) {
+    if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES) {
+        wcscpy(out, path);
+        return;
+    }
+
+    wchar_t drive[_MAX_DRIVE], dir[_MAX_DIR], fname[_MAX_FNAME], ext[_MAX_EXT];
+    _wsplitpath_s(path, drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME, ext, _MAX_EXT);
+
+    for (int i = 2; i < 1000; i++) {
+        wchar_t new_fname[_MAX_FNAME + 16];
+        _snwprintf(new_fname, _MAX_FNAME + 15, L"%s (%d)", fname, i);
+        _wmakepath_s(out, MAX_PATH, drive, dir, new_fname, ext);
+        if (GetFileAttributesW(out) == INVALID_FILE_ATTRIBUTES) {
+            return;
+        }
+    }
+    wcscpy(out, path); // 万が一失敗したら元のパス（エラーになるはず）
+}
+
+// ---------------------------------------------------------------------------
 // CRUD
 // ---------------------------------------------------------------------------
 void handle_mkdir(const char* path_utf8) {
-    wchar_t wpath[MAX_PATH];
-    MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
-    if (CreateDirectoryW(wpath, NULL)) {
-        send_json_utf8("CREATED", path_utf8);
+    wchar_t wpath_requested[MAX_PATH], wpath_final[MAX_PATH];
+    MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath_requested, MAX_PATH);
+    
+    get_unique_path_w(wpath_requested, wpath_final);
+
+    if (CreateDirectoryW(wpath_final, NULL)) {
+        char final_utf8[MAX_PATH * 4];
+        WideCharToMultiByte(CP_UTF8, 0, wpath_final, -1, final_utf8, sizeof(final_utf8), NULL, NULL);
+        send_json_utf8("CREATED", final_utf8);
     } else {
         char msg[256];
         _snprintf(msg, sizeof(msg), "Failed to create directory: %lu", GetLastError());
@@ -266,12 +294,17 @@ void handle_mkdir(const char* path_utf8) {
 }
 
 void handle_new_file(const char* path_utf8) {
-    wchar_t wpath[MAX_PATH];
-    MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
-    HANDLE hFile = CreateFileW(wpath, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+    wchar_t wpath_requested[MAX_PATH], wpath_final[MAX_PATH];
+    MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath_requested, MAX_PATH);
+
+    get_unique_path_w(wpath_requested, wpath_final);
+
+    HANDLE hFile = CreateFileW(wpath_final, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile != INVALID_HANDLE_VALUE) {
         CloseHandle(hFile);
-        send_json_utf8("CREATED", path_utf8);
+        char final_utf8[MAX_PATH * 4];
+        WideCharToMultiByte(CP_UTF8, 0, wpath_final, -1, final_utf8, sizeof(final_utf8), NULL, NULL);
+        send_json_utf8("CREATED", final_utf8);
     } else {
         char msg[256];
         _snprintf(msg, sizeof(msg), "Failed to create file: %lu", GetLastError());
