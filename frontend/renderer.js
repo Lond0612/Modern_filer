@@ -28,6 +28,7 @@ const btnCut = document.getElementById('btn-cut');
 const btnCopy = document.getElementById('btn-copy');
 const btnPaste = document.getElementById('btn-paste');
 const btnDelete = document.getElementById('btn-delete');
+const btnRename = document.getElementById('btn-rename');
 const newMenu = document.getElementById('new-menu');
 
 // ---------------------------------------------------------------------------
@@ -67,10 +68,14 @@ document.querySelectorAll('.menu-item').forEach(item => {
     };
 });
 
-// メニュー以外をクリックしたら閉じる
+// メニュー以外をクリックしたら閉じる、ファイルリスト外をクリックしたら選択解除
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.new-btn-wrapper')) {
         newMenu.classList.remove('visible');
+    }
+    // ファイルリスト行の外をクリックしたら選択解除
+    if (!e.target.closest('#file-list-body tr')) {
+        document.querySelectorAll('#file-list-body tr.selected').forEach(r => r.classList.remove('selected'));
     }
 });
 
@@ -120,6 +125,13 @@ btnDelete.onclick = () => {
     selected.forEach(item => {
         window.api.sendCommand(`DELETE|${item.srcPath}`);
     });
+};
+
+btnRename.onclick = () => {
+    // 選択中の先頭が1つの行に対してリネームを開始
+    const selectedRows = fileListBody.querySelectorAll('tr.selected');
+    if (selectedRows.length === 0) return;
+    startRename(selectedRows[0]);
 };
 
 // ---------------------------------------------------------------------------
