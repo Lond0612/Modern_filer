@@ -22,6 +22,120 @@ body {
     gap: 10px;
 }
 
+.actions-bar {
+    padding: 6px 10px;
+    background: #252525;
+    border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.action-btn {
+    background: transparent;
+    border: none;
+    color: #e0e0e0;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.action-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+#btn-new {
+    background: #007acc;
+    color: white;
+    font-weight: 500;
+    margin-right: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#btn-new:hover {
+    background: #008be5;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+#btn-new svg {
+    stroke-width: 3;
+}
+
+.separator {
+    width: 1px;
+    height: 20px;
+    background: #444;
+    margin: 0 8px;
+}
+
+.new-btn-wrapper {
+    position: relative;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: #2d2d2d;
+    border: 1px solid #454545;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    min-width: 200px;
+    z-index: 1000;
+    display: none;
+    padding: 5px 0;
+    overflow: hidden;
+}
+
+.dropdown-menu.visible {
+    display: block;
+    animation: dropdownFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dropdownFadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #cccccc;
+    transition: all 0.15s ease;
+}
+
+.menu-item:hover {
+    background: #3c3c3c;
+    color: #ffffff;
+}
+
+.menu-item svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+}
+
+.menu-item:hover svg {
+    color: #007acc;
+}
+
 #address-input {
     flex: 1;
     background: #3c3c3c;
@@ -317,7 +431,7 @@ body {
 }
 
 .terminal-pane {
-    height: 165px;
+    height: 155px;
     display: flex;
     flex-direction: column;
     background: #0c0c0c;

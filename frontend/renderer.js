@@ -16,6 +16,51 @@ const btnBack    = document.getElementById('btn-back');
 const btnForward = document.getElementById('btn-forward');
 const btnUp      = document.getElementById('btn-up');
 const btnRefresh = document.getElementById('btn-refresh');
+const btnNew     = document.getElementById('btn-new');
+const btnCut     = document.getElementById('btn-cut');
+const btnCopy    = document.getElementById('btn-copy');
+const btnPaste   = document.getElementById('btn-paste');
+const btnDelete  = document.getElementById('btn-delete');
+const newMenu    = document.getElementById('new-menu');
+
+// アクションボタンのイベントリスナー
+btnNew.onclick = (e) => {
+    e.stopPropagation();
+    newMenu.classList.toggle('visible');
+};
+
+// メニュー項目のクリックイベント
+document.querySelectorAll('.menu-item').forEach(item => {
+    item.onclick = (e) => {
+        const type = item.dataset.type;
+        const label = item.querySelector('span').textContent;
+        appendTerminal(`Action: Create ${label} selected (${type})`, 'command-echo');
+        newMenu.classList.remove('visible');
+    };
+});
+
+// メニュー以外をクリックしたら閉じる
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.new-btn-wrapper')) {
+        newMenu.classList.remove('visible');
+    }
+});
+
+btnCut.onclick = () => {
+    appendTerminal('Action: Cut (Not implemented)', 'command-echo');
+};
+
+btnCopy.onclick = () => {
+    appendTerminal('Action: Copy (Not implemented)', 'command-echo');
+};
+
+btnPaste.onclick = () => {
+    appendTerminal('Action: Paste (Not implemented)', 'command-echo');
+};
+
+btnDelete.onclick = () => {
+    appendTerminal('Action: Delete (Not implemented)', 'command-echo');
+};
 
 // ボタンの有効/無効を更新
 function updateNavButtons() {
