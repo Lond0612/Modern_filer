@@ -376,6 +376,23 @@ function startRename(tr) {
     nameCell.appendChild(input);
     input.focus();
 
+    // 入力内容に合わせて入力欄の幅を動的に調整
+    const adjustInputWidth = () => {
+        const span = document.createElement('span');
+        span.style.visibility = 'hidden';
+        span.style.position = 'absolute';
+        span.style.whiteSpace = 'pre';
+        span.style.font = window.getComputedStyle(input).font;
+        span.textContent = input.value || ' '; // 空の場合は1文字分の幅を確保
+        document.body.appendChild(span);
+        // padding(左右合わせて10px)やカーソル幅を考慮して15pxほど余裕を持たせる
+        input.style.width = (span.offsetWidth + 15) + 'px';
+        document.body.removeChild(span);
+    };
+
+    adjustInputWidth();
+    input.addEventListener('input', adjustInputWidth);
+
     let dotIndex = oldName.lastIndexOf('.');
     if (isDir || dotIndex <= 0) {
         input.select();

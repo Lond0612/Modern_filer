@@ -511,9 +511,14 @@ body {
     color: #ff5555;
 }
 
+/* ファイル名セル（アイコンとテキスト/入力が改行されないようにする） */
+.file-name {
+    white-space: nowrap;
+}
+
 /* インラインリネーム */
 .rename-input {
-    width: calc(100% - 20px);
+    min-width: 20px;
     background: #3c3c3c;
     border: 1px solid #007acc;
     color: #fff;
