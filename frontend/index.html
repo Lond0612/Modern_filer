@@ -1,48 +1,56 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
-    <title>JSON Filer</title>
+    <title>fcmd</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="app-container">
         <div class="toolbar">
             <div class="nav-buttons">
                 <button id="btn-back" class="nav-btn" title="戻る">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6"/>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6" />
                     </svg>
                 </button>
                 <button id="btn-forward" class="nav-btn" title="進む">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 18 15 12 9 6"/>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6" />
                     </svg>
                 </button>
                 <button id="btn-up" class="nav-btn" title="上のディレクトリへ">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="18 15 12 9 6 15"/>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="18 15 12 9 6 15" />
                     </svg>
                 </button>
                 <button id="btn-refresh" class="nav-btn" title="更新">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="23 4 23 10 17 10"/>
-                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10" />
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                     </svg>
                 </button>
             </div>
             <input type="text" id="address-input" placeholder="Path...">
             <div class="search-container">
                 <div class="search-box">
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
                     </svg>
                     <input type="text" id="search-input" placeholder="検索...">
                 </div>
                 <div id="search-results" class="search-results" style="display:none;"></div>
             </div>
         </div>
-        
+
         <div class="main-layout">
             <div class="top-section">
                 <div class="sidebar">
@@ -51,7 +59,7 @@
                         <!-- Tree items will be generated here -->
                     </div>
                 </div>
-                
+
                 <div class="resizer-h" id="resizer-sidebar"></div>
 
                 <div class="file-pane">
@@ -70,7 +78,7 @@
             </div>
 
             <div class="resizer-v" id="resizer-terminal"></div>
-            
+
             <div class="terminal-pane">
                 <div id="terminal-output"></div>
                 <div class="input-area">
@@ -82,4 +90,5 @@
     </div>
     <script src="renderer.js"></script>
 </body>
+
 </html>
