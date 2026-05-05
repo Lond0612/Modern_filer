@@ -517,3 +517,13 @@ body {
     font-size: inherit;
     box-shadow: 0 0 4px rgba(0, 122, 204, 0.5);
 }
+
+/* カット中のアイテム */
+#file-list-body tr.cut-item {
+    opacity: 0.4;
+}
+
+/* 複数選択時も選択スタイルを適用 */
+#file-list-body tr.selected td {
+    background: rgba(0, 122, 204, 0.25);
+}

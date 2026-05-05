@@ -4,6 +4,11 @@
 let currentPath = '';
 let pendingRename = null; // 作成直後のリネーム待ちファイル名
 
+// クリップボード状態
+let clipboard = { mode: null, items: [] };
+// mode: 'copy' | 'cut'
+// items: [{ name: string, srcPath: string }]
+
 const addressInput = document.getElementById('address-input');
 const fileListBody = document.getElementById('file-list-body');
 const terminalOutput = document.getElementById('terminal-output');
@@ -70,19 +75,51 @@ document.addEventListener('click', (e) => {
 });
 
 btnCut.onclick = () => {
-    appendTerminal('Action: Cut (Not implemented)', 'command-echo');
+    const selected = getSelectedItems();
+    if (selected.length === 0) return;
+    // 前のカット状態をクリア
+    document.querySelectorAll('#file-list-body tr.cut-item').forEach(r => r.classList.remove('cut-item'));
+    clipboard = { mode: 'cut', items: selected };
+    // 選択行を半透明に
+    selected.forEach(item => {
+        const row = fileListBody.querySelector(`tr[data-name="${CSS.escape(item.name)}"]`);
+        if (row) row.classList.add('cut-item');
+    });
+    appendTerminal(`Cut: ${selected.map(i => i.name).join(', ')}`, 'command-echo');
+    updateClipboardButtons();
 };
 
 btnCopy.onclick = () => {
-    appendTerminal('Action: Copy (Not implemented)', 'command-echo');
+    const selected = getSelectedItems();
+    if (selected.length === 0) return;
+    document.querySelectorAll('#file-list-body tr.cut-item').forEach(r => r.classList.remove('cut-item'));
+    clipboard = { mode: 'copy', items: selected };
+    appendTerminal(`Copy: ${selected.map(i => i.name).join(', ')}`, 'command-echo');
+    updateClipboardButtons();
 };
 
 btnPaste.onclick = () => {
-    appendTerminal('Action: Paste (Not implemented)', 'command-echo');
+    if (!clipboard.mode || clipboard.items.length === 0) return;
+    clipboard.items.forEach(item => {
+        const dst = currentPath + item.name;
+        if (clipboard.mode === 'copy') {
+            window.api.sendCommand(`COPY|${item.srcPath}|${dst}`);
+        } else {
+            window.api.sendCommand(`MOVE|${item.srcPath}|${dst}`);
+        }
+    });
+    if (clipboard.mode === 'cut') {
+        clipboard = { mode: null, items: [] };
+        updateClipboardButtons();
+    }
 };
 
 btnDelete.onclick = () => {
-    appendTerminal('Action: Delete (Not implemented)', 'command-echo');
+    const selected = getSelectedItems();
+    if (selected.length === 0) return;
+    selected.forEach(item => {
+        window.api.sendCommand(`DELETE|${item.srcPath}`);
+    });
 };
 
 // ---------------------------------------------------------------------------
@@ -198,6 +235,19 @@ window.api.onBackendResponse((obj) => {
             appendTerminal(obj.content);
             break;
 
+        case 'DELETED':
+            window.api.sendCommand(`LIST|${currentPath}`);
+            break;
+
+        case 'COPIED':
+            window.api.sendCommand(`LIST|${currentPath}`);
+            break;
+
+        case 'MOVED':
+            // 移動元と移動先が同一ディレクトリなら1回のLISTで済む
+            window.api.sendCommand(`LIST|${currentPath}`);
+            break;
+
         case 'ERROR':
             appendTerminal(`ERROR: ${obj.content}`, 'error');
             pendingRename = null;
@@ -238,6 +288,22 @@ window.api.onBackendResponse((obj) => {
 // ---------------------------------------------------------------------------
 // ファイルリスト表示
 // ---------------------------------------------------------------------------
+
+// 選択中アイテムを [{name, srcPath}] で返す
+function getSelectedItems() {
+    const items = [];
+    document.querySelectorAll('#file-list-body tr.selected').forEach(row => {
+        const name = row.dataset.name;
+        if (name) items.push({ name, srcPath: currentPath + name });
+    });
+    return items;
+}
+
+// ペーストボタンの有効/無効を制御
+function updateClipboardButtons() {
+    btnPaste.disabled = !clipboard.mode || clipboard.items.length === 0;
+}
+
 function addFileRow(data) {
     const parts = data.split('|');
     if (parts.length < 3) return;
@@ -254,9 +320,14 @@ function addFileRow(data) {
         <td>${type === 'D' ? '' : formatSize(size)}</td>
     `;
 
-    tr.onclick = () => {
-        document.querySelectorAll('#file-list-body tr').forEach(r => r.classList.remove('selected'));
-        tr.classList.add('selected');
+    tr.onclick = (e) => {
+        if (e.ctrlKey) {
+            // Ctrl+クリック：複数選択をトグル
+            tr.classList.toggle('selected');
+        } else {
+            document.querySelectorAll('#file-list-body tr').forEach(r => r.classList.remove('selected'));
+            tr.classList.add('selected');
+        }
     };
 
     tr.ondblclick = () => {

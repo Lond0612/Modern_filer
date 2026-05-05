@@ -325,6 +325,72 @@ void handle_rename(const char* old_path_utf8, const char* new_path_utf8) {
     }
 }
 
+void handle_delete(const char* path_utf8) {
+    wchar_t wpath[MAX_PATH + 2];
+    MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
+    wpath[wcslen(wpath) + 1] = L'\0';
+
+    SHFILEOPSTRUCTW op = {0};
+    op.wFunc = FO_DELETE;
+    op.pFrom = wpath;
+    op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
+
+    int result = SHFileOperationW(&op);
+    if (result == 0 && !op.fAnyOperationsAborted) {
+        send_json_utf8("DELETED", path_utf8);
+    } else {
+        char msg[256];
+        _snprintf(msg, sizeof(msg), "Failed to delete: %d", result);
+        send_json_utf8("ERROR", msg);
+    }
+}
+
+void handle_copy(const char* src_utf8, const char* dst_utf8) {
+    wchar_t wsrc[MAX_PATH + 2], wdst[MAX_PATH + 2];
+    MultiByteToWideChar(CP_UTF8, 0, src_utf8, -1, wsrc, MAX_PATH);
+    wsrc[wcslen(wsrc) + 1] = L'\0';
+    MultiByteToWideChar(CP_UTF8, 0, dst_utf8, -1, wdst, MAX_PATH);
+    wdst[wcslen(wdst) + 1] = L'\0';
+
+    SHFILEOPSTRUCTW op = {0};
+    op.wFunc = FO_COPY;
+    op.pFrom = wsrc;
+    op.pTo = wdst;
+    op.fFlags = FOF_NOERRORUI | FOF_SILENT;
+
+    int result = SHFileOperationW(&op);
+    if (result == 0 && !op.fAnyOperationsAborted) {
+        send_json_utf8("COPIED", dst_utf8);
+    } else {
+        char msg[256];
+        _snprintf(msg, sizeof(msg), "Failed to copy: %d", result);
+        send_json_utf8("ERROR", msg);
+    }
+}
+
+void handle_move(const char* src_utf8, const char* dst_utf8) {
+    wchar_t wsrc[MAX_PATH + 2], wdst[MAX_PATH + 2];
+    MultiByteToWideChar(CP_UTF8, 0, src_utf8, -1, wsrc, MAX_PATH);
+    wsrc[wcslen(wsrc) + 1] = L'\0';
+    MultiByteToWideChar(CP_UTF8, 0, dst_utf8, -1, wdst, MAX_PATH);
+    wdst[wcslen(wdst) + 1] = L'\0';
+
+    SHFILEOPSTRUCTW op = {0};
+    op.wFunc = FO_MOVE;
+    op.pFrom = wsrc;
+    op.pTo = wdst;
+    op.fFlags = FOF_NOERRORUI | FOF_SILENT;
+
+    int result = SHFileOperationW(&op);
+    if (result == 0 && !op.fAnyOperationsAborted) {
+        send_json_utf8("MOVED", dst_utf8);
+    } else {
+        char msg[256];
+        _snprintf(msg, sizeof(msg), "Failed to move: %d", result);
+        send_json_utf8("ERROR", msg);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // メイン
 // ---------------------------------------------------------------------------
@@ -362,6 +428,17 @@ int main(void) {
             char *old_p = line + 7;
             char *new_p = strchr(old_p, '|');
             if (new_p) { *new_p = '\0'; handle_rename(old_p, new_p + 1); }
+        }
+        else if (strncmp(line, "DELETE|", 7) == 0) handle_delete(line + 7);
+        else if (strncmp(line, "COPY|", 5) == 0) {
+            char *src = line + 5;
+            char *dst = strchr(src, '|');
+            if (dst) { *dst = '\0'; handle_copy(src, dst + 1); }
+        }
+        else if (strncmp(line, "MOVE|", 5) == 0) {
+            char *src = line + 5;
+            char *dst = strchr(src, '|');
+            if (dst) { *dst = '\0'; handle_move(src, dst + 1); }
         }
         else if (strncmp(line, "EXEC|", 5) == 0) {
             char cmd_cp932[4096];
