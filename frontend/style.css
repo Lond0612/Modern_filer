@@ -514,11 +514,17 @@ body {
 /* ファイル名セル（アイコンとテキスト/入力が改行されないようにする） */
 .file-name {
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 8vw;
+    /* 名前が長すぎる場合は省略（...）表示にする */
 }
 
 /* インラインリネーム */
 .rename-input {
     min-width: 20px;
+    max-width: 8vw;
+    /* 一定幅を超えたら左にスクロールさせる */
     background: #3c3c3c;
     border: 1px solid #007acc;
     color: #fff;
