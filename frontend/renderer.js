@@ -29,7 +29,19 @@ const btnCopy = document.getElementById('btn-copy');
 const btnPaste = document.getElementById('btn-paste');
 const btnDelete = document.getElementById('btn-delete');
 const btnRename = document.getElementById('btn-rename');
+const btnSort = document.getElementById('btn-sort');
+const btnView = document.getElementById('btn-view');
 const newMenu = document.getElementById('new-menu');
+const sortMenu = document.getElementById('sort-menu');
+const viewMenu = document.getElementById('view-menu');
+const fileTable = document.getElementById('file-table');
+const fileGrid = document.getElementById('file-grid');
+
+let currentSortKey = 0;
+let currentSortOrder = 0;
+let currentViewMode = 'details';
+let showHiddenFiles = false;
+let showExtensions = true;
 
 // ---------------------------------------------------------------------------
 // 初期化
@@ -38,14 +50,33 @@ window.onload = () => {
     // 起動時はバックエンドのREADYを待つ
 };
 
-// アクションボタンのイベントリスナー
 btnNew.onclick = (e) => {
     e.stopPropagation();
     newMenu.classList.toggle('visible');
+    if (sortMenu) sortMenu.classList.remove('visible');
+    if (viewMenu) viewMenu.classList.remove('visible');
 };
 
+if (btnSort) {
+    btnSort.onclick = (e) => {
+        e.stopPropagation();
+        sortMenu.classList.toggle('visible');
+        newMenu.classList.remove('visible');
+        if (viewMenu) viewMenu.classList.remove('visible');
+    };
+}
+
+if (btnView) {
+    btnView.onclick = (e) => {
+        e.stopPropagation();
+        viewMenu.classList.toggle('visible');
+        newMenu.classList.remove('visible');
+        if (sortMenu) sortMenu.classList.remove('visible');
+    };
+}
+
 // メニュー項目のクリックイベント
-document.querySelectorAll('.menu-item').forEach(item => {
+document.querySelectorAll('#new-menu .menu-item').forEach(item => {
     item.onclick = (e) => {
         const type = item.dataset.type;
         let defaultName = '';
@@ -73,9 +104,15 @@ document.addEventListener('click', (e) => {
     if (!e.target.closest('.new-btn-wrapper')) {
         newMenu.classList.remove('visible');
     }
+    if (!e.target.closest('.sort-btn-wrapper') && sortMenu) {
+        sortMenu.classList.remove('visible');
+    }
+    if (!e.target.closest('.view-btn-wrapper') && viewMenu) {
+        viewMenu.classList.remove('visible');
+    }
     // ファイルリスト行の外をクリックしたら選択解除
-    if (!e.target.closest('#file-list-body tr')) {
-        document.querySelectorAll('#file-list-body tr.selected').forEach(r => r.classList.remove('selected'));
+    if (!e.target.closest('#file-list-body tr') && !e.target.closest('.grid-item')) {
+        document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
     }
 });
 
@@ -83,11 +120,11 @@ btnCut.onclick = () => {
     const selected = getSelectedItems();
     if (selected.length === 0) return;
     // 前のカット状態をクリア
-    document.querySelectorAll('#file-list-body tr.cut-item').forEach(r => r.classList.remove('cut-item'));
+    document.querySelectorAll('#file-list-body tr.cut-item, .grid-item.cut-item').forEach(r => r.classList.remove('cut-item'));
     clipboard = { mode: 'cut', items: selected };
     // 選択行を半透明に
     selected.forEach(item => {
-        const row = fileListBody.querySelector(`tr[data-name="${CSS.escape(item.name)}"]`);
+        const row = document.querySelector(`tr[data-name="${CSS.escape(item.name)}"], .grid-item[data-name="${CSS.escape(item.name)}"]`);
         if (row) row.classList.add('cut-item');
     });
     appendTerminal(`Cut: ${selected.map(i => i.name).join(', ')}`, 'command-echo');
@@ -97,7 +134,7 @@ btnCut.onclick = () => {
 btnCopy.onclick = () => {
     const selected = getSelectedItems();
     if (selected.length === 0) return;
-    document.querySelectorAll('#file-list-body tr.cut-item').forEach(r => r.classList.remove('cut-item'));
+    document.querySelectorAll('#file-list-body tr.cut-item, .grid-item.cut-item').forEach(r => r.classList.remove('cut-item'));
     clipboard = { mode: 'copy', items: selected };
     appendTerminal(`Copy: ${selected.map(i => i.name).join(', ')}`, 'command-echo');
     updateClipboardButtons();
@@ -129,10 +166,88 @@ btnDelete.onclick = () => {
 
 btnRename.onclick = () => {
     // 選択中の先頭が1つの行に対してリネームを開始
-    const selectedRows = fileListBody.querySelectorAll('tr.selected');
+    const selectedRows = document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected');
     if (selectedRows.length === 0) return;
     startRename(selectedRows[0]);
 };
+
+// ソートメニューのイベント
+function updateSortMenuUI() {
+    document.querySelectorAll('.sort-item .check-icon').forEach(icon => icon.style.opacity = '0');
+    const activeItem = document.querySelector(`.sort-item[data-sort-key="${currentSortKey}"] .check-icon`);
+    if (activeItem) activeItem.style.opacity = '1';
+
+    document.querySelectorAll('.sort-order .check-icon').forEach(icon => icon.style.opacity = '0');
+    const activeOrder = document.querySelector(`.sort-order[data-sort-order="${currentSortOrder}"] .check-icon`);
+    if (activeOrder) activeOrder.style.opacity = '1';
+}
+
+document.querySelectorAll('.sort-item').forEach(item => {
+    item.onclick = (e) => {
+        currentSortKey = parseInt(item.dataset.sortKey);
+        updateSortMenuUI();
+        window.api.sendCommand(`SORT|${currentSortKey}|${currentSortOrder}`);
+        sortMenu.classList.remove('visible');
+    };
+});
+
+document.querySelectorAll('.sort-order').forEach(item => {
+    item.onclick = (e) => {
+        currentSortOrder = parseInt(item.dataset.sortOrder);
+        updateSortMenuUI();
+        window.api.sendCommand(`SORT|${currentSortKey}|${currentSortOrder}`);
+        sortMenu.classList.remove('visible');
+    };
+});
+
+// 表示メニューのイベント
+function updateViewMenuUI() {
+    document.querySelectorAll('.view-mode .check-icon').forEach(icon => icon.style.opacity = '0');
+    const activeMode = document.querySelector(`.view-mode[data-view-mode="${currentViewMode}"] .check-icon`);
+    if (activeMode) activeMode.style.opacity = '1';
+
+    const hiddenIcon = document.querySelector(`.view-toggle[data-toggle="hidden"] .check-icon`);
+    if (hiddenIcon) hiddenIcon.style.opacity = showHiddenFiles ? '1' : '0';
+
+    const extIcon = document.querySelector(`.view-toggle[data-toggle="extension"] .check-icon`);
+    if (extIcon) extIcon.style.opacity = showExtensions ? '1' : '0';
+}
+
+document.querySelectorAll('.view-mode').forEach(item => {
+    item.onclick = (e) => {
+        currentViewMode = item.dataset.viewMode;
+        if (currentViewMode === 'compact') {
+            document.body.classList.add('compact-mode');
+        } else {
+            document.body.classList.remove('compact-mode');
+        }
+        
+        if (currentViewMode === 'details' || currentViewMode === 'compact') {
+            fileTable.style.display = '';
+            fileGrid.style.display = 'none';
+        } else {
+            fileTable.style.display = 'none';
+            fileGrid.style.display = 'grid';
+            fileGrid.className = `grid-size-${currentViewMode}`;
+        }
+        
+        updateViewMenuUI();
+        viewMenu.classList.remove('visible');
+        window.api.sendCommand(`LIST|${currentPath}`); // Reload
+    };
+});
+
+document.querySelectorAll('.view-toggle').forEach(item => {
+    item.onclick = (e) => {
+        e.stopPropagation();
+        const toggle = item.dataset.toggle;
+        if (toggle === 'hidden') showHiddenFiles = !showHiddenFiles;
+        if (toggle === 'extension') showExtensions = !showExtensions;
+        
+        updateViewMenuUI();
+        window.api.sendCommand(`LIST|${currentPath}`); // Reload
+    };
+});
 
 // ---------------------------------------------------------------------------
 // ナビゲーション
@@ -214,6 +329,7 @@ window.api.onBackendResponse((obj) => {
 
         case 'START_LIST':
             fileListBody.innerHTML = '';
+            fileGrid.innerHTML = '';
             break;
 
         case 'DATA':
@@ -304,7 +420,7 @@ window.api.onBackendResponse((obj) => {
 // 選択中アイテムを [{name, srcPath}] で返す
 function getSelectedItems() {
     const items = [];
-    document.querySelectorAll('#file-list-body tr.selected').forEach(row => {
+    document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(row => {
         const name = row.dataset.name;
         if (name) items.push({ name, srcPath: currentPath + name });
     });
@@ -316,33 +432,82 @@ function updateClipboardButtons() {
     btnPaste.disabled = !clipboard.mode || clipboard.items.length === 0;
 }
 
+function getFileNameWithoutExtension(name) {
+    if (showExtensions) return name;
+    const lastDotIndex = name.lastIndexOf('.');
+    if (lastDotIndex > 0) {
+        return name.substring(0, lastDotIndex);
+    }
+    return name;
+}
+
+function isImageExtension(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'].includes(ext);
+}
+
 function addFileRow(data) {
     const parts = data.split('|');
-    if (parts.length < 3) return;
+    if (parts.length < 4) return;
 
     const type = parts[0];
     const name = parts[1];
     const size = parts[2];
+    const isHidden = parts[3] === '1';
 
-    const tr = document.createElement('tr');
-    tr.dataset.name = name;
-    tr.innerHTML = `
-        <td class="file-name">${type === 'D' ? '📁' : '📄'} ${name}</td>
-        <td>${type === 'D' ? 'Folder' : 'File'}</td>
-        <td>${type === 'D' ? '' : formatSize(size)}</td>
-    `;
+    if (!showHiddenFiles && isHidden) return;
 
-    tr.onclick = (e) => {
-        if (e.ctrlKey) {
-            // Ctrl+クリック：複数選択をトグル
-            tr.classList.toggle('selected');
+    const displayName = type === 'D' ? name : getFileNameWithoutExtension(name);
+
+    let element;
+
+    if (currentViewMode === 'details' || currentViewMode === 'compact') {
+        const tr = document.createElement('tr');
+        tr.dataset.name = name;
+        tr.dataset.fullname = name;
+        tr.dataset.type = type;
+        tr.innerHTML = `
+            <td class="file-name" title="${name}">${type === 'D' ? '📁' : '📄'} ${displayName}</td>
+            <td>${type === 'D' ? 'Folder' : 'File'}</td>
+            <td>${type === 'D' ? '' : formatSize(size)}</td>
+        `;
+        fileListBody.appendChild(tr);
+        element = tr;
+    } else {
+        const div = document.createElement('div');
+        div.className = 'grid-item';
+        div.dataset.name = name;
+        div.dataset.fullname = name;
+        div.dataset.type = type;
+        
+        let iconHtml = '';
+        if (type === 'D') {
+            iconHtml = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
+        } else if (isImageExtension(name)) {
+            const fileUri = encodeURI(`file:///${currentPath}${name}`.replace(/\\/g, '/')).replace(/#/g, '%23');
+            iconHtml = `<img src="${fileUri}" loading="lazy" alt="${name}" onerror="this.outerHTML='<svg viewBox=\\'0 0 24 24\\' fill=\\'currentColor\\'><path d=\\'M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z\\'></path><polyline points=\\'13 2 13 9 20 9\\'></polyline></svg>'">`;
         } else {
-            document.querySelectorAll('#file-list-body tr').forEach(r => r.classList.remove('selected'));
-            tr.classList.add('selected');
+            iconHtml = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
+        }
+        
+        div.innerHTML = `
+            <div class="grid-icon">${iconHtml}</div>
+            <div class="grid-name file-name" title="${name}">${displayName}</div>
+        `;
+        fileGrid.appendChild(div);
+        element = div;
+    }
+
+    element.onclick = (e) => {
+        if (e.ctrlKey) {
+            element.classList.toggle('selected');
+        } else {
+            document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
+            element.classList.add('selected');
         }
     };
 
-    tr.ondblclick = () => {
+    element.ondblclick = () => {
         if (type === 'D') {
             loadPath(currentPath + name + '\\', true);
         } else {
@@ -350,29 +515,31 @@ function addFileRow(data) {
         }
     };
 
-    fileListBody.appendChild(tr);
-
     if (pendingRename && name === pendingRename) {
         pendingRename = null;
-        setTimeout(() => startRename(tr), 100);
+        setTimeout(() => startRename(element), 100);
     }
 }
 
 // ---------------------------------------------------------------------------
 // リネーム機能
 // ---------------------------------------------------------------------------
-function startRename(tr) {
-    const nameCell = tr.querySelector('.file-name');
-    const typeIcon = nameCell.textContent.startsWith('📁') ? '📁' : '📄';
-    const oldName = nameCell.textContent.substring(typeIcon.length + 1);
-    const isDir = typeIcon === '📁';
+function startRename(el) {
+    const nameCell = el.querySelector('.file-name');
+    const oldName = el.dataset.fullname;
+    const isDir = el.dataset.type === 'D';
 
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'rename-input';
     input.value = oldName;
 
-    nameCell.innerHTML = `${typeIcon} `;
+    const typeIcon = isDir ? '📁 ' : '📄 ';
+    nameCell.innerHTML = '';
+    if (el.tagName === 'TR') {
+        nameCell.innerHTML = typeIcon;
+    }
+    
     nameCell.appendChild(input);
     input.focus();
 
@@ -405,7 +572,8 @@ function startRename(tr) {
 
         // キャンセルまたは空入力
         if (cancel || !newName) {
-            nameCell.textContent = `${typeIcon} ${oldName}`;
+            const displayName = isDir ? oldName : getFileNameWithoutExtension(oldName);
+            nameCell.textContent = el.tagName === 'TR' ? `${typeIcon}${displayName}` : displayName;
             return;
         }
 
@@ -420,12 +588,14 @@ function startRename(tr) {
 
         // 変更がない場合は何もしない
         if (newName === oldName) {
-            nameCell.textContent = `${typeIcon} ${oldName}`;
+            const displayName = isDir ? oldName : getFileNameWithoutExtension(oldName);
+            nameCell.textContent = el.tagName === 'TR' ? `${typeIcon}${displayName}` : displayName;
             return;
         }
 
         window.api.sendCommand(`RENAME|${currentPath}${oldName}|${currentPath}${newName}`);
-        nameCell.textContent = `${typeIcon} ${newName}`;
+        const displayName = isDir ? newName : getFileNameWithoutExtension(newName);
+        nameCell.textContent = el.tagName === 'TR' ? `${typeIcon}${displayName}` : displayName;
     };
 
     input.onkeydown = (e) => {
@@ -449,7 +619,7 @@ function startRename(tr) {
 // skipName: 現在リネーム対象のファイル（自分自身は除外する）
 function resolveNameConflict(name, skipName) {
     const existing = new Set();
-    document.querySelectorAll('#file-list-body tr').forEach(row => {
+    document.querySelectorAll('#file-list-body tr, .grid-item').forEach(row => {
         const n = row.dataset.name;
         if (n && n !== skipName) existing.add(n);
     });
@@ -510,17 +680,22 @@ function addSearchResult(data) {
     if (placeholder) placeholder.remove();
 
     const parts = data.split('|');
-    if (parts.length < 3) return;
+    if (parts.length < 4) return;
     const type = parts[0];
     const name = parts[1];
-    const dirPath = parts.slice(2).join('|');
+    const dirPath = parts[2];
+    const isHidden = parts[3] === '1';
+
+    if (!showHiddenFiles && isHidden) return;
+
+    const displayName = type === 'D' ? name : getFileNameWithoutExtension(name);
 
     const item = document.createElement('div');
     item.className = 'search-result-item';
     item.innerHTML = `
         <span>${type === 'D' ? '📁' : '📄'}</span>
         <div style="min-width:0;flex:1;">
-            <div class="search-result-name">${name}</div>
+            <div class="search-result-name">${displayName}</div>
             <div class="search-result-path">${dirPath}</div>
         </div>
     `;

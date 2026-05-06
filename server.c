@@ -14,6 +14,9 @@
 CRITICAL_SECTION g_stdout_cs;
 static char currentPath[MAX_PATH] = {0}; // 検索で使う現在パス (UTF-8)
 
+static SortKey g_sort_key = SORT_NAME;
+static SortOrder g_sort_order = SORT_ASC;
+
 // UTF-8への変換
 void cp932_to_utf8(const char* cp932, char* utf8, size_t utf8_size) {
     if (!cp932 || !utf8 || utf8_size == 0) return;
@@ -77,7 +80,7 @@ void handle_list(const char* path_utf8) {
         filelist_free(&list);
         return;
     }
-    filelist_sort(&list, (SortContext){SORT_NAME, SORT_ASC});
+    filelist_sort(&list, (SortContext){g_sort_key, g_sort_order});
     
     send_json_utf8("START_LIST", path_utf8);
     for (int i = 0; i < list.count; i++) {
@@ -86,9 +89,10 @@ void handle_list(const char* path_utf8) {
         WideCharToMultiByte(CP_UTF8, 0, e->name, -1, name_utf8, sizeof(name_utf8), NULL, NULL);
 
         char line[MAX_PATH * 4 + 64];
-        _snprintf(line, sizeof(line)-1, "%s|%s|%lld", 
+        _snprintf(line, sizeof(line)-1, "%s|%s|%lld|%d", 
             (e->attributes & FILE_ATTRIBUTE_DIRECTORY) ? "D" : "F", 
-            name_utf8, (long long)e->size);
+            name_utf8, (long long)e->size,
+            (e->attributes & FILE_ATTRIBUTE_HIDDEN) ? 1 : 0);
         send_json_utf8("DATA", line);
     }
     send_json_utf8("END_LIST", path_utf8);
@@ -159,8 +163,9 @@ static void handle_search_level(const char* root_utf8, const char* keyword_utf8,
                 WideCharToMultiByte(CP_UTF8, 0, e->name, -1, name_utf8, sizeof(name_utf8), NULL, NULL);
                 
                 char result_line[SPATH_MAX + MAX_PATH * 4 + 8];
-                _snprintf(result_line, sizeof(result_line) - 1, "%s|%s|%s",
-                    is_dir ? "D" : "F", name_utf8, current_utf8);
+                _snprintf(result_line, sizeof(result_line) - 1, "%s|%s|%s|%d",
+                    is_dir ? "D" : "F", name_utf8, current_utf8,
+                    (e->attributes & FILE_ATTRIBUTE_HIDDEN) ? 1 : 0);
                 send_json_utf8("SEARCH_RESULT", result_line);
                 (*result_count)++;
             }
@@ -420,6 +425,16 @@ int main(void) {
     while (fgets(line, sizeof(line), stdin)) {
         line[strcspn(line, "\r\n")] = 0;
         if (strncmp(line, "LIST|", 5) == 0) handle_list(line + 5);
+        else if (strncmp(line, "SORT|", 5) == 0) {
+            char *k = line + 5;
+            char *o = strchr(k, '|');
+            if (o) {
+                *o = '\0';
+                g_sort_key = (SortKey)atoi(k);
+                g_sort_order = (SortOrder)atoi(o + 1);
+                handle_list(currentPath);
+            }
+        }
         else if (strncmp(line, "TREE_LIST|", 10) == 0) handle_tree_list(line + 10);
         else if (strncmp(line, "SEARCH|", 7) == 0) handle_search(currentPath, line + 7);
         else if (strncmp(line, "MKDIR|", 6) == 0) handle_mkdir(line + 6);

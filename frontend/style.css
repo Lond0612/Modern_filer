@@ -1,3 +1,6 @@
+/* ==========================================================================
+   1. Base & Layout (全体の設定と大枠のレイアウト)
+   ========================================================================== */
 body {
     margin: 0;
     padding: 0;
@@ -14,142 +17,15 @@ body {
     height: 100%;
 }
 
+/* ==========================================================================
+   2. Toolbar (上部ツールバー: 戻る/進む/パス/検索)
+   ========================================================================== */
 .toolbar {
     padding: 10px;
     background: #2d2d2d;
     border-bottom: 1px solid #444;
     display: flex;
     gap: 10px;
-}
-
-.actions-bar {
-    padding: 6px 10px;
-    background: #252525;
-    border-bottom: 1px solid #333;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.action-btn {
-    background: transparent;
-    border: none;
-    color: #e0e0e0;
-    height: 32px;
-    padding: 0 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 12px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.action-btn svg {
-    width: 16px;
-    height: 16px;
-    stroke-width: 2;
-}
-
-.action-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-#btn-new {
-    background: #007acc;
-    color: white;
-    font-weight: 500;
-    margin-right: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-#btn-new:hover {
-    background: #008be5;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-#btn-new svg {
-    stroke-width: 3;
-}
-
-.separator {
-    width: 1px;
-    height: 20px;
-    background: #444;
-    margin: 0 8px;
-}
-
-.new-btn-wrapper {
-    position: relative;
-}
-
-.dropdown-menu {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    background: #2d2d2d;
-    border: 1px solid #454545;
-    border-radius: 6px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-    min-width: 200px;
-    z-index: 1000;
-    display: none;
-    padding: 5px 0;
-    overflow: hidden;
-}
-
-.dropdown-menu.visible {
-    display: block;
-    animation: dropdownFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes dropdownFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-8px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.menu-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 15px;
-    cursor: pointer;
-    font-size: 13px;
-    color: #cccccc;
-    transition: all 0.15s ease;
-}
-
-.menu-item:hover {
-    background: #3c3c3c;
-    color: #ffffff;
-}
-
-.menu-item svg {
-    width: 16px;
-    height: 16px;
-    stroke: currentColor;
-}
-
-.menu-item:hover svg {
-    color: #007acc;
-}
-
-#address-input {
-    flex: 1;
-    background: #3c3c3c;
-    border: 1px solid #555;
-    color: #fff;
-    padding: 5px 10px;
-    border-radius: 4px;
 }
 
 .nav-buttons {
@@ -186,6 +62,15 @@ body {
 .nav-btn:disabled {
     color: #555;
     cursor: default;
+}
+
+#address-input {
+    flex: 1;
+    background: #3c3c3c;
+    border: 1px solid #555;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
 }
 
 /* 検索バー */
@@ -282,6 +167,142 @@ body {
     font-size: 12px;
 }
 
+/* ==========================================================================
+   3. Actions Bar (アクションバー: 新規作成/カット/コピー等)
+   ========================================================================== */
+.actions-bar {
+    padding: 6px 10px;
+    background: #252525;
+    border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.action-btn {
+    background: transparent;
+    border: none;
+    color: #e0e0e0;
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.action-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.separator {
+    width: 1px;
+    height: 20px;
+    background: #444;
+    margin: 0 8px;
+}
+
+/* 新規作成ボタン・メニュー */
+.new-btn-wrapper {
+    position: relative;
+}
+
+#btn-new {
+    background: #007acc;
+    color: white;
+    font-weight: 500;
+    margin-right: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#btn-new:hover {
+    background: #008be5;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+#btn-new svg {
+    stroke-width: 3;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: #2d2d2d;
+    border: 1px solid #454545;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    min-width: 200px;
+    z-index: 1000;
+    display: none;
+    padding: 5px 0;
+}
+
+.dropdown-menu.visible {
+    display: block;
+    animation: dropdownFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #cccccc;
+    transition: all 0.15s ease;
+}
+
+.menu-item:hover {
+    background: #3c3c3c;
+    color: #ffffff;
+}
+
+.menu-item svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+}
+
+.menu-item:hover svg {
+    color: #007acc;
+}
+
+/* チェックアイコン (ソートメニュー用) */
+.check-icon {
+    display: inline-block;
+    width: 16px;
+    text-align: center;
+    font-weight: bold;
+    color: #007acc;
+    transition: opacity 0.15s ease;
+}
+
+/* ==========================================================================
+   4. Main Layout & Resizers (メイン画面の骨格とリサイズバー)
+   ========================================================================== */
 .main-layout {
     display: flex;
     flex-direction: column;
@@ -298,9 +319,7 @@ body {
 /* リサイズバー (判定は広く、見た目は細く) */
 .resizer-h {
     width: 8px;
-    /* 当たり判定の幅 */
-    margin: 0 -4px;
-    /* レイアウトの隙間を埋める */
+    margin: 0 -4px; /* レイアウトの隙間を埋める */
     background: transparent;
     cursor: col-resize;
     z-index: 100;
@@ -312,7 +331,6 @@ body {
 .resizer-h::after {
     content: "";
     width: 1px;
-    /* 見た目の細さ */
     height: 100%;
     background: #333;
     transition: background 0.2s;
@@ -320,7 +338,6 @@ body {
 
 .resizer-v {
     height: 12px;
-    /* 当たり判定の高さ */
     margin: -4px 0;
     background: transparent;
     cursor: row-resize;
@@ -334,7 +351,6 @@ body {
     content: "";
     width: 100%;
     height: 1px;
-    /* 見た目の細さ */
     background: #333;
     transition: background 0.2s;
 }
@@ -345,7 +361,9 @@ body {
     box-shadow: 0 0 4px #007acc;
 }
 
-/* サイドバー */
+/* ==========================================================================
+   5. Sidebar (サイドバー: フォルダツリー)
+   ========================================================================== */
 .sidebar {
     width: 240px;
     background: #252525;
@@ -431,18 +449,13 @@ body {
     display: block;
 }
 
+/* ==========================================================================
+   6. File Pane (ファイル一覧ペイン)
+   ========================================================================== */
 .file-pane {
     flex: 2;
     overflow-y: auto;
     border-right: 1px solid #444;
-}
-
-.terminal-pane {
-    height: 155px;
-    display: flex;
-    flex-direction: column;
-    background: #0c0c0c;
-    flex-shrink: 0;
 }
 
 #file-table {
@@ -468,9 +481,52 @@ body {
     background: #333;
 }
 
+/* 選択状態・操作状態 */
 #file-table tr.selected {
     background: #005a9e;
     color: #fff;
+}
+
+#file-table tr.selected td {
+    background: rgba(0, 122, 204, 0.25);
+}
+
+#file-table tr.cut-item {
+    opacity: 0.4;
+}
+
+/* ファイル名セル（アイコンとテキスト/入力が改行されないようにする） */
+.file-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 4vw; /* 名前が長すぎる場合は省略（...）表示にする */
+}
+
+/* インラインリネーム */
+.rename-input {
+    min-width: 20px;
+    max-width: 4vw; /* 一定幅を超えたら左にスクロールさせる */
+    background: #3c3c3c;
+    border: 1px solid #007acc;
+    color: #fff;
+    padding: 2px 5px;
+    border-radius: 2px;
+    outline: none;
+    font-family: inherit;
+    font-size: inherit;
+    box-shadow: 0 0 4px rgba(0, 122, 204, 0.5);
+}
+
+/* ==========================================================================
+   7. Terminal Pane (ターミナルペイン)
+   ========================================================================== */
+.terminal-pane {
+    height: 155px;
+    display: flex;
+    flex-direction: column;
+    background: #0c0c0c;
+    flex-shrink: 0;
 }
 
 #terminal-output {
@@ -503,6 +559,7 @@ body {
     font-family: 'Consolas', monospace;
 }
 
+/* ターミナルテキストカラー */
 .command-echo {
     color: #00ffff;
 }
@@ -511,37 +568,118 @@ body {
     color: #ff5555;
 }
 
-/* ファイル名セル（アイコンとテキスト/入力が改行されないようにする） */
-.file-name {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 8vw;
-    /* 名前が長すぎる場合は省略（...）表示にする */
+/* ==========================================================================
+   8. View Options & Layouts (表示モード、コンパクトモード等)
+   ========================================================================== */
+
+/* サブメニュー */
+.has-submenu {
+    position: relative;
+}
+.has-submenu .submenu {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: -5px;
+    background: #2d2d2d;
+    border: 1px solid #454545;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    min-width: 160px;
+    z-index: 1001;
+    padding: 5px 0;
+}
+.has-submenu:hover .submenu {
+    display: block;
 }
 
-/* インラインリネーム */
-.rename-input {
-    min-width: 20px;
-    max-width: 8vw;
-    /* 一定幅を超えたら左にスクロールさせる */
-    background: #3c3c3c;
-    border: 1px solid #007acc;
-    color: #fff;
-    padding: 2px 5px;
-    border-radius: 2px;
-    outline: none;
-    font-family: inherit;
-    font-size: inherit;
-    box-shadow: 0 0 4px rgba(0, 122, 204, 0.5);
+/* コンパクトモード */
+body.compact-mode .tree-item {
+    padding: 2px 10px;
+    font-size: 12px;
+}
+body.compact-mode #file-table td {
+    padding: 3px 8px;
+    font-size: 12px;
 }
 
-/* カット中のアイテム */
-#file-list-body tr.cut-item {
+/* グリッドビュー (アイコン表示) */
+#file-grid {
+    display: grid;
+    gap: 10px;
+    padding: 10px;
+    align-content: start;
+    overflow-y: auto;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.grid-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 8px;
+    text-align: center;
+    border: 1px solid transparent;
+    transition: background 0.1s;
+}
+
+.grid-item:hover {
+    background: #333;
+}
+
+.grid-item.selected {
+    background: rgba(0, 122, 204, 0.25);
+    border-color: #007acc;
+}
+
+.grid-item.cut-item {
     opacity: 0.4;
 }
 
-/* 複数選択時も選択スタイルを適用 */
-#file-list-body tr.selected td {
-    background: rgba(0, 122, 204, 0.25);
+.grid-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    aspect-ratio: 1;
+    background: transparent;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
 }
+
+.grid-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.grid-icon svg {
+    width: 60%;
+    height: 60%;
+    color: #aaa;
+}
+
+.grid-name {
+    width: 100%;
+    font-size: 12px;
+    color: #e0e0e0;
+    word-break: break-all;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* グリッドサイズ定義 */
+.grid-size-extralarge { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.grid-size-large { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+.grid-size-medium { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+.grid-size-small { grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); }
