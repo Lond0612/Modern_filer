@@ -470,6 +470,7 @@ function addFileRow(data) {
             <td class="file-name" title="${name}">${type === 'D' ? '📁' : '📄'} ${displayName}</td>
             <td>${type === 'D' ? 'Folder' : 'File'}</td>
             <td>${type === 'D' ? '' : formatSize(size)}</td>
+            <td class="filler-col"></td>
         `;
         fileListBody.appendChild(tr);
         element = tr;
@@ -901,3 +902,42 @@ function initResizers() {
 }
 
 initResizers();
+
+// ---------------------------------------------------------------------------
+// カラムリサイズ機能
+// ---------------------------------------------------------------------------
+function initColumnResizers() {
+    const resizers = document.querySelectorAll('.col-resizer');
+    let startX, startWidth, currentTh;
+
+    resizers.forEach(resizer => {
+        resizer.addEventListener('mousedown', (e) => {
+            currentTh = e.target.parentElement;
+            startX = e.pageX;
+            startWidth = currentTh.offsetWidth;
+            
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+            resizer.classList.add('resizing');
+            document.body.style.cursor = 'col-resize';
+            e.preventDefault(); // テキスト選択を防ぐ
+        });
+    });
+
+    function onMouseMove(e) {
+        if (!currentTh) return;
+        const dx = e.pageX - startX;
+        currentTh.style.width = `${startWidth + dx}px`;
+    }
+
+    function onMouseUp() {
+        if (!currentTh) return;
+        currentTh.querySelector('.col-resizer').classList.remove('resizing');
+        document.body.style.cursor = '';
+        currentTh = null;
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+    }
+}
+
+initColumnResizers();
