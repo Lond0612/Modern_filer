@@ -88,11 +88,16 @@ void handle_list(const char* path_utf8) {
         char name_utf8[MAX_PATH * 4];
         WideCharToMultiByte(CP_UTF8, 0, e->name, -1, name_utf8, sizeof(name_utf8), NULL, NULL);
 
-        char line[MAX_PATH * 4 + 64];
-        _snprintf(line, sizeof(line)-1, "%s|%s|%lld|%d", 
+        ULARGE_INTEGER ull;
+        ull.LowPart = e->updated_at.dwLowDateTime;
+        ull.HighPart = e->updated_at.dwHighDateTime;
+        long long ms = (ull.QuadPart - 116444736000000000ULL) / 10000ULL;
+
+        char line[MAX_PATH * 4 + 128];
+        _snprintf(line, sizeof(line)-1, "%s|%s|%lld|%d|%lld", 
             (e->attributes & FILE_ATTRIBUTE_DIRECTORY) ? "D" : "F", 
             name_utf8, (long long)e->size,
-            (e->attributes & FILE_ATTRIBUTE_HIDDEN) ? 1 : 0);
+            (e->attributes & FILE_ATTRIBUTE_HIDDEN) ? 1 : 0, ms);
         send_json_utf8("DATA", line);
     }
     send_json_utf8("END_LIST", path_utf8);
@@ -162,10 +167,15 @@ static void handle_search_level(const char* root_utf8, const char* keyword_utf8,
                 char name_utf8[MAX_PATH * 4];
                 WideCharToMultiByte(CP_UTF8, 0, e->name, -1, name_utf8, sizeof(name_utf8), NULL, NULL);
                 
-                char result_line[SPATH_MAX + MAX_PATH * 4 + 8];
-                _snprintf(result_line, sizeof(result_line) - 1, "%s|%s|%s|%d",
+                ULARGE_INTEGER ull;
+                ull.LowPart = e->updated_at.dwLowDateTime;
+                ull.HighPart = e->updated_at.dwHighDateTime;
+                long long ms = (ull.QuadPart - 116444736000000000ULL) / 10000ULL;
+
+                char result_line[SPATH_MAX + MAX_PATH * 4 + 128];
+                _snprintf(result_line, sizeof(result_line) - 1, "%s|%s|%s|%d|%lld",
                     is_dir ? "D" : "F", name_utf8, current_utf8,
-                    (e->attributes & FILE_ATTRIBUTE_HIDDEN) ? 1 : 0);
+                    (e->attributes & FILE_ATTRIBUTE_HIDDEN) ? 1 : 0, ms);
                 send_json_utf8("SEARCH_RESULT", result_line);
                 (*result_count)++;
             }

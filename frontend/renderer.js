@@ -446,14 +446,27 @@ function isImageExtension(name) {
     return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'].includes(ext);
 }
 
+function formatDate(timestampMs) {
+    if (!timestampMs) return '';
+    const date = new Date(timestampMs);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const h = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    return `${y}/${m}/${d} ${h}:${min}`;
+}
+
 function addFileRow(data) {
     const parts = data.split('|');
-    if (parts.length < 4) return;
+    if (parts.length < 5) return;
 
     const type = parts[0];
     const name = parts[1];
     const size = parts[2];
     const isHidden = parts[3] === '1';
+    const timestampMs = parseInt(parts[4], 10);
+    const dateStr = formatDate(timestampMs);
 
     if (!showHiddenFiles && isHidden) return;
 
@@ -468,7 +481,7 @@ function addFileRow(data) {
         tr.dataset.type = type;
         tr.innerHTML = `
             <td class="file-name" title="${name}">${type === 'D' ? '📁' : '📄'} ${displayName}</td>
-            <td>${type === 'D' ? 'Folder' : 'File'}</td>
+            <td>${dateStr}</td>
             <td>${type === 'D' ? '' : formatSize(size)}</td>
             <td class="filler-col"></td>
         `;
