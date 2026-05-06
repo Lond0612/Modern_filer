@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const { StringDecoder } = require('string_decoder');
@@ -104,11 +104,15 @@ app.on('window-all-closed', () => {
 });
 
 ipcMain.on('send-command', (event, command) => {
+  if (command.startsWith('OPEN|')) {
+    const filePath = command.substring(5);
+    shell.openPath(filePath).then((error) => {
+      if (error) console.error("Failed to open file:", error);
+    });
+    return;
+  }
+
   if (filerServer && !filerServer.killed) {
-    // ファイルを開くときは、背面に隠れないように自らフォーカスを外す
-    if (command.startsWith('OPEN|') && mainWindow) {
-      mainWindow.blur();
-    }
     filerServer.stdin.write(command + '\n');
   }
 });
