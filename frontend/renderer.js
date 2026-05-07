@@ -190,9 +190,12 @@ document.querySelectorAll('#new-menu .menu-item').forEach(item => {
             defaultName = '新規メモ.txt';
             command = 'NEW_FILE';
         } else if (type === 'other') {
-            defaultName = '新規メモ';
+            defaultName = '新規メモ.txt';
             command = 'NEW_FILE';
         }
+
+        // 名前被りを事前にチェックして回避
+        defaultName = resolveNameConflict(defaultName);
 
         pendingRename = defaultName;
         window.api.sendCommand(`${command}|${currentPath}${defaultName}`);
@@ -765,15 +768,19 @@ function startRename(el) {
     const oldName = el.dataset.fullname;
     const isDir = el.dataset.type === 'D';
 
+    const currentIcon = IconThemeManager.getIcon(oldName, isDir);
+
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'rename-input';
     input.value = oldName;
 
-    const typeIcon = isDir ? '📁 ' : '📄 ';
     nameCell.innerHTML = '';
     if (el.tagName === 'TR') {
-        nameCell.innerHTML = typeIcon;
+        const iconSpan = document.createElement('span');
+        iconSpan.style.marginRight = '6px';
+        iconSpan.innerHTML = currentIcon;
+        nameCell.appendChild(iconSpan);
     }
     
     nameCell.appendChild(input);
@@ -806,32 +813,47 @@ function startRename(el) {
     const finishRename = (cancel = false) => {
         let newName = input.value.trim();
 
+        // 共通の描画復旧処理
+        const restoreView = (nameToUse) => {
+            const currentIcon = IconThemeManager.getIcon(nameToUse, isDir);
+            const displayName = isDir ? nameToUse : getFileNameWithoutExtension(nameToUse);
+            if (el.tagName === 'TR') {
+                nameCell.innerHTML = `<span style="margin-right: 6px;">${currentIcon}</span> ${displayName}`;
+            } else {
+                nameCell.textContent = displayName;
+                // グリッドの場合はアイコンも更新（名前で変わる可能性があるため）
+                const gridIcon = el.querySelector('.grid-icon');
+                if (gridIcon) {
+                    const isImg = isImageExtension(nameToUse);
+                    const isVid = isVideoExtension(nameToUse);
+                    if (!isImg && !isVid) {
+                        gridIcon.innerHTML = `<div class="grid-icon-placeholder">${currentIcon}</div>`;
+                    }
+                }
+            }
+        };
+
         // キャンセルまたは空入力
         if (cancel || !newName) {
-            const displayName = isDir ? oldName : getFileNameWithoutExtension(oldName);
-            nameCell.textContent = el.tagName === 'TR' ? `${typeIcon}${displayName}` : displayName;
+            restoreView(oldName);
             return;
         }
 
-        // 「その他ファイル」（初期名：新規メモ）の拡張子補完
-        // 入力名にドットが含まれていない場合、.txt を付与する
         if (!isDir && !newName.includes('.') && oldName.startsWith('新規メモ')) {
             newName += '.txt';
         }
 
-        // リネーム後の名前が既存ファイルと衝突しないかチェック
         newName = resolveNameConflict(newName, oldName);
 
-        // 変更がない場合は何もしない
         if (newName === oldName) {
-            const displayName = isDir ? oldName : getFileNameWithoutExtension(oldName);
-            nameCell.textContent = el.tagName === 'TR' ? `${typeIcon}${displayName}` : displayName;
+            restoreView(oldName);
             return;
         }
 
         window.api.sendCommand(`RENAME|${currentPath}${oldName}|${currentPath}${newName}`);
-        const displayName = isDir ? newName : getFileNameWithoutExtension(newName);
-        nameCell.textContent = el.tagName === 'TR' ? `${typeIcon}${displayName}` : displayName;
+        el.dataset.name = newName;
+        el.dataset.fullname = newName;
+        restoreView(newName);
     };
 
     input.onkeydown = (e) => {
@@ -1200,3 +1222,132 @@ function initColumnResizers() {
 }
 
 initColumnResizers();
+
+// ---------------------------------------------------------------------------
+// コンテキストメニュー制御
+// ---------------------------------------------------------------------------
+const contextMenu = document.getElementById('context-menu');
+let contextTarget = null; // 右クリック対象のデータ
+
+window.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    
+    if (isHomeActive) return;
+
+    const fileRow = e.target.closest('#file-list-body tr, .grid-item');
+    const isFilePane = e.target.closest('.file-pane');
+    
+    if (!isFilePane) {
+        contextMenu.style.display = 'none';
+        return;
+    }
+    
+    if (fileRow) {
+        contextTarget = {
+            name: fileRow.dataset.name,
+            path: currentPath + fileRow.dataset.name,
+            isDir: fileRow.dataset.type === 'D'
+        };
+        
+        if (!fileRow.classList.contains('selected')) {
+            document.querySelectorAll('#file-list-body tr, .grid-item').forEach(el => el.classList.remove('selected'));
+            fileRow.classList.add('selected');
+        }
+    } else {
+        contextTarget = null;
+    }
+
+    // すべてのメニュー項目を一度リセット
+    document.querySelectorAll('.context-item').forEach(item => {
+        item.classList.remove('disabled');
+    });
+
+    // アイテム選択の有無に応じた制御
+    const hasSelection = contextTarget !== null;
+    ['ctx-open', 'ctx-cut', 'ctx-copy', 'ctx-rename', 'ctx-delete'].forEach(id => {
+        document.getElementById(id).classList.toggle('disabled', !hasSelection);
+    });
+    
+    // 貼り付けの制御
+    const canPaste = clipboard.mode && clipboard.items.length > 0;
+    document.getElementById('ctx-paste').classList.toggle('disabled', !canPaste);
+
+    // 表示位置の計算
+    contextMenu.style.display = 'block';
+    const menuWidth = contextMenu.offsetWidth;
+    const menuHeight = contextMenu.offsetHeight;
+    let x = e.clientX;
+    let y = e.clientY;
+
+    if (x + menuWidth > window.innerWidth) x -= menuWidth;
+    if (y + menuHeight > window.innerHeight) y -= menuHeight;
+
+    contextMenu.style.left = `${x}px`;
+    contextMenu.style.top = `${y}px`;
+});
+
+window.addEventListener('click', () => {
+    contextMenu.style.display = 'none';
+});
+
+// コンテキストメニューのアクション
+document.getElementById('ctx-open').onclick = () => {
+    if (contextTarget) {
+        if (contextTarget.isDir) {
+            loadPath(contextTarget.path, true);
+        } else {
+            window.api.sendCommand(`OPEN|${contextTarget.path}`);
+        }
+    }
+};
+
+document.getElementById('ctx-cut').onclick = () => {
+    const items = getSelectedItems();
+    if (items.length > 0) {
+        clipboard = { mode: 'cut', items };
+        document.querySelectorAll('#file-list-body tr, .grid-item').forEach(el => el.classList.remove('cut-item'));
+        document.querySelectorAll('.selected').forEach(el => el.classList.add('cut-item'));
+        updateClipboardButtons();
+    }
+};
+
+document.getElementById('ctx-copy').onclick = () => {
+    const items = getSelectedItems();
+    if (items.length > 0) {
+        clipboard = { mode: 'copy', items };
+        document.querySelectorAll('#file-list-body tr, .grid-item').forEach(el => el.classList.remove('cut-item'));
+        updateClipboardButtons();
+    }
+};
+
+document.getElementById('ctx-paste').onclick = () => {
+    if (clipboard.mode && clipboard.items.length > 0) {
+        const cmd = clipboard.mode === 'copy' ? 'COPY' : 'MOVE';
+        clipboard.items.forEach(item => {
+            window.api.sendCommand(`${cmd}|${item.srcPath}|${currentPath}${item.name}`);
+        });
+        if (clipboard.mode === 'cut') {
+            clipboard = { mode: null, items: [] };
+            updateClipboardButtons();
+        }
+    }
+};
+
+document.getElementById('ctx-rename').onclick = () => {
+    const selected = document.querySelector('.selected');
+    if (selected) {
+        const nameCell = selected.querySelector('.file-name');
+        if (nameCell) startRename(nameCell, selected.dataset.name);
+    }
+};
+
+document.getElementById('ctx-delete').onclick = () => {
+    const items = getSelectedItems();
+    if (items.length > 0) {
+        if (confirm(`${items.length}個のアイテムを削除しますか？`)) {
+            items.forEach(item => {
+                window.api.sendCommand(`DELETE|${item.srcPath}`);
+            });
+        }
+    }
+};

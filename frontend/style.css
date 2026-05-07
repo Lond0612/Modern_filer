@@ -1,6 +1,84 @@
 /* ==========================================================================
    1. Base & Layout (全体の設定と大枠のレイアウト)
    ========================================================================== */
+.context-menu {
+    position: fixed;
+    z-index: 10000;
+    background: rgba(45, 45, 45, 0.85);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    padding: 6px;
+    min-width: 260px;
+    display: none;
+    animation: menuFadeIn 0.15s ease-out;
+}
+
+@keyframes menuFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.context-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    color: #eee;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.context-item svg {
+    width: 16px;
+    height: 16px;
+    color: #aaa;
+}
+
+.context-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.context-item.delete:hover {
+    background: rgba(255, 69, 58, 0.2);
+    color: #ff453a;
+}
+
+.context-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 6px 4px;
+}
+
+.context-horizontal-actions {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 4px;
+    gap: 2px;
+}
+
+.context-item.icon-only {
+    flex-direction: column;
+    padding: 8px 4px;
+    flex: 1;
+    justify-content: center;
+    min-width: 50px;
+    gap: 4px;
+}
+
+.context-item.icon-only svg {
+    width: 20px;
+    height: 20px;
+}
+
+.icon-label {
+    font-size: 10px;
+    opacity: 0.8;
+}
 body {
     margin: 0;
     padding: 0;
