@@ -2,6 +2,8 @@
 // 状態変数
 // ---------------------------------------------------------------------------
 let currentPath = '';
+let isHomeActive = true;
+let recentFolders = JSON.parse(localStorage.getItem('recentFolders') || '[]');
 let pendingRename = null; // 作成直後のリネーム待ちファイル名
 
 // クリップボード状態
@@ -10,6 +12,9 @@ let clipboard = { mode: null, items: [] };
 // items: [{ name: string, srcPath: string }]
 
 const addressInput = document.getElementById('address-input');
+const btnSidebarHome = document.getElementById('btn-sidebar-home');
+const homeView = document.getElementById('home-view');
+const explorerView = document.getElementById('explorer-view');
 const fileListBody = document.getElementById('file-list-body');
 const terminalOutput = document.getElementById('terminal-output');
 const terminalInput = document.getElementById('terminal-input');
@@ -379,6 +384,98 @@ btnUp.onclick = () => {
     }
 };
 
+btnSidebarHome.onclick = () => showHome();
+
+function showHome() {
+    isHomeActive = true;
+    homeView.style.display = 'block';
+    explorerView.style.display = 'none';
+    btnSidebarHome.classList.add('active');
+    addressInput.value = 'HOME';
+    
+    // ツリーの選択解除
+    document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
+    // HOME項目をアクティブに
+    const homeNode = treeView.querySelector('.tree-node[data-path="HOME"]');
+    if (homeNode) homeNode.querySelector('.tree-item').classList.add('active');
+    
+    renderHomeContent();
+}
+
+function showExplorer(path) {
+    isHomeActive = false;
+    homeView.style.display = 'none';
+    explorerView.style.display = 'block';
+    btnSidebarHome.classList.remove('active');
+    if (path) loadPath(path, true);
+}
+
+async function renderHomeContent() {
+    const quickAccess = document.getElementById('home-quick-access');
+    const recentList = document.getElementById('home-recent-list');
+    const greeting = document.getElementById('home-greeting');
+    
+    // 挨拶の更新
+    const hour = new Date().getHours();
+    if (hour < 12) greeting.textContent = "おはようございます";
+    else if (hour < 18) greeting.textContent = "こんにちは";
+    else greeting.textContent = "こんばんは";
+
+    // クイックアクセスの描画
+    quickAccess.innerHTML = '';
+    const paths = await window.api.getSystemPaths();
+    if (paths) {
+        const items = [
+            { path: paths.desktop, label: "デスクトップ", icon: IconThemeManager.customIcons.desktop },
+            { path: paths.downloads, label: "ダウンロード", icon: IconThemeManager.customIcons.download },
+            { path: paths.documents, label: "ドキュメント", icon: IconThemeManager.customIcons.doc },
+            { path: paths.music, label: "ミュージック", icon: IconThemeManager.customIcons.audio },
+            { path: paths.pictures, label: "ピクチャ", icon: IconThemeManager.customIcons.image },
+            { path: paths.videos, label: "ビデオ", icon: IconThemeManager.customIcons.media }
+        ];
+
+        items.forEach(item => {
+            const tile = document.createElement('div');
+            tile.className = 'quick-tile';
+            tile.innerHTML = `
+                <div class="tile-icon">${item.icon}</div>
+                <span>${item.label}</span>
+            `;
+            tile.onclick = () => showExplorer(item.path);
+            quickAccess.appendChild(tile);
+        });
+    }
+
+    // 最近使用したフォルダの描画
+    recentList.innerHTML = '';
+    if (recentFolders.length === 0) {
+        recentList.innerHTML = '<div style="color:#666; font-size:13px;">履歴はありません</div>';
+    } else {
+        recentFolders.slice(0, 8).forEach(folder => {
+            const item = document.createElement('div');
+            item.className = 'recent-item';
+            item.innerHTML = `
+                <div class="recent-icon">${IconThemeManager.customIcons.folder}</div>
+                <div class="recent-info">
+                    <span class="recent-name">${folder.name}</span>
+                    <span class="recent-path">${folder.path}</span>
+                </div>
+            `;
+            item.onclick = () => showExplorer(folder.path);
+            recentList.appendChild(item);
+        });
+    }
+}
+
+function addToRecentFolders(path) {
+    if (!path || path === 'HOME') return;
+    const name = path.split('\\').filter(Boolean).pop() || path;
+    recentFolders = recentFolders.filter(f => f.path !== path);
+    recentFolders.unshift({ name, path, timestamp: Date.now() });
+    recentFolders = recentFolders.slice(0, 20);
+    localStorage.setItem('recentFolders', JSON.stringify(recentFolders));
+}
+
 btnRefresh.onclick = () => {
     if (currentPath) {
         window.api.sendCommand(`LIST|${currentPath}`);
@@ -394,7 +491,8 @@ function loadPath(path, isUserClick = false) {
     currentPath = path;
     addressInput.value = currentPath;
     updateNavButtons();
-    updateTreeActiveState();
+    addToRecentFolders(path);
+
     if (isUserClick) {
         window.api.sendCommand(`CD|${currentPath}`);
     } else {
@@ -407,7 +505,6 @@ function navigateTo(path) {
     currentPath = path;
     addressInput.value = currentPath;
     updateNavButtons();
-    updateTreeActiveState();
     window.api.sendCommand(`CD|${currentPath}`);
 }
 
@@ -419,10 +516,8 @@ window.api.onBackendResponse((obj) => {
         case 'READY':
             currentPath = obj.content;
             if (!currentPath.endsWith('\\')) currentPath += '\\';
-            addressInput.value = currentPath;
-            updateNavButtons();
             initTree(currentPath);
-            updateTreeActiveState();
+            showHome();
             break;
 
         case 'START_LIST':
@@ -513,7 +608,6 @@ window.api.onBackendResponse((obj) => {
             createTreeNode(obj.content, treeView, true);
             break;
         case 'END_DRIVES':
-            updateTreeActiveState();
             break;
 
         case 'END_TREE':
@@ -971,6 +1065,11 @@ function createTreeNode(fullPath, container, isRoot = false, customIcon = null, 
         e.stopPropagation();
         document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
         item.classList.add('active');
+        
+        // クイックアクセス等のトグルがない項目の場合は1クリックで移動
+        if (hideExpander) {
+            showExplorer(node.dataset.path);
+        }
     };
 
     item.ondblclick = (e) => {

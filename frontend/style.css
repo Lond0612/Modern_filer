@@ -390,7 +390,7 @@ body {
    5. Sidebar (サイドバー: フォルダツリー)
    ========================================================================== */
 .sidebar {
-    width: 240px;
+    width: calc(240px - 5vh);
     background: #252525;
     border-right: 1px solid #333;
     display: flex;
@@ -482,12 +482,202 @@ body {
 }
 
 /* ==========================================================================
+   11. Home View (ホーム画面)
+   ========================================================================== */
+.sidebar-nav {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: none;
+    color: #aaa;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-family: inherit;
+    width: 100%;
+    text-align: left;
+}
+
+.sidebar-nav-item svg {
+    width: 18px;
+    height: 18px;
+}
+
+.sidebar-nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.sidebar-nav-item.active {
+    background: rgba(45, 90, 142, 0.3);
+    color: #4facfe;
+}
+
+.home-view {
+    padding: 40px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
+    min-height: 100%;
+    box-sizing: border-box;
+}
+
+.home-hero {
+    margin-bottom: 40px;
+    animation: fadeInDown 0.8s ease-out;
+}
+
+.home-hero h1 {
+    font-size: 32px;
+    margin: 0 0 10px 0;
+    background: linear-gradient(to right, #fff, #4facfe);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.home-hero p {
+    color: #888;
+    margin: 0;
+}
+
+.home-section {
+    margin-bottom: 40px;
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.section-title {
+    font-size: 18px;
+    color: #aaa;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.quick-access-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+}
+
+.quick-tile {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    padding: 20px 15px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quick-tile:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(79, 172, 254, 0.4);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.quick-tile .tile-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quick-tile .tile-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.quick-tile span {
+    font-weight: 500;
+    color: #ddd;
+}
+
+.recent-folders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.recent-item {
+    background: rgba(255, 255, 255, 0.02);
+    padding: 12px 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: 1px solid transparent;
+}
+
+.recent-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.recent-item .recent-icon {
+    color: #4facfe;
+    width: 20px;
+    display: flex;
+}
+
+.recent-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.recent-name {
+    font-weight: 500;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.recent-path {
+    font-size: 12px;
+    color: #666;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
    6. File Pane (ファイル一覧ペイン)
    ========================================================================== */
 .file-pane {
     flex: 2;
     overflow-y: auto;
+    overflow-x: hidden;
     border-right: 1px solid #444;
+    position: relative;
+}
+
+.explorer-view {
+    width: 100%;
 }
 
 #file-table {
