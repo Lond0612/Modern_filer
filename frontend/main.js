@@ -26,11 +26,11 @@ function createWindow() {
   });
 
   mainWindow.loadFile('index.html');
-  
+
   mainWindow.webContents.on('did-finish-load', () => {
     isWindowReady = true;
     for (const msg of messageQueue) {
-        mainWindow.webContents.send('backend-response', msg);
+      mainWindow.webContents.send('backend-response', msg);
     }
     messageQueue = [];
   });
@@ -52,12 +52,12 @@ function startServer() {
       if (!line.includes('{')) continue;
       try {
         const obj = JSON.parse(line);
-        
+
         if (!isWindowReady) {
-            messageQueue.push(obj);
-            continue;
+          messageQueue.push(obj);
+          continue;
         }
-        
+
         if (obj.type === 'CMD_OUT') {
           batchedCmdOut += obj.content;
         } else {
@@ -72,7 +72,7 @@ function startServer() {
         console.error('Failed to parse JSON:', line, e);
       }
     }
-    
+
     // Final flush of batched content
     if (batchedCmdOut && isWindowReady) {
       mainWindow.webContents.send('backend-response', { type: 'CMD_OUT', content: batchedCmdOut });
@@ -132,61 +132,68 @@ ipcMain.handle('get-system-paths', () => {
 });
 
 ipcMain.handle('READ_FILE_TEXT', async (event, filePath) => {
-    try {
-        // セキュリティ上の配慮として、一定サイズ以上の場合は先頭のみ読み込む等の制限を設けるのが望ましい
-        const stats = await fs.stat(filePath);
-        if (stats.size > 1024 * 1024) { // 1MB制限
-            const buffer = Buffer.alloc(1024 * 10); // 10KB
-            const handle = await fs.open(filePath, 'r');
-            const { bytesRead } = await handle.read(buffer, 0, 1024 * 10, 0);
-            await handle.close();
-            return buffer.toString('utf8', 0, bytesRead) + '\n\n... (File too large, preview truncated)';
-        }
-        return await fs.readFile(filePath, 'utf8');
-    } catch (err) {
-        console.error('IPC READ_FILE_TEXT Error:', err);
-        throw err;
+  try {
+    // セキュリティ上の配慮として、一定サイズ以上の場合は先頭のみ読み込む等の制限を設けるのが望ましい
+    const stats = await fs.stat(filePath);
+    if (stats.size > 1024 * 1024) { // 1MB制限
+      const buffer = Buffer.alloc(1024 * 10); // 10KB
+      const handle = await fs.open(filePath, 'r');
+      const { bytesRead } = await handle.read(buffer, 0, 1024 * 10, 0);
+      await handle.close();
+      return buffer.toString('utf8', 0, bytesRead) + '\n\n... (File too large, preview truncated)';
     }
+    return await fs.readFile(filePath, 'utf8');
+  } catch (err) {
+    console.error('IPC READ_FILE_TEXT Error:', err);
+    throw err;
+  }
 });
 
 ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
-    if (previewWindow) {
-        previewWindow.show();
-        previewWindow.webContents.send('backend-response', { type: 'UPDATE_PREVIEW', file: data.file });
-        return;
+  if (previewWindow) {
+    previewWindow.show();
+    previewWindow.webContents.send('backend-response', { type: 'UPDATE_PREVIEW', file: data.file });
+    return;
+  }
+
+  const mainBounds = mainWindow.getBounds();
+
+  previewWindow = new BrowserWindow({
+    width: 600,
+    height: 338, // 16:9 ratio
+    x: mainBounds.x + mainBounds.width - 400, // メインウィンドウの右側に寄せる
+    y: mainBounds.y + mainBounds.height - 330, // メインウィンドウの下側に寄せる
+    title: 'Preview',
+    backgroundColor: '#1e1e1e',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
     }
+  });
 
-    previewWindow = new BrowserWindow({
-        width: 600,
-        height: 800,
-        title: 'Preview',
-        backgroundColor: '#1e1e1e',
-        webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
-            contextIsolation: true,
-            nodeIntegration: false
-        }
-    });
+  previewWindow.loadFile('preview.html');
 
-    previewWindow.loadFile('preview.html');
-    
-    previewWindow.webContents.on('did-finish-load', () => {
-        previewWindow.webContents.send('backend-response', { type: 'UPDATE_PREVIEW', file: data.file });
-        previewWindow.webContents.send('backend-response', { 
-            type: 'APPLY_THEME', 
-            theme: data.theme,
-            isDark: data.isDark,
-            highContrast: data.highContrast
-        });
+  previewWindow.webContents.on('did-finish-load', () => {
+    previewWindow.webContents.send('backend-response', { type: 'UPDATE_PREVIEW', file: data.file });
+    previewWindow.webContents.send('backend-response', {
+      type: 'APPLY_THEME',
+      theme: data.theme,
+      isDark: data.isDark,
+      highContrast: data.highContrast
     });
+  });
 
-    previewWindow.on('closed', () => {
-        previewWindow = null;
-    });
+  previewWindow.on('closed', () => {
+    previewWindow = null;
+    if (mainWindow) {
+      mainWindow.webContents.send('backend-response', { type: 'PREVIEW_WINDOW_CLOSED' });
+    }
+  });
 });
 
 ipcMain.on('CLOSE_PREVIEW_WINDOW', () => {
-    if (previewWindow) {
-        previewWindow.close();
-    }
+  if (previewWindow) {
+    previewWindow.close();
+  }
 });

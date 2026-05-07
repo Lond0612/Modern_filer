@@ -23,6 +23,14 @@ const PreviewManager = {
         if (this.toggleBtn) {
             this.toggleBtn.onclick = () => this.toggle();
         }
+
+        // ウィンドウが外部で閉じられた際の同期
+        window.api.onBackendResponse((obj) => {
+            if (obj.type === 'PREVIEW_WINDOW_CLOSED') {
+                this.isOpen = false;
+                if (this.toggleBtn) this.toggleBtn.classList.remove('active');
+            }
+        });
     },
 
     toggle() {
