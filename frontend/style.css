@@ -696,14 +696,14 @@ body.compact-mode #file-table td {
     justify-content: center;
     align-items: center;
     width: 100%;
-    aspect-ratio: 1;
+    aspect-ratio: 16 / 9;
     background: transparent;
     border-radius: 4px;
     overflow: hidden;
     margin-bottom: 8px;
 }
 
-.grid-icon img {
+.grid-icon img, .grid-video-thumb {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -733,10 +733,10 @@ body.compact-mode #file-table td {
 }
 
 /* 各グリッドサイズでのアイコン調整 */
-.grid-size-extralarge .grid-icon-placeholder { font-size: 96px; }
-.grid-size-large .grid-icon-placeholder { font-size: 64px; }
-.grid-size-medium .grid-icon-placeholder { font-size: 48px; }
-.grid-size-small .grid-icon-placeholder { font-size: 32px; }
+.grid-size-extralarge .grid-icon-placeholder { font-size: 80px; }
+.grid-size-large .grid-icon-placeholder { font-size: 56px; }
+.grid-size-medium .grid-icon-placeholder { font-size: 40px; }
+.grid-size-small .grid-icon-placeholder { font-size: 24px; }
 
 .grid-name {
     width: 100%;
@@ -751,11 +751,11 @@ body.compact-mode #file-table td {
     -webkit-box-orient: vertical;
 }
 
-/* グリッドサイズ定義 */
-.grid-size-extralarge { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
-.grid-size-large { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
-.grid-size-medium { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
-.grid-size-small { grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); }
+/* グリッドサイズ定義 (16:9に合わせて横幅を調整) */
+.grid-size-extralarge { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.grid-size-large { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.grid-size-medium { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+.grid-size-small { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
 
 /* ==========================================================================
    9. Settings Screen (設定画面)
