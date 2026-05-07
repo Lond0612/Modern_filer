@@ -257,23 +257,41 @@
                 <!-- デザインタブ -->
                 <div id="tab-theme" class="settings-tab-content active">
                     <div class="tab-header">デザイン設定</div>
-                    <div class="setting-group">
+                    <div class="setting-group-vertical">
                         <div class="setting-label">
                             <span class="main-label">テーマプリセット</span>
                             <span class="sub-label">あらかじめ用意された配色を選択します</span>
                         </div>
-                        <div class="theme-presets">
-                            <div class="theme-option active" data-theme="default" title="Default Dark">
-                                <div class="theme-preview" style="background:#1e1e1e;"></div>
+                        <div class="theme-presets-container">
+                            <div class="preset-section-label">ライトベース</div>
+                            <div class="theme-presets">
+                                <div class="theme-option" data-theme="snow" title="Snow Light">
+                                    <div class="theme-preview" style="background:#f8f9fa; border:1px solid #ddd;"></div>
+                                </div>
+                                <div class="theme-option" data-theme="sakura" title="桜 (Sakura Pink)">
+                                    <div class="theme-preview" style="background:#fffcfd; border:1px solid #ffe4e1;"></div>
+                                </div>
+                                <div class="theme-option" data-theme="amber" title="琥珀 (Amber Yellow)">
+                                    <div class="theme-preview" style="background:#fffbeb; border:1px solid #fbbf24;"></div>
+                                </div>
+                                <div class="theme-option" data-theme="sky" title="空 (Sky Blue)">
+                                    <div class="theme-preview" style="background:#f0f9ff; border:1px solid #bae6fd;"></div>
+                                </div>
                             </div>
-                            <div class="theme-option" data-theme="snow" title="Snow Light">
-                                <div class="theme-preview" style="background:#f8f9fa; border:1px solid #ddd;"></div>
-                            </div>
-                            <div class="theme-option" data-theme="deepblue" title="深青 (Deep Blue)">
-                                <div class="theme-preview" style="background:#001b36;"></div>
-                            </div>
-                            <div class="theme-option" data-theme="khaki" title="カーキ (Khaki)">
-                                <div class="theme-preview" style="background:#2b2b1b;"></div>
+                            
+                            <div class="preset-divider"></div>
+                            
+                            <div class="preset-section-label">ダークベース</div>
+                            <div class="theme-presets">
+                                <div class="theme-option active" data-theme="default" title="Default Dark">
+                                    <div class="theme-preview" style="background:#1e1e1e;"></div>
+                                </div>
+                                <div class="theme-option" data-theme="deepblue" title="深青 (Deep Blue)">
+                                    <div class="theme-preview" style="background:#001b36;"></div>
+                                </div>
+                                <div class="theme-option" data-theme="khaki" title="カーキ (Khaki)">
+                                    <div class="theme-preview" style="background:#2b2b1b;"></div>
+                                </div>
                             </div>
                         </div>
                     </div>

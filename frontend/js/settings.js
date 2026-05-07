@@ -93,14 +93,17 @@ const SettingsManager = {
     },
 
     applyThemePreset(theme) {
-        document.body.classList.remove('theme-deepblue', 'theme-khaki', 'light-mode');
+        document.body.classList.remove('theme-deepblue', 'theme-khaki', 'theme-sakura', 'theme-amber', 'theme-sky', 'light-mode');
         this.themeOptions.forEach(opt => opt.classList.remove('active'));
         
         const selectedOpt = Array.from(this.themeOptions).find(opt => opt.dataset.theme === theme);
         if (selectedOpt) selectedOpt.classList.add('active');
 
-        if (theme === 'snow') {
+        const lightThemes = ['snow', 'sakura', 'amber', 'sky'];
+        
+        if (lightThemes.includes(theme)) {
             document.body.classList.add('light-mode');
+            if (theme !== 'snow') document.body.classList.add(`theme-${theme}`);
             localStorage.setItem('isDarkMode', 'false');
         } else {
             if (theme !== 'default') document.body.classList.add(`theme-${theme}`);
