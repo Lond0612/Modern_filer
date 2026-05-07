@@ -1,13 +1,77 @@
 /* ==========================================================================
+   0. Theme Variables (テーマ定数)
+   ========================================================================== */
+:root {
+    /* Dark Mode (Default) */
+    --bg-main: #1e1e1e;
+    --bg-toolbar: #2d2d2d;
+    --bg-input: #3c3c3c;
+    --bg-sidebar: #252526;
+    --bg-item-hover: rgba(255, 255, 255, 0.08);
+    --bg-item-selected: rgba(0, 122, 204, 0.3);
+    --text-main: #e0e0e0;
+    --text-muted: #aaa;
+    --text-bright: #ffffff;
+    --border-main: #444;
+    --border-light: rgba(255, 255, 255, 0.1);
+    --accent-color: #007acc;
+    --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.35);
+    --glass-bg: rgba(45, 45, 45, 0.85);
+    --tree-active: rgba(0, 122, 204, 0.2);
+
+    /* Terminal */
+    --bg-terminal: #0c0c0c;
+    --text-terminal: #00ff00;
+    --text-terminal-echo: #00ffff;
+    --text-terminal-error: #ff5555;
+
+    /* Icon Fills */
+    --icon-folder: rgb(255, 212, 59);
+    --icon-file: rgb(241, 242, 243);
+    --icon-accent: #4facfe;
+}
+
+body.light-mode {
+    --bg-main: #f8f9fa;
+    --bg-toolbar: #ffffff;
+    --bg-input: #e9ecef;
+    --bg-sidebar: #f1f3f5;
+    --bg-item-hover: rgba(0, 0, 0, 0.05);
+    --bg-item-selected: rgba(0, 122, 204, 0.15);
+    --text-main: #343a40;
+    --text-muted: #6c757d;
+    --text-bright: #000000;
+    --border-main: #dee2e6;
+    --border-light: rgba(0, 0, 0, 0.08);
+    --accent-color: #007acc;
+    --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+    --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+    --glass-bg: rgba(255, 255, 255, 0.9);
+    --tree-active: rgba(0, 122, 204, 0.1);
+
+    /* Terminal */
+    --bg-terminal: #ffffff;
+    --text-terminal: #333333;
+    --text-terminal-echo: #005cc5;
+    --text-terminal-error: #d73a49;
+
+    /* Icon Fills */
+    --icon-folder: #e8a600;
+    --icon-file: #555555;
+    --icon-accent: #007acc;
+}
+
+/* ==========================================================================
    1. Base & Layout (全体の設定と大枠のレイアウト)
    ========================================================================== */
 .context-menu {
     position: fixed;
     z-index: 10000;
-    background: rgba(45, 45, 45, 0.85);
+    background: var(--glass-bg);
     backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     border-radius: 10px;
     padding: 6px;
     min-width: 260px;
@@ -25,7 +89,7 @@
     align-items: center;
     gap: 10px;
     padding: 8px 12px;
-    color: #eee;
+    color: var(--text-main);
     font-size: 13px;
     cursor: pointer;
     border-radius: 6px;
@@ -35,22 +99,22 @@
 .context-item svg {
     width: 16px;
     height: 16px;
-    color: #aaa;
+    color: var(--text-muted);
 }
 
 .context-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    background: var(--bg-item-hover);
+    color: var(--text-bright);
 }
 
 .context-item.delete:hover {
     background: rgba(255, 69, 58, 0.2);
-    color: #ff453a;
+    color: var(--text-terminal-error);
 }
 
 .context-divider {
     height: 1px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--border-light);
     margin: 6px 4px;
 }
 
@@ -89,10 +153,11 @@ body {
     margin: 0;
     padding: 0;
     font-family: 'Segoe UI', sans-serif;
-    background: #1e1e1e;
-    color: #e0e0e0;
+    background: var(--bg-main);
+    color: var(--text-main);
     height: 100vh;
     overflow: hidden;
+    transition: background 0.3s, color 0.3s;
 }
 
 .app-container {
@@ -112,14 +177,14 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: var(--scrollbar-thumb);
     border: 4px solid transparent;
     background-clip: padding-box;
     border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(255, 255, 255, 0.35);
+    background-color: var(--scrollbar-thumb-hover);
 }
 
 ::-webkit-scrollbar-corner {
@@ -131,8 +196,8 @@ body {
    ========================================================================== */
 .toolbar {
     padding: 10px;
-    background: #2d2d2d;
-    border-bottom: 1px solid #444;
+    background: var(--bg-toolbar);
+    border-bottom: 1px solid var(--border-main);
     display: flex;
     gap: 10px;
 }
@@ -146,7 +211,7 @@ body {
 .nav-btn {
     background: transparent;
     border: none;
-    color: #ccc;
+    color: var(--text-muted);
     width: 30px;
     height: 30px;
     border-radius: 4px;
@@ -164,20 +229,20 @@ body {
 }
 
 .nav-btn:hover:not(:disabled) {
-    background: #4a4a4a;
-    color: #fff;
+    background: var(--bg-item-hover);
+    color: var(--text-bright);
 }
 
 .nav-btn:disabled {
-    color: #555;
+    color: var(--border-main);
     cursor: default;
 }
 
 #address-input {
     flex: 1;
-    background: #3c3c3c;
-    border: 1px solid #555;
-    color: #fff;
+    background: var(--bg-input);
+    border: 1px solid var(--border-main);
+    color: var(--text-bright);
     padding: 5px 10px;
     border-radius: 4px;
 }
@@ -192,8 +257,8 @@ body {
 .search-box {
     display: flex;
     align-items: center;
-    background: #3c3c3c;
-    border: 1px solid #555;
+    background: var(--bg-input);
+    border: 1px solid var(--border-main);
     border-radius: 4px;
     padding: 0 8px;
     gap: 6px;
@@ -202,7 +267,7 @@ body {
 .search-icon {
     width: 14px;
     height: 14px;
-    color: #888;
+    color: var(--text-muted);
     flex-shrink: 0;
 }
 
@@ -210,7 +275,7 @@ body {
     flex: 1;
     background: transparent;
     border: none;
-    color: #fff;
+    color: var(--text-bright);
     outline: none;
     padding: 5px 0;
     font-size: 13px;
@@ -218,7 +283,7 @@ body {
 }
 
 #search-input::placeholder {
-    color: #666;
+    color: var(--text-muted);
 }
 
 .search-results {
@@ -226,13 +291,13 @@ body {
     top: calc(100% + 4px);
     left: 0;
     right: 0;
-    background: #252525;
-    border: 1px solid #555;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-main);
     border-radius: 4px;
     max-height: 320px;
     overflow-y: auto;
     z-index: 1000;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .search-result-item {
@@ -241,7 +306,7 @@ body {
     gap: 8px;
     padding: 6px 10px;
     cursor: pointer;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border-light);
     font-size: 12px;
 }
 
@@ -250,19 +315,19 @@ body {
 }
 
 .search-result-item:hover {
-    background: #2d5a8e;
+    background: var(--bg-item-hover);
 }
 
 .search-result-name {
     font-weight: 500;
-    color: #e0e0e0;
+    color: var(--text-main);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .search-result-path {
-    color: #777;
+    color: var(--text-muted);
     font-size: 11px;
     white-space: nowrap;
     overflow: hidden;
@@ -271,7 +336,7 @@ body {
 
 .search-searching {
     padding: 10px;
-    color: #888;
+    color: var(--text-muted);
     text-align: center;
     font-size: 12px;
 }
@@ -281,8 +346,8 @@ body {
    ========================================================================== */
 .actions-bar {
     padding: 6px 10px;
-    background: #252525;
-    border-bottom: 1px solid #333;
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border-main);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -291,7 +356,7 @@ body {
 .action-btn {
     background: transparent;
     border: none;
-    color: #e0e0e0;
+    color: var(--text-main);
     height: 32px;
     padding: 0 10px;
     border-radius: 4px;
@@ -311,13 +376,13 @@ body {
 }
 
 .action-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--bg-item-hover);
 }
 
 .separator {
     width: 1px;
     height: 20px;
-    background: #444;
+    background: var(--border-main);
     margin: 0 8px;
 }
 
@@ -327,7 +392,7 @@ body {
 }
 
 #btn-new {
-    background: #007acc;
+    background: var(--accent-color);
     color: white;
     font-weight: 500;
     margin-right: 4px;
@@ -347,10 +412,10 @@ body {
     position: absolute;
     top: calc(100% + 6px);
     left: 0;
-    background: #2d2d2d;
-    border: 1px solid #454545;
+    background: var(--bg-toolbar);
+    border: 1px solid var(--border-main);
     border-radius: 6px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     min-width: 200px;
     z-index: 1000;
     display: none;
@@ -381,13 +446,13 @@ body {
     padding: 10px 15px;
     cursor: pointer;
     font-size: 13px;
-    color: #cccccc;
+    color: var(--text-main);
     transition: all 0.15s ease;
 }
 
 .menu-item:hover {
-    background: #3c3c3c;
-    color: #ffffff;
+    background: var(--bg-item-hover);
+    color: var(--text-bright);
 }
 
 .menu-item svg {
@@ -397,7 +462,7 @@ body {
 }
 
 .menu-item:hover svg {
-    color: #007acc;
+    color: var(--accent-color);
 }
 
 /* チェックアイコン (ソートメニュー用) */
@@ -406,7 +471,7 @@ body {
     width: 16px;
     text-align: center;
     font-weight: bold;
-    color: #007acc;
+    color: var(--accent-color);
     transition: opacity 0.15s ease;
 }
 
@@ -443,7 +508,7 @@ body {
     content: "";
     width: 1px;
     height: 100%;
-    background: #333;
+    background: var(--border-main);
     transition: background 0.2s;
 }
 
@@ -462,14 +527,14 @@ body {
     content: "";
     width: 100%;
     height: 1px;
-    background: #333;
+    background: var(--border-main);
     transition: background 0.2s;
 }
 
 .resizer-h:hover::after,
 .resizer-v:hover::after {
-    background: #007acc;
-    box-shadow: 0 0 4px #007acc;
+    background: var(--accent-color);
+    box-shadow: 0 0 4px var(--accent-color);
 }
 
 /* ==========================================================================
@@ -477,8 +542,8 @@ body {
    ========================================================================== */
 .sidebar {
     width: calc(240px - 5vh);
-    background: #252525;
-    border-right: 1px solid #333;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-main);
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
@@ -488,10 +553,10 @@ body {
     padding: 5px 15px;
     font-size: 11px;
     font-weight: bold;
-    color: #666;
+    color: var(--text-muted);
     letter-spacing: 1px;
     text-transform: uppercase;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border-light);
 }
 
 .tree-view {
@@ -511,20 +576,20 @@ body {
     padding: 4px 10px;
     cursor: pointer;
     font-size: 13px;
-    color: #ccc;
+    color: var(--text-main);
     white-space: nowrap;
     border-left: 3px solid transparent;
 }
 
 .tree-item:hover {
-    background: #2d2d2d;
-    color: #fff;
+    background: var(--bg-item-hover);
+    color: var(--text-bright);
 }
 
 .tree-item.active {
-    background: #37373d;
-    color: #fff;
-    border-left-color: #007acc;
+    background: var(--tree-active);
+    color: var(--accent-color);
+    border-left-color: var(--accent-color);
 }
 
 .tree-expander {
@@ -535,7 +600,7 @@ body {
     justify-content: center;
     margin-right: 4px;
     transition: transform 0.1s;
-    color: #666;
+    color: var(--text-muted);
 }
 
 .tree-expander.expanded {
@@ -562,7 +627,7 @@ body {
 
 .tree-separator {
     height: 1px;
-    background: #444;
+    background: var(--border-main);
     margin: 8px 15px;
     opacity: 0.5;
 }
@@ -583,7 +648,7 @@ body {
     gap: 10px;
     background: transparent;
     border: none;
-    color: #aaa;
+    color: var(--text-main);
     padding: 10px 12px;
     border-radius: 8px;
     cursor: pointer;
@@ -600,18 +665,18 @@ body {
 }
 
 .sidebar-nav-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    background: var(--bg-item-hover);
+    color: var(--text-bright);
 }
 
 .sidebar-nav-item.active {
-    background: rgba(45, 90, 142, 0.3);
-    color: #4facfe;
+    background: var(--tree-active);
+    color: var(--accent-color);
 }
 
 .home-view {
     padding: 40px;
-    background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
+    background: var(--bg-main);
     min-height: 100%;
     box-sizing: border-box;
 }
@@ -624,13 +689,11 @@ body {
 .home-hero h1 {
     font-size: 32px;
     margin: 0 0 10px 0;
-    background: linear-gradient(to right, #fff, #4facfe);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: var(--text-bright);
 }
 
 .home-hero p {
-    color: #888;
+    color: var(--text-muted);
     margin: 0;
 }
 
@@ -648,7 +711,7 @@ body {
 
 .section-title {
     font-size: 18px;
-    color: #aaa;
+    color: var(--text-muted);
     margin-bottom: 20px;
     font-weight: 600;
 }
@@ -660,8 +723,8 @@ body {
 }
 
 .quick-tile {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--bg-input);
+    border: 1px solid var(--border-light);
     backdrop-filter: blur(10px);
     padding: 7px 5px;
     border-radius: 16px;
@@ -675,10 +738,10 @@ body {
 }
 
 .quick-tile:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(79, 172, 254, 0.4);
+    background: var(--bg-item-hover);
+    border-color: var(--accent-color);
     transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
 
 .quick-tile .tile-icon {
@@ -696,7 +759,7 @@ body {
 
 .quick-tile span {
     font-weight: 500;
-    color: #ddd;
+    color: var(--text-main);
 }
 
 .recent-folders-list {
@@ -706,7 +769,7 @@ body {
 }
 
 .recent-item {
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--bg-input);
     padding: 12px 20px;
     border-radius: 10px;
     display: flex;
@@ -714,16 +777,16 @@ body {
     gap: 15px;
     cursor: pointer;
     transition: background 0.2s;
-    border: 1px solid transparent;
+    border: 1px solid var(--border-light);
 }
 
 .recent-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: var(--bg-item-hover);
+    border-color: var(--border-main);
 }
 
 .recent-item .recent-icon {
-    color: #4facfe;
+    color: var(--accent-color);
     width: 20px;
     display: flex;
 }
@@ -741,7 +804,7 @@ body {
 
 .recent-path {
     font-size: 12px;
-    color: #666;
+    color: var(--text-muted);
     display: block;
     white-space: nowrap;
     overflow: hidden;
@@ -779,8 +842,9 @@ body {
     flex: 2;
     overflow-y: auto;
     overflow-x: hidden;
-    border-right: 1px solid #444;
+    border-right: 1px solid var(--border-main);
     position: relative;
+    background: var(--bg-main);
 }
 
 .explorer-view {
@@ -795,11 +859,13 @@ body {
 
 #file-table th {
     text-align: left;
-    background: #2d2d2d;
+    background: var(--bg-toolbar);
+    color: var(--text-muted);
     padding: 6px 8px;
     position: sticky;
     top: 0;
     z-index: 10;
+    border-bottom: 1px solid var(--border-main);
 }
 
 .col-resizer {
@@ -820,7 +886,7 @@ body {
 
 #file-table td {
     padding: 6px 8px;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border-light);
     cursor: pointer;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -828,17 +894,12 @@ body {
 }
 
 #file-table tr:hover {
-    background: #333;
+    background: var(--bg-item-hover);
 }
 
 /* 選択状態・操作状態 */
-#file-table tr.selected {
-    background: #005a9e;
-    color: #fff;
-}
-
 #file-table tr.selected td {
-    background: rgba(0, 122, 204, 0.25);
+    background: var(--bg-item-selected);
 }
 
 #file-table tr.cut-item {
@@ -864,15 +925,15 @@ body {
     min-width: 20px;
     width: 100%;
     box-sizing: border-box;
-    background: #3c3c3c;
-    border: 1px solid #007acc;
-    color: #fff;
+    background: var(--bg-input);
+    border: 1px solid var(--accent-color);
+    color: var(--text-bright);
     padding: 2px 5px;
     border-radius: 2px;
     outline: none;
     font-family: inherit;
     font-size: inherit;
-    box-shadow: 0 0 4px rgba(0, 122, 204, 0.5);
+    box-shadow: 0 0 4px rgba(0, 122, 204, 0.3);
 }
 
 /* ==========================================================================
@@ -882,7 +943,7 @@ body {
     height: 140px;
     display: flex;
     flex-direction: column;
-    background: #0c0c0c;
+    background: var(--bg-terminal);
     flex-shrink: 0;
 }
 
@@ -898,31 +959,31 @@ body {
 .input-area {
     display: flex;
     padding: 5px 10px;
-    background: #1e1e1e;
-    border-top: 1px solid #444;
+    background: var(--bg-terminal);
+    border-top: 1px solid var(--border-light);
 }
 
 .input-area span {
     margin-right: 5px;
-    color: #aaa;
+    color: var(--text-muted);
 }
 
 #terminal-input {
     flex: 1;
     background: transparent;
     border: none;
-    color: #00ff00;
+    color: var(--text-terminal);
     outline: none;
     font-family: 'Consolas', monospace;
 }
 
 /* ターミナルテキストカラー */
 .command-echo {
-    color: #00ffff;
+    color: var(--text-terminal-echo);
 }
 
 .error {
-    color: #ff5555;
+    color: var(--text-terminal-error);
 }
 
 /* ==========================================================================
@@ -939,10 +1000,10 @@ body {
     position: absolute;
     left: 100%;
     top: -5px;
-    background: #2d2d2d;
-    border: 1px solid #454545;
+    background: var(--bg-toolbar);
+    border: 1px solid var(--border-main);
     border-radius: 6px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     min-width: 160px;
     z-index: 1001;
     padding: 5px 0;
@@ -987,12 +1048,12 @@ body.compact-mode #file-table td {
 }
 
 .grid-item:hover {
-    background: #333;
+    background: var(--bg-item-hover);
 }
 
 .grid-item.selected {
-    background: rgba(0, 122, 204, 0.25);
-    border-color: #007acc;
+    background: var(--bg-item-selected);
+    border-color: var(--accent-color);
 }
 
 .grid-item.cut-item {
@@ -1062,7 +1123,7 @@ body.compact-mode #file-table td {
 .grid-name {
     width: 100%;
     font-size: 12px;
-    color: #e0e0e0;
+    color: var(--text-main);
     word-break: break-all;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1098,8 +1159,7 @@ body.compact-mode #file-table td {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(30, 30, 30, 0.95);
-    backdrop-filter: blur(10px);
+    background: var(--bg-main);
     z-index: 2000;
     display: flex;
     flex-direction: column;
@@ -1109,7 +1169,7 @@ body.compact-mode #file-table td {
     display: flex;
     align-items: center;
     padding: 20px;
-    border-bottom: 1px solid #444;
+    border-bottom: 1px solid var(--border-main);
 }
 
 .settings-header h2 {
@@ -1121,7 +1181,7 @@ body.compact-mode #file-table td {
 .back-btn {
     background: transparent;
     border: none;
-    color: #ccc;
+    color: var(--text-muted);
     font-size: 16px;
     display: flex;
     align-items: center;
@@ -1139,8 +1199,8 @@ body.compact-mode #file-table td {
 }
 
 .back-btn:hover {
-    background: #333;
-    color: #fff;
+    background: var(--bg-item-hover);
+    color: var(--text-bright);
 }
 
 .settings-content {
@@ -1155,10 +1215,10 @@ body.compact-mode #file-table td {
 
 .settings-section h3 {
     font-size: 14px;
-    color: #888;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 1px;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border-light);
     padding-bottom: 5px;
     margin-bottom: 15px;
 }
@@ -1182,7 +1242,7 @@ body.compact-mode #file-table td {
 
 .setting-desc {
     font-size: 12px;
-    color: #888;
+    color: var(--text-muted);
 }
 
 /* iOS風トグルスイッチ */
@@ -1206,7 +1266,8 @@ body.compact-mode #file-table td {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #444;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-main);
     transition: .3s;
     border-radius: 26px;
 }
