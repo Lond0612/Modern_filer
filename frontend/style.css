@@ -54,6 +54,12 @@
     margin: 6px 4px;
 }
 
+.context-item.disabled {
+    opacity: 0.3;
+    pointer-events: none;
+    filter: grayscale(1);
+}
+
 .context-horizontal-actions {
     display: flex;
     justify-content: space-between;

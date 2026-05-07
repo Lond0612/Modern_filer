@@ -1255,6 +1255,8 @@ window.addEventListener('contextmenu', (e) => {
         }
     } else {
         contextTarget = null;
+        // 空白部分の右クリックでは既存の選択を解除する
+        document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(el => el.classList.remove('selected'));
     }
 
     // すべてのメニュー項目を一度リセット
