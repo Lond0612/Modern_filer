@@ -283,6 +283,7 @@ body {
         opacity: 0;
         transform: translateY(-8px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -344,7 +345,8 @@ body {
 /* リサイズバー (判定は広く、見た目は細く) */
 .resizer-h {
     width: 8px;
-    margin: 0 -4px; /* レイアウトの隙間を埋める */
+    margin: 0 -4px;
+    /* レイアウトの隙間を埋める */
     background: transparent;
     cursor: col-resize;
     z-index: 100;
@@ -549,8 +551,15 @@ body {
 }
 
 .home-section {
-    margin-bottom: 40px;
+    margin-bottom: 0;
     animation: fadeInUp 0.8s ease-out;
+}
+
+.home-main-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
 }
 
 .section-title {
@@ -570,7 +579,7 @@ body {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
-    padding: 20px 15px;
+    padding: 7px 5px;
     border-radius: 16px;
     display: flex;
     flex-direction: column;
@@ -656,13 +665,27 @@ body {
 }
 
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ==========================================================================
@@ -706,7 +729,8 @@ body {
     z-index: 11;
 }
 
-.col-resizer:hover, .col-resizer.resizing {
+.col-resizer:hover,
+.col-resizer.resizing {
     background: rgba(255, 255, 255, 0.2);
 }
 
@@ -771,7 +795,7 @@ body {
    7. Terminal Pane (ターミナルペイン)
    ========================================================================== */
 .terminal-pane {
-    height: 155px;
+    height: 140px;
     display: flex;
     flex-direction: column;
     background: #0c0c0c;
@@ -825,6 +849,7 @@ body {
 .has-submenu {
     position: relative;
 }
+
 .has-submenu .submenu {
     display: none;
     position: absolute;
@@ -838,6 +863,7 @@ body {
     z-index: 1001;
     padding: 5px 0;
 }
+
 .has-submenu:hover .submenu {
     display: block;
 }
@@ -847,6 +873,7 @@ body.compact-mode .tree-item {
     padding: 2px 10px;
     font-size: 12px;
 }
+
 body.compact-mode #file-table td {
     padding: 3px 8px;
     font-size: 12px;
@@ -900,12 +927,13 @@ body.compact-mode #file-table td {
     margin-bottom: 8px;
 }
 
-.grid-icon img, .grid-video-thumb {
+.grid-icon img,
+.grid-video-thumb {
     width: 100%;
     height: 100%;
     object-fit: cover;
     border-radius: 4px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .grid-icon-placeholder {
@@ -914,7 +942,8 @@ body.compact-mode #file-table td {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 48px; /* Default */
+    font-size: 48px;
+    /* Default */
 }
 
 .grid-icon svg {
@@ -930,10 +959,21 @@ body.compact-mode #file-table td {
 }
 
 /* 各グリッドサイズでのアイコン調整 */
-.grid-size-extralarge .grid-icon-placeholder { font-size: 80px; }
-.grid-size-large .grid-icon-placeholder { font-size: 56px; }
-.grid-size-medium .grid-icon-placeholder { font-size: 40px; }
-.grid-size-small .grid-icon-placeholder { font-size: 24px; }
+.grid-size-extralarge .grid-icon-placeholder {
+    font-size: 80px;
+}
+
+.grid-size-large .grid-icon-placeholder {
+    font-size: 56px;
+}
+
+.grid-size-medium .grid-icon-placeholder {
+    font-size: 40px;
+}
+
+.grid-size-small .grid-icon-placeholder {
+    font-size: 24px;
+}
 
 .grid-name {
     width: 100%;
@@ -949,10 +989,21 @@ body.compact-mode #file-table td {
 }
 
 /* グリッドサイズ定義 (16:9に合わせて横幅を調整) */
-.grid-size-extralarge { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-.grid-size-large { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-.grid-size-medium { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
-.grid-size-small { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
+.grid-size-extralarge {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.grid-size-large {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+.grid-size-medium {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+}
+
+.grid-size-small {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+}
 
 /* ==========================================================================
    9. Settings Screen (設定画面)
@@ -1067,7 +1118,10 @@ body.compact-mode #file-table td {
 .toggle-switch .slider {
     position: absolute;
     cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background-color: #444;
     transition: .3s;
     border-radius: 26px;
@@ -1085,14 +1139,14 @@ body.compact-mode #file-table td {
     border-radius: 50%;
 }
 
-.toggle-switch input:checked + .slider {
+.toggle-switch input:checked+.slider {
     background-color: #007acc;
 }
 
-.toggle-switch input:focus + .slider {
+.toggle-switch input:focus+.slider {
     box-shadow: 0 0 1px #007acc;
 }
 
-.toggle-switch input:checked + .slider:before {
+.toggle-switch input:checked+.slider:before {
     transform: translateX(24px);
 }
