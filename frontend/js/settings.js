@@ -14,6 +14,7 @@ const SettingsManager = {
         
         // Theme
         this.themeOptions = document.querySelectorAll('.theme-option');
+        this.highContrastToggle = document.getElementById('toggle-high-contrast');
         
         // Contents
         this.fontSizeSlider = document.getElementById('font-size-slider');
@@ -42,6 +43,15 @@ const SettingsManager = {
         if (this.closeBtn) {
             this.closeBtn.onclick = () => {
                 this.screen.style.display = 'none';
+            };
+        }
+
+        // Close on overlay click
+        if (this.screen) {
+            this.screen.onclick = (e) => {
+                if (e.target === this.screen) {
+                    this.screen.style.display = 'none';
+                }
             };
         }
 
@@ -81,6 +91,15 @@ const SettingsManager = {
                 localStorage.setItem('settings-zoom', zoom);
             };
         }
+
+        // High Contrast
+        if (this.highContrastToggle) {
+            this.highContrastToggle.onchange = () => {
+                const enabled = this.highContrastToggle.checked;
+                localStorage.setItem('settings-high-contrast', enabled);
+                this.applyHighContrast(enabled);
+            };
+        }
     },
 
     switchTab(tabId) {
@@ -93,7 +112,7 @@ const SettingsManager = {
     },
 
     applyThemePreset(theme) {
-        document.body.classList.remove('theme-deepblue', 'theme-khaki', 'theme-sakura', 'theme-amber', 'theme-sky', 'light-mode');
+        document.body.classList.remove('theme-deepblue', 'theme-khaki', 'theme-sakura', 'theme-amber', 'theme-sky', 'theme-midnight', 'light-mode');
         this.themeOptions.forEach(opt => opt.classList.remove('active'));
         
         const selectedOpt = Array.from(this.themeOptions).find(opt => opt.dataset.theme === theme);
@@ -157,6 +176,17 @@ const SettingsManager = {
             this.zoomValue.textContent = zoom + '%';
             this.applyZoom(zoom);
         }
+
+        // High Contrast
+        const highContrastEnabled = localStorage.getItem('settings-high-contrast') === 'true';
+        if (this.highContrastToggle) {
+            this.highContrastToggle.checked = highContrastEnabled;
+            this.applyHighContrast(highContrastEnabled);
+        }
+    },
+
+    applyHighContrast(enabled) {
+        document.body.classList.toggle('high-contrast', enabled);
     },
 
     applyZoom(zoomPercent) {

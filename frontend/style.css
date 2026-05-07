@@ -36,6 +36,7 @@
     --settings-main-bg: #1e1e1e;
     --main-font-size: 13px;
     --app-zoom: 1;
+    --theme-preset-border: #005fa3;
 }
 
 body {
@@ -74,6 +75,7 @@ body.light-mode {
     /* Settings & Customization */
     --settings-sidebar-bg: #f1f3f5;
     --settings-main-bg: #ffffff;
+    --theme-preset-border: #005fa3;
 }
 
 /* Deep Blue (深青) Theme */
@@ -109,6 +111,7 @@ body.theme-deepblue {
     /* Settings & Customization */
     --settings-sidebar-bg: #001529;
     --settings-main-bg: #001b36;
+    --theme-preset-border: #0077cc;
 }
 
 /* Khaki (カーキ) Theme */
@@ -144,6 +147,7 @@ body.theme-khaki {
     /* Settings & Customization */
     --settings-sidebar-bg: #1f1f14;
     --settings-main-bg: #2b2b1b;
+    --theme-preset-border: #8c7b4a;
 }
 
 /* Sakura (薄ピンク) Theme */
@@ -160,6 +164,7 @@ body.theme-sakura {
     --tree-active: rgba(255, 182, 193, 0.15);
     --icon-accent: #ffb6c1;
     --settings-sidebar-bg: #fff5f8;
+    --theme-preset-border: #f48fb1;
 }
 
 /* Amber (黄色系) Theme */
@@ -176,6 +181,7 @@ body.theme-amber {
     --tree-active: rgba(217, 119, 6, 0.1);
     --icon-accent: #d97706;
     --settings-sidebar-bg: #fef3c7;
+    --theme-preset-border: #b45309;
 }
 
 /* Sky (うっすい水色) Theme */
@@ -192,6 +198,81 @@ body.theme-sky {
     --tree-active: rgba(14, 165, 233, 0.1);
     --icon-accent: #0ea5e9;
     --settings-sidebar-bg: #e0f2fe;
+    --theme-preset-border: #0284c7;
+}
+
+/* Midnight Purple (黒に近い紫) Theme */
+body.theme-midnight {
+    --bg-main: #0f051a;
+    --bg-toolbar: #1a0b2e;
+    --bg-input: #24123d;
+    --bg-sidebar: #0a0412;
+    --bg-item-hover: rgba(187, 134, 252, 0.15);
+    --bg-item-selected: rgba(187, 134, 252, 0.3);
+    --text-main: #e0d0f0;
+    --text-muted: #9d8db0;
+    --text-bright: #ffffff;
+    --border-main: rgba(187, 134, 252, 0.2);
+    --border-light: rgba(187, 134, 252, 0.1);
+    --accent-color: #bb86fc;
+    --scrollbar-thumb: rgba(187, 134, 252, 0.2);
+    --scrollbar-thumb-hover: rgba(187, 134, 252, 0.4);
+    --glass-bg: rgba(10, 4, 18, 0.85);
+    --tree-active: rgba(187, 134, 252, 0.2);
+
+    /* Terminal */
+    --bg-terminal: #07020d;
+    --text-terminal: #bb86fc;
+    --text-terminal-echo: #f06292;
+    --text-terminal-error: #cf6679;
+
+    /* Icon Fills */
+    --icon-folder: #9d4edd;
+    --icon-file: #9d8db0;
+    --icon-accent: #bb86fc;
+
+    /* Settings & Customization */
+    --settings-sidebar-bg: #0a0412;
+    --settings-main-bg: #0f051a;
+    --theme-preset-border: #7b1fa2;
+}
+
+/* ハイコントラストモード */
+body.high-contrast {
+    --border-main: var(--accent-color);
+    --border-light: var(--accent-color);
+    --bg-item-hover: rgba(255, 255, 255, 0.15);
+    --bg-item-selected: var(--accent-color);
+}
+
+body.light-mode.high-contrast {
+    --border-main: #000000;
+    --border-light: #333333;
+    --bg-item-hover: rgba(0, 0, 0, 0.1);
+    --bg-item-selected: #000000;
+    --text-bright: #000000;
+}
+
+body.high-contrast .app-container *,
+body.high-contrast #settings-screen * {
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+}
+
+body.high-contrast .theme-option.active {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+/* 選択項目のテキスト視認性確保 */
+body.high-contrast .settings-tab-btn.active {
+    background: var(--accent-color) !important;
+    color: var(--bg-main) !important;
+    font-weight: bold;
+}
+
+body.high-contrast .settings-tab-btn.active svg {
+    stroke: var(--bg-main) !important;
 }
 
 /* ==========================================================================
@@ -1645,29 +1726,37 @@ input[type="range"] {
 }
 
 .theme-option {
-    width: 60px;
-    height: 45px;
+    box-sizing: border-box;
+    width: 64px;
+    height: 48px;
     border-radius: 8px;
     cursor: pointer;
-    padding: 4px;
-    border: 2px solid transparent;
-    transition: all 0.2s;
+    padding: 3px;
+    border: 3px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .theme-option:hover {
-    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
 }
 
 .theme-option.active {
-    border-color: var(--accent-color);
+    border-color: var(--theme-preset-border);
+    background: rgba(var(--accent-color-rgb, 0, 122, 204), 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .theme-preview {
     width: 100%;
     height: 100%;
     border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-sizing: border-box; /* Ensure border doesn't expand preview */
 }
 
 /* プレースホルダー */
