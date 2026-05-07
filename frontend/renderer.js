@@ -658,6 +658,7 @@ function addFileRow(data) {
             document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
             element.classList.add('selected');
         }
+        onSelectionChanged();
     };
 
     element.ondblclick = () => {
@@ -1056,7 +1057,8 @@ function initResizers() {
     const resizerSidebar = document.getElementById('resizer-sidebar');
     const resizerTerminal = document.getElementById('resizer-terminal');
 
-    function setupResizer(resizer, targetElem, axis) {
+    function setupResizer(resizer, targetElem, axis, isRightSide = false) {
+        if (!resizer || !targetElem) return;
         let isResizing = false;
         resizer.addEventListener('mousedown', (e) => {
             isResizing = true;
@@ -1068,8 +1070,8 @@ function initResizers() {
             if (!isResizing) return;
             if (axis === 'h') {
                 const targetRect = targetElem.getBoundingClientRect();
-                const newWidth = e.clientX - targetRect.left;
-                if (newWidth > 100 && newWidth < 600) {
+                const newWidth = isRightSide ? (targetRect.right - e.clientX) : (e.clientX - targetRect.left);
+                if (newWidth > 150 && newWidth < 800) {
                     targetElem.style.width = `${newWidth}px`;
                     targetElem.style.flex = 'none';
                 }
@@ -1092,9 +1094,88 @@ function initResizers() {
         });
     }
 
+    const previewPane = document.getElementById('preview-pane');
+    const resizerPreview = document.getElementById('resizer-preview');
+
     setupResizer(resizerSidebar, sidebar, 'h');
     setupResizer(resizerTerminal, terminalPane, 'v');
+    setupResizer(resizerPreview, previewPane, 'h', true);
 }
+
+function onSelectionChanged() {
+    if (typeof PreviewManager !== 'undefined') {
+        PreviewManager.update();
+    }
+}
+
+// グローバルキーイベント
+window.addEventListener('keydown', (e) => {
+    // 入力エリアにフォーカスがある場合は無視
+    const active = document.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+        return;
+    }
+
+    if (e.code === 'Space') {
+        e.preventDefault();
+        if (typeof PreviewManager !== 'undefined') {
+            PreviewManager.toggle();
+        }
+    }
+
+    // 上下キーでの選択移動
+    if (e.code === 'ArrowDown' || e.code === 'ArrowUp') {
+        e.preventDefault();
+        navigateSelection(e.code === 'ArrowDown' ? 1 : -1);
+    }
+});
+
+function navigateSelection(direction) {
+    const items = Array.from(document.querySelectorAll('#file-list-body tr, .grid-item'));
+    if (items.length === 0) return;
+
+    const currentIndex = items.findIndex(item => item.classList.contains('selected'));
+    let nextIndex = 0;
+
+    if (currentIndex === -1) {
+        nextIndex = direction > 0 ? 0 : items.length - 1;
+    } else {
+        nextIndex = currentIndex + direction;
+        if (nextIndex < 0) nextIndex = 0;
+        if (nextIndex >= items.length) nextIndex = items.length - 1;
+    }
+
+    if (nextIndex !== currentIndex) {
+        items.forEach(item => item.classList.remove('selected'));
+        items[nextIndex].classList.add('selected');
+        items[nextIndex].scrollIntoView({ block: 'nearest' });
+        onSelectionChanged();
+    }
+}
+
+// レイアウト切り替えロジック
+document.querySelectorAll('.toggle-layout').forEach(item => {
+    item.onclick = () => {
+        const layout = item.dataset.layout;
+        if (layout === 'sidebar') {
+            const sidebar = document.querySelector('.sidebar');
+            const resizer = document.getElementById('resizer-sidebar');
+            const isHidden = sidebar.style.display === 'none';
+            sidebar.style.display = isHidden ? 'flex' : 'none';
+            resizer.style.display = isHidden ? 'block' : 'none';
+        } else if (layout === 'terminal') {
+            const terminal = document.querySelector('.terminal-pane');
+            const resizer = document.getElementById('resizer-terminal');
+            const isHidden = terminal.style.display === 'none';
+            terminal.style.display = isHidden ? 'flex' : 'none';
+            resizer.style.display = isHidden ? 'block' : 'none';
+        } else if (layout === 'preview') {
+            if (typeof PreviewManager !== 'undefined') {
+                PreviewManager.toggle();
+            }
+        }
+    };
+});
 
 initResizers();
 

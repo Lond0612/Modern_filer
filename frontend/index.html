@@ -141,12 +141,28 @@
                         <span class="check-icon" style="opacity: 0;"></span>その他
                         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto; width:14px; height:14px;"><polyline points="9 18 15 12 9 6"></polyline></svg>
                         <div class="submenu dropdown-menu">
+                            <div class="menu-item has-submenu">
+                                <span>レイアウト</span>
+                                <div class="submenu">
+                                    <div class="menu-item toggle-layout" data-layout="sidebar">サイドバーを表示</div>
+                                    <div class="menu-item toggle-layout" data-layout="terminal">ターミナルを表示</div>
+                                    <div class="menu-item toggle-layout" data-layout="preview">プレビューを表示</div>
+                                </div>
+                            </div>
                             <div class="menu-item view-toggle" data-toggle="hidden"><span class="check-icon" style="opacity: 0;">✓</span>隠しファイル</div>
                             <div class="menu-item view-toggle" data-toggle="extension"><span class="check-icon" style="opacity: 1;">✓</span>ファイル名拡張子</div>
                         </div>
                     </div>
                 </div>
             </div>
+            <button id="btn-preview-toggle" class="action-btn" title="プレビュー (Space)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <span>プレビュー</span>
+            </button>
+            <div class="separator"></div>
             <div style="flex-grow: 1;"></div>
             <button id="btn-settings" class="action-btn" title="設定" style="margin-left: auto;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -201,9 +217,9 @@
                         </div>
                     </div>
 
-                    <!-- エクスプローラー画面 -->
+                    <!-- ファイルリスト画面 -->
                     <div id="explorer-view" class="explorer-view" style="display: none;">
-                        <table id="file-table">
+                        <table class="file-list">
                             <thead>
                                 <tr>
                                     <th style="width: 300px;">Name<div class="col-resizer"></div></th>
@@ -216,6 +232,27 @@
                             </tbody>
                         </table>
                         <div id="file-grid" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <div class="resizer-h" id="resizer-preview" style="display: none;"></div>
+
+                <div id="preview-pane" class="preview-pane" style="display: none;">
+                    <div class="preview-header">
+                        <span id="preview-filename">File Preview</span>
+                        <button id="btn-close-preview" class="preview-close-btn" title="閉じる">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                    <div id="preview-content" class="preview-body">
+                        <div class="preview-placeholder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                            <p>ファイルを選択してスペースキーを押すとプレビューが表示されます</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -400,6 +437,7 @@
     <script src="js/theme.js"></script>
     <script src="js/settings.js"></script>
     <script src="renderer.js"></script>
+    <script src="js/preview.js"></script>
 </body>
 
 </html>

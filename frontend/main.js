@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
 const path = require('path');
+const fs = require('fs').promises;
 const { spawn } = require('child_process');
 const { StringDecoder } = require('string_decoder');
 
@@ -127,4 +128,22 @@ ipcMain.handle('get-system-paths', () => {
     videos: app.getPath('videos'),
     home: app.getPath('home')
   };
+});
+
+ipcMain.handle('READ_FILE_TEXT', async (event, filePath) => {
+    try {
+        // セキュリティ上の配慮として、一定サイズ以上の場合は先頭のみ読み込む等の制限を設けるのが望ましい
+        const stats = await fs.stat(filePath);
+        if (stats.size > 1024 * 1024) { // 1MB制限
+            const buffer = Buffer.alloc(1024 * 10); // 10KB
+            const handle = await fs.open(filePath, 'r');
+            const { bytesRead } = await handle.read(buffer, 0, 1024 * 10, 0);
+            await handle.close();
+            return buffer.toString('utf8', 0, bytesRead) + '\n\n... (File too large, preview truncated)';
+        }
+        return await fs.readFile(filePath, 'utf8');
+    } catch (err) {
+        console.error('IPC READ_FILE_TEXT Error:', err);
+        throw err;
+    }
 });
