@@ -120,6 +120,25 @@ void handle_tree_list(const char* path_utf8) {
     filelist_free(&list);
 }
 
+void handle_get_drives() {
+    wchar_t drives[512];
+    DWORD len = GetLogicalDriveStringsW(511, drives);
+    if (len == 0) {
+        send_json_utf8("ERROR", "Failed to get drives");
+        return;
+    }
+
+    send_json_utf8("START_DRIVES", "");
+    wchar_t *p = drives;
+    while (*p) {
+        char drive_utf8[MAX_PATH * 4];
+        WideCharToMultiByte(CP_UTF8, 0, p, -1, drive_utf8, sizeof(drive_utf8), NULL, NULL);
+        send_json_utf8("DRIVE_DATA", drive_utf8);
+        p += wcslen(p) + 1;
+    }
+    send_json_utf8("END_DRIVES", "");
+}
+
 // ---------------------------------------------------------------------------
 // 検索ロジック (WCHAR化)
 // ---------------------------------------------------------------------------
@@ -482,6 +501,7 @@ int main(void) {
             MultiByteToWideChar(CP_UTF8, 0, line + 5, -1, wpath, MAX_PATH);
             ShellExecuteW(NULL, L"open", wpath, NULL, NULL, SW_SHOWNORMAL);
         }
+        else if (strcmp(line, "GET_DRIVES") == 0) handle_get_drives();
         else if (strcmp(line, "QUIT") == 0) break;
     }
 

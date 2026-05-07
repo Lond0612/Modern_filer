@@ -116,3 +116,15 @@ ipcMain.on('send-command', (event, command) => {
     filerServer.stdin.write(command + '\n');
   }
 });
+
+ipcMain.handle('get-system-paths', () => {
+  return {
+    desktop: app.getPath('desktop'),
+    documents: app.getPath('documents'),
+    downloads: app.getPath('downloads'),
+    music: app.getPath('music'),
+    pictures: app.getPath('pictures'),
+    videos: app.getPath('videos'),
+    home: app.getPath('home')
+  };
+});
