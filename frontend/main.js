@@ -11,6 +11,7 @@ let serverBuffer = '';
 let batchedCmdOut = '';
 let messageQueue = [];
 let isWindowReady = false;
+let previewWindow = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -145,5 +146,47 @@ ipcMain.handle('READ_FILE_TEXT', async (event, filePath) => {
     } catch (err) {
         console.error('IPC READ_FILE_TEXT Error:', err);
         throw err;
+    }
+});
+
+ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
+    if (previewWindow) {
+        previewWindow.show();
+        previewWindow.webContents.send('backend-response', { type: 'UPDATE_PREVIEW', file: data.file });
+        return;
+    }
+
+    previewWindow = new BrowserWindow({
+        width: 600,
+        height: 800,
+        title: 'Preview',
+        backgroundColor: '#1e1e1e',
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            contextIsolation: true,
+            nodeIntegration: false
+        }
+    });
+
+    previewWindow.loadFile('preview.html');
+    
+    previewWindow.webContents.on('did-finish-load', () => {
+        previewWindow.webContents.send('backend-response', { type: 'UPDATE_PREVIEW', file: data.file });
+        previewWindow.webContents.send('backend-response', { 
+            type: 'APPLY_THEME', 
+            theme: data.theme,
+            isDark: data.isDark,
+            highContrast: data.highContrast
+        });
+    });
+
+    previewWindow.on('closed', () => {
+        previewWindow = null;
+    });
+});
+
+ipcMain.on('CLOSE_PREVIEW_WINDOW', () => {
+    if (previewWindow) {
+        previewWindow.close();
     }
 });

@@ -12,6 +12,9 @@ const SettingsManager = {
         this.tabBtns = document.querySelectorAll('.settings-tab-btn');
         this.tabContents = document.querySelectorAll('.settings-tab-content');
         
+        // General
+        this.windowPreviewToggle = document.getElementById('toggle-window-preview');
+
         // Theme
         this.themeOptions = document.querySelectorAll('.theme-option');
         this.highContrastToggle = document.getElementById('toggle-high-contrast');
@@ -29,7 +32,9 @@ const SettingsManager = {
         // Open
         if (this.openBtn) {
             this.openBtn.onclick = () => {
-                this.switchTab('theme'); // 常に最初のタブを開く
+                const activeTab = document.querySelector('.settings-tab-btn.active');
+                const tabId = activeTab ? activeTab.dataset.tab : 'general';
+                this.switchTab(tabId);
                 this.screen.style.display = 'flex';
             };
         }
@@ -98,6 +103,14 @@ const SettingsManager = {
                 const enabled = this.highContrastToggle.checked;
                 localStorage.setItem('settings-high-contrast', enabled);
                 this.applyHighContrast(enabled);
+            };
+        }
+
+        // Window Preview
+        if (this.windowPreviewToggle) {
+            this.windowPreviewToggle.onchange = () => {
+                const enabled = this.windowPreviewToggle.checked;
+                localStorage.setItem('settings-window-preview', enabled);
             };
         }
     },
@@ -182,6 +195,12 @@ const SettingsManager = {
         if (this.highContrastToggle) {
             this.highContrastToggle.checked = highContrastEnabled;
             this.applyHighContrast(highContrastEnabled);
+        }
+
+        // Window Preview
+        const windowPreviewEnabled = localStorage.getItem('settings-window-preview') === 'true';
+        if (this.windowPreviewToggle) {
+            this.windowPreviewToggle.checked = windowPreviewEnabled;
         }
     },
 

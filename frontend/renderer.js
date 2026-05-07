@@ -317,6 +317,11 @@ function showHome() {
     if (homeNode) homeNode.querySelector('.tree-item').classList.add('active');
     
     renderHomeContent();
+
+    // プレビューを閉じる
+    if (typeof PreviewManager !== 'undefined') {
+        PreviewManager.hide();
+    }
 }
 
 function showExplorer(path) {

@@ -275,6 +275,21 @@ body.high-contrast .settings-tab-btn.active svg {
     stroke: var(--bg-main) !important;
 }
 
+/* リストアイテムの境界線強調 */
+body.high-contrast .file-list td {
+    border-bottom: 1px solid var(--border-main) !important;
+}
+
+body.high-contrast .grid-item {
+    border: 1px solid var(--border-main) !important;
+}
+
+body.high-contrast .file-list tr.selected td,
+body.high-contrast .grid-item.selected {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -2px;
+}
+
 /* ==========================================================================
    1. Base & Layout (全体の設定と大枠のレイアウト)
    ========================================================================== */
@@ -1068,13 +1083,13 @@ body {
     width: 100%;
 }
 
-#file-table {
+.file-list {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
 }
 
-#file-table th {
+.file-list th {
     text-align: left;
     background: var(--bg-toolbar);
     color: var(--text-muted);
@@ -1101,7 +1116,7 @@ body {
     background: rgba(255, 255, 255, 0.2);
 }
 
-#file-table td {
+.file-list td {
     padding: 6px 8px;
     border-bottom: 1px solid var(--border-light);
     cursor: pointer;
@@ -1110,16 +1125,16 @@ body {
     white-space: nowrap;
 }
 
-#file-table tr:hover {
+.file-list tr:hover {
     background: var(--bg-item-hover);
 }
 
 /* 選択状態・操作状態 */
-#file-table tr.selected td {
+.file-list tr.selected td {
     background: var(--bg-item-selected);
 }
 
-#file-table tr.cut-item {
+.file-list tr.cut-item {
     opacity: 0.4;
 }
 
@@ -1236,7 +1251,7 @@ body.compact-mode .tree-item {
     font-size: 12px;
 }
 
-body.compact-mode #file-table td {
+body.compact-mode .file-list td {
     padding: 3px 8px;
     font-size: 12px;
 }

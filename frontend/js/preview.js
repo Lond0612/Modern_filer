@@ -34,11 +34,21 @@ const PreviewManager = {
     },
 
     show() {
-        this.isOpen = true;
-        this.pane.style.display = 'flex';
-        this.resizer.style.display = 'block';
-        if (this.toggleBtn) this.toggleBtn.classList.add('active');
-        this.update();
+        const isWindowMode = localStorage.getItem('settings-window-preview') === 'true';
+        
+        if (isWindowMode) {
+            this.isOpen = true; // ウィンドウが開いている状態としてマーク
+            this.pane.style.display = 'none';
+            this.resizer.style.display = 'none';
+            if (this.toggleBtn) this.toggleBtn.classList.add('active');
+            this.update();
+        } else {
+            this.isOpen = true;
+            this.pane.style.display = 'flex';
+            this.resizer.style.display = 'block';
+            if (this.toggleBtn) this.toggleBtn.classList.add('active');
+            this.update();
+        }
     },
 
     hide() {
@@ -46,20 +56,41 @@ const PreviewManager = {
         this.pane.style.display = 'none';
         this.resizer.style.display = 'none';
         if (this.toggleBtn) this.toggleBtn.classList.remove('active');
+        
+        // ウィンドウモードならウィンドウを閉じる
+        if (localStorage.getItem('settings-window-preview') === 'true') {
+            window.api.sendCommand('CLOSE_PREVIEW_WINDOW');
+        }
     },
 
     async update() {
         if (!this.isOpen) return;
 
+        const isWindowMode = localStorage.getItem('settings-window-preview') === 'true';
         const selected = typeof getSelectedItems === 'function' ? getSelectedItems() : [];
+        
         if (selected.length === 0) {
-            this.renderPlaceholder();
+            if (!isWindowMode) this.renderPlaceholder();
             return;
         }
 
         const file = selected[0];
         if (this.currentFile === file.srcPath) return;
         this.currentFile = file.srcPath;
+
+        if (isWindowMode) {
+            const theme = localStorage.getItem('app-theme') || 'default';
+            const isDark = localStorage.getItem('isDarkMode') !== 'false';
+            const highContrast = localStorage.getItem('settings-high-contrast') === 'true';
+
+            window.api.invoke('SHOW_PREVIEW_WINDOW', { 
+                file,
+                theme,
+                isDark,
+                highContrast
+            });
+            return;
+        }
         
         this.filename.textContent = file.name;
         this.renderLoading();
