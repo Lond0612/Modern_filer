@@ -76,6 +76,76 @@ body.light-mode {
     --settings-main-bg: #ffffff;
 }
 
+/* Deep Blue (深青) Theme */
+body.theme-deepblue {
+    --bg-main: #001b36;
+    --bg-toolbar: #002142;
+    --bg-input: #002b52;
+    --bg-sidebar: #001529;
+    --bg-item-hover: rgba(0, 162, 255, 0.15);
+    --bg-item-selected: rgba(0, 162, 255, 0.3);
+    --text-main: #e6f1ff;
+    --text-muted: #8892b0;
+    --text-bright: #ffffff;
+    --border-main: #003366;
+    --border-light: rgba(0, 162, 255, 0.1);
+    --accent-color: #00a2ff;
+    --scrollbar-thumb: rgba(0, 162, 255, 0.2);
+    --scrollbar-thumb-hover: rgba(0, 162, 255, 0.4);
+    --glass-bg: rgba(0, 21, 41, 0.85);
+    --tree-active: rgba(0, 162, 255, 0.2);
+
+    /* Terminal */
+    --bg-terminal: #000c18;
+    --text-terminal: #00d4ff;
+    --text-terminal-echo: #64ffda;
+    --text-terminal-error: #ff4d4d;
+
+    /* Icon Fills */
+    --icon-folder: #00a2ff;
+    --icon-file: #8892b0;
+    --icon-accent: #64ffda;
+
+    /* Settings & Customization */
+    --settings-sidebar-bg: #001529;
+    --settings-main-bg: #001b36;
+}
+
+/* Khaki (カーキ) Theme */
+body.theme-khaki {
+    --bg-main: #2b2b1b;
+    --bg-toolbar: #363622;
+    --bg-input: #40402a;
+    --bg-sidebar: #1f1f14;
+    --bg-item-hover: rgba(194, 178, 128, 0.15);
+    --bg-item-selected: rgba(194, 178, 128, 0.3);
+    --text-main: #f5f5dc;
+    --text-muted: #a8a878;
+    --text-bright: #ffffff;
+    --border-main: #45452e;
+    --border-light: rgba(194, 178, 128, 0.1);
+    --accent-color: #c2b280;
+    --scrollbar-thumb: rgba(194, 178, 128, 0.2);
+    --scrollbar-thumb-hover: rgba(194, 178, 128, 0.4);
+    --glass-bg: rgba(31, 31, 20, 0.85);
+    --tree-active: rgba(194, 178, 128, 0.2);
+
+    /* Terminal */
+    --bg-terminal: #1a1a10;
+    --text-terminal: #d4d4aa;
+    --text-terminal-echo: #c2b280;
+    --text-terminal-error: #ff6b6b;
+
+    /* Icon Fills */
+    --icon-folder: #c2b280;
+    --icon-file: #a8a878;
+    --icon-accent: #f5f5dc;
+
+    /* Settings & Customization */
+    --settings-sidebar-bg: #1f1f14;
+    --settings-main-bg: #2b2b1b;
+}
+
 /* ==========================================================================
    1. Base & Layout (全体の設定と大枠のレイアウト)
    ========================================================================== */
@@ -163,14 +233,18 @@ body.light-mode {
     font-size: 10px;
     opacity: 0.8;
 }
-body {
+html, body {
+    height: 100%;
+    width: 100%;
     margin: 0;
     padding: 0;
+    overflow: hidden;
+}
+
+body {
     font-family: 'Segoe UI', sans-serif;
     background: var(--bg-main);
     color: var(--text-main);
-    height: 100vh;
-    overflow: hidden;
     transition: background 0.3s, color 0.3s;
 }
 

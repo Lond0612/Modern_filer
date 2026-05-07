@@ -21,6 +21,7 @@ const SettingsManager = {
         this.customFontInput = document.getElementById('custom-font-input');
         this.zoomSlider = document.getElementById('zoom-slider');
         this.zoomValue = document.getElementById('zoom-value');
+        this.appContainer = document.querySelector('.app-container');
     },
 
     bindEvents() {
@@ -76,8 +77,7 @@ const SettingsManager = {
             this.zoomSlider.oninput = () => {
                 const zoom = this.zoomSlider.value;
                 this.zoomValue.textContent = zoom + '%';
-                // Using CSS zoom for simplicity across the whole app
-                document.body.style.zoom = zoom / 100;
+                this.applyZoom(zoom);
                 localStorage.setItem('settings-zoom', zoom);
             };
         }
@@ -93,7 +93,7 @@ const SettingsManager = {
     },
 
     applyThemePreset(theme) {
-        document.body.classList.remove('theme-ocean', 'theme-forest', 'light-mode');
+        document.body.classList.remove('theme-deepblue', 'theme-khaki', 'light-mode');
         this.themeOptions.forEach(opt => opt.classList.remove('active'));
         
         const selectedOpt = Array.from(this.themeOptions).find(opt => opt.dataset.theme === theme);
@@ -152,7 +152,18 @@ const SettingsManager = {
         if (this.zoomSlider) {
             this.zoomSlider.value = zoom;
             this.zoomValue.textContent = zoom + '%';
-            document.body.style.zoom = zoom / 100;
+            this.applyZoom(zoom);
+        }
+    },
+
+    applyZoom(zoomPercent) {
+        const factor = zoomPercent / 100;
+        if (this.appContainer) {
+            // zoomプロパティを使用すると座標系自体が拡大されるため、
+            // コンテナのサイズを(100/factor)%に調整することでビューポート内に収める
+            this.appContainer.style.zoom = factor;
+            this.appContainer.style.height = (100 / factor) + 'vh';
+            this.appContainer.style.width = (100 / factor) + 'vw';
         }
     }
 };
