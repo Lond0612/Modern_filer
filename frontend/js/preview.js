@@ -28,6 +28,7 @@ const PreviewManager = {
             this.openBtn.onclick = () => {
                 if (this.currentFile) {
                     window.api.sendCommand('OPEN|' + this.currentFile);
+                    this.hide();
                 }
             };
         }
