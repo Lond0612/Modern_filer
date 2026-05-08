@@ -131,6 +131,43 @@ ipcMain.handle('get-system-paths', () => {
   };
 });
 
+ipcMain.handle('GET_USER_THEMES', async () => {
+  const themesPath = path.join(app.getPath('userData'), 'themes');
+  const themesFile = path.join(themesPath, 'user_themes.json');
+  
+  try {
+    await fs.mkdir(themesPath, { recursive: true });
+    try {
+      const data = await fs.readFile(themesFile, 'utf8');
+      return JSON.parse(data);
+    } catch (e) {
+      // 初期ファイルを作成
+      const initialData = [
+        {
+          id: "user-sample-dark",
+          name: "サンプル・ネオン",
+          colors: {
+            "--bg-main": "#050505",
+            "--accent-color": "#ff00ff",
+            "--text-main": "#00ffff",
+            "--border-main": "#ff00ff"
+          }
+        }
+      ];
+      await fs.writeFile(themesFile, JSON.stringify(initialData, null, 2));
+      return initialData;
+    }
+  } catch (err) {
+    console.error('Failed to handle user themes:', err);
+    return [];
+  }
+});
+
+ipcMain.on('OPEN_THEMES_FOLDER', () => {
+  const themesPath = path.join(app.getPath('userData'), 'themes');
+  shell.openPath(themesPath).catch(err => console.error('Failed to open themes folder:', err));
+});
+
 ipcMain.handle('READ_FILE_TEXT', async (event, filePath) => {
   try {
     // セキュリティ上の配慮として、一定サイズ以上の場合は先頭のみ読み込む等の制限を設けるのが望ましい

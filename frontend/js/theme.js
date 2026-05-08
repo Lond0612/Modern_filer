@@ -38,29 +38,83 @@ const IconThemeManager = {
         if (['exe', 'bat', 'cmd', 'ps1', 'sh', 'msi', 'dll'].includes(ext)) return this.customIcons.exe;
         if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'txt', 'md', 'rtf'].includes(ext)) return this.customIcons.doc;
         return this.customIcons.file;
+    },
+
+    // アイコンの初期状態を保持（リセット用）
+    _defaultIcons: null,
+    
+    saveDefaults() {
+        if (!this._defaultIcons) {
+            this._defaultIcons = { ...this.customIcons };
+        }
+    },
+
+    resetIcons() {
+        if (this._defaultIcons) {
+            this.customIcons = { ...this._defaultIcons };
+        }
+    },
+
+    overrideIcons(icons) {
+        this.saveDefaults();
+        if (icons) {
+            Object.assign(this.customIcons, icons);
+        }
     }
 };
 
-function isImageExtension(name) {
-    const ext = name.split('.').pop().toLowerCase();
-    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'].includes(ext);
-}
-
-function isVideoExtension(name) {
-    const ext = name.split('.').pop().toLowerCase();
-    return ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv'].includes(ext);
-}
-
 // テーマ適用
-function applyTheme(themeName) {
-    document.body.classList.remove('theme-ocean', 'theme-forest', 'light-mode');
-    if (themeName === 'snow') {
-        document.body.classList.add('light-mode');
-    } else if (themeName === 'ocean') {
-        document.body.classList.add('theme-ocean');
-    } else if (themeName === 'forest') {
-        document.body.classList.add('theme-forest');
+function applyTheme(themeName, customThemeObj = null) {
+    // 既存のテーマクラスとカスタムスタイルをクリア
+    document.body.classList.remove('theme-deepblue', 'theme-khaki', 'theme-sakura', 'theme-amber', 'theme-sky', 'theme-midnight', 'light-mode');
+    
+    // インラインスタイルのクリア（カスタムカラー用）
+    const customStyleEl = document.getElementById('custom-theme-styles');
+    if (customStyleEl) customStyleEl.remove();
+    
+    // アイコンのリセット
+    IconThemeManager.resetIcons();
+
+    if (customThemeObj) {
+        // ユーザー定義テーマの適用
+        const style = document.createElement('style');
+        style.id = 'custom-theme-styles';
+        let css = 'body { ';
+        if (customThemeObj.colors) {
+            for (const [key, value] of Object.entries(customThemeObj.colors)) {
+                css += `${key}: ${value} !important; `;
+            }
+        }
+        css += ' }';
+        style.textContent = css;
+        document.head.appendChild(style);
+
+        // アイコンの上書き
+        if (customThemeObj.icons) {
+            IconThemeManager.overrideIcons(customThemeObj.icons);
+        }
+        
+        localStorage.setItem('app-theme', 'custom-' + customThemeObj.id);
+        localStorage.setItem('custom-theme-data', JSON.stringify(customThemeObj));
+    } else {
+        // プリセットテーマの適用
+        const lightThemes = ['snow', 'sakura', 'amber', 'sky'];
+        if (lightThemes.includes(themeName)) {
+            document.body.classList.add('light-mode');
+            if (themeName !== 'snow') document.body.classList.add(`theme-${themeName}`);
+            localStorage.setItem('isDarkMode', 'false');
+        } else {
+            if (themeName !== 'default') document.body.classList.add(`theme-${themeName}`);
+            localStorage.setItem('isDarkMode', 'true');
+        }
+        localStorage.setItem('app-theme', themeName);
+        localStorage.removeItem('custom-theme-data');
     }
-    // localStorage に保存
-    localStorage.setItem('app-theme', themeName);
+
+    // 画面の更新
+    if (typeof renderHomeContent === 'function' && isHomeActive) {
+        renderHomeContent();
+    } else if (typeof currentPath !== 'undefined' && currentPath) {
+        window.api.sendCommand(`LIST|${currentPath}`);
+    }
 }

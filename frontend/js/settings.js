@@ -26,6 +26,10 @@ const SettingsManager = {
         this.zoomSlider = document.getElementById('zoom-slider');
         this.zoomValue = document.getElementById('zoom-value');
         this.appContainer = document.querySelector('.app-container');
+
+        // User Themes
+        this.userThemesContainer = document.getElementById('user-themes-container');
+        this.openThemesFolderBtn = document.getElementById('btn-open-themes-folder');
     },
 
     bindEvents() {
@@ -113,6 +117,13 @@ const SettingsManager = {
                 localStorage.setItem('settings-window-preview', enabled);
             };
         }
+
+        // Open Themes Folder
+        if (this.openThemesFolderBtn) {
+            this.openThemesFolderBtn.onclick = () => {
+                window.api.sendCommand('OPEN_THEMES_FOLDER');
+            };
+        }
     },
 
     switchTab(tabId) {
@@ -142,6 +153,12 @@ const SettingsManager = {
             localStorage.setItem('isDarkMode', 'true');
         }
         localStorage.setItem('app-theme', theme);
+        localStorage.removeItem('custom-theme-data'); // プリセット時はカスタムデータを消す
+        
+        // アイコンのリセットが必要な場合は applyTheme (js/theme.js) を呼ぶのが確実
+        if (typeof applyTheme === 'function') {
+            applyTheme(theme);
+        }
         
         // Re-render
         if (typeof renderHomeContent === 'function' && isHomeActive) {
@@ -155,7 +172,61 @@ const SettingsManager = {
         this.themeOptions.forEach(opt => {
             opt.classList.toggle('active', opt.dataset.theme === theme);
         });
+        // ユーザーテーマの選択状態も更新
+        document.querySelectorAll('.user-theme-option').forEach(opt => {
+            opt.classList.toggle('active', 'custom-' + opt.dataset.themeId === theme);
+        });
         localStorage.setItem('app-theme', theme);
+    },
+
+    async loadUserThemes() {
+        if (!this.userThemesContainer) return;
+        
+        const themes = await window.api.invoke('GET_USER_THEMES');
+        this.userThemesContainer.innerHTML = '';
+        
+        if (!themes || themes.length === 0) {
+            this.userThemesContainer.innerHTML = '<p style="font-size:11px; color:var(--text-muted);">テーマが見つかりません</p>';
+            return;
+        }
+
+        const currentTheme = localStorage.getItem('app-theme');
+
+        themes.forEach(theme => {
+            const opt = document.createElement('div');
+            opt.className = 'theme-option user-theme-option';
+            if (currentTheme === 'custom-' + theme.id) opt.classList.add('active');
+            opt.dataset.themeId = theme.id;
+            opt.title = theme.name || theme.id;
+            
+            // プレビュー色
+            const bg = theme.colors ? (theme.colors['--bg-main'] || '#1e1e1e') : '#1e1e1e';
+            const accent = theme.colors ? (theme.colors['--accent-color'] || '#007acc') : '#007acc';
+            
+            opt.innerHTML = `
+                <div class="theme-preview" style="background:${bg}; border:1px solid ${accent}; display:flex; align-items:center; justify-content:center;">
+                    <div style="width:12px; height:12px; border-radius:50%; background:${accent};"></div>
+                </div>
+            `;
+            
+            opt.onclick = () => {
+                this.applyCustomTheme(theme);
+            };
+            
+            this.userThemesContainer.appendChild(opt);
+        });
+    },
+
+    applyCustomTheme(themeObj) {
+        // 既存の選択解除
+        this.themeOptions.forEach(opt => opt.classList.remove('active'));
+        document.querySelectorAll('.user-theme-option').forEach(opt => {
+            opt.classList.toggle('active', opt.dataset.themeId === themeObj.id);
+        });
+
+        if (typeof applyTheme === 'function') {
+            applyTheme(null, themeObj);
+        }
     },
 
     loadSettings() {
@@ -201,6 +272,22 @@ const SettingsManager = {
         const windowPreviewEnabled = localStorage.getItem('settings-window-preview') === 'true';
         if (this.windowPreviewToggle) {
             this.windowPreviewToggle.checked = windowPreviewEnabled;
+        }
+
+        // User Themes
+        this.loadUserThemes();
+
+        // 初期状態でカスタムテーマが選ばれている場合
+        const customData = localStorage.getItem('custom-theme-data');
+        if (theme.startsWith('custom-') && customData) {
+            try {
+                const themeObj = JSON.parse(customData);
+                if (typeof applyTheme === 'function') {
+                    applyTheme(null, themeObj);
+                }
+            } catch (e) {
+                console.error('Failed to load custom theme data:', e);
+            }
         }
     },
 
