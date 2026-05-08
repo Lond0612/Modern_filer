@@ -34,7 +34,11 @@ function createWindow() {
     }
     messageQueue = [];
   });
-  // mainWindow.webContents.openDevTools();
+  mainWindow.on('closed', () => {
+    if (previewWindow && !previewWindow.isDestroyed()) {
+      previewWindow.close();
+    }
+  });
 }
 
 function startServer() {
@@ -228,7 +232,7 @@ ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
 
   previewWindow.on('closed', () => {
     previewWindow = null;
-    if (mainWindow) {
+    if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('backend-response', { type: 'PREVIEW_WINDOW_CLOSED' });
     }
   });
