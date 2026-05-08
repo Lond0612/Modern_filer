@@ -316,6 +316,18 @@
                 <!-- デザインタブ -->
                 <div id="tab-theme" class="settings-tab-content">
                     <div class="tab-header">デザイン設定</div>
+                    
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            <span class="main-label">ハイコントラスト</span>
+                            <span class="sub-label">枠線や境界線を強調し、視認性を高めます</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-high-contrast">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
                     <div class="setting-group-vertical">
                         <div class="setting-label">
                             <span class="main-label">テーマプリセット</span>
@@ -358,7 +370,12 @@
 
                             <div class="preset-divider"></div>
                             
-                            <div class="preset-section-label">ユーザーテーマ (user_themes.json)</div>
+                            <div class="preset-section-label" style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                                <span>ユーザーテーマ (user_themes.json)</span>
+                                <button id="btn-refresh-themes" class="action-btn-icon" title="テーマを再読み込み" style="background:transparent; border:none; padding:2px; cursor:pointer; color:var(--text-muted); display:flex;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                                </button>
+                            </div>
                             <div id="user-themes-container" class="theme-presets">
                                 <!-- ユーザーテーマがここに注入される -->
                             </div>
@@ -367,16 +384,6 @@
                                 <span>テーマフォルダを開く</span>
                             </button>
                         </div>
-                    </div>
-                    <div class="setting-group">
-                        <div class="setting-label">
-                            <span class="main-label">ハイコントラスト</span>
-                            <span class="sub-label">枠線や境界線を強調し、視認性を高めます</span>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="toggle-high-contrast">
-                            <span class="slider"></span>
-                        </label>
                     </div>
                 </div>
 

@@ -139,23 +139,28 @@ ipcMain.handle('GET_USER_THEMES', async () => {
     await fs.mkdir(themesPath, { recursive: true });
     try {
       const data = await fs.readFile(themesFile, 'utf8');
-      return JSON.parse(data);
+      // コメント（// または /* */）を除去してからパース
+      const cleanJson = data.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1');
+      return JSON.parse(cleanJson);
     } catch (e) {
-      // 初期ファイルを作成
-      const initialData = [
-        {
-          id: "user-sample-dark",
-          name: "サンプル・ネオン",
-          colors: {
-            "--bg-main": "#050505",
-            "--accent-color": "#ff00ff",
-            "--text-main": "#00ffff",
-            "--border-main": "#ff00ff"
-          }
-        }
-      ];
-      await fs.writeFile(themesFile, JSON.stringify(initialData, null, 2));
-      return initialData;
+      // 初期ファイルを作成（コメント付きの文字列として作成）
+      const initialContent = `[
+  {
+    "id": "user-sample-dark",
+    "name": "サンプル・ネオン",
+    "colors": {
+      "--bg-main": "#050505",       // メインの背景色
+      "--bg-side": "#0a0a0a",       // サイドバーの背景色
+      "--accent-color": "#ff00ff",  // アクセントカラー（選択時など）
+      "--text-main": "#00ffff",     // メインの文字色
+      "--border-main": "#ff00ff",   // 境界線の色
+      "--icon-folder": "#ff00ff",   // フォルダアイコンの色
+      "--icon-file": "#00ffff"      // ファイルアイコンの色
+    }
+  }
+]`;
+      await fs.writeFile(themesFile, initialContent);
+      return JSON.parse(initialContent.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1'));
     }
   } catch (err) {
     console.error('Failed to handle user themes:', err);
@@ -163,7 +168,7 @@ ipcMain.handle('GET_USER_THEMES', async () => {
   }
 });
 
-ipcMain.on('OPEN_THEMES_FOLDER', () => {
+ipcMain.handle('OPEN_THEMES_FOLDER', () => {
   const themesPath = path.join(app.getPath('userData'), 'themes');
   shell.openPath(themesPath).catch(err => console.error('Failed to open themes folder:', err));
 });

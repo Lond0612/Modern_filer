@@ -30,6 +30,7 @@ const SettingsManager = {
         // User Themes
         this.userThemesContainer = document.getElementById('user-themes-container');
         this.openThemesFolderBtn = document.getElementById('btn-open-themes-folder');
+        this.refreshThemesBtn = document.getElementById('btn-refresh-themes');
     },
 
     bindEvents() {
@@ -121,7 +122,24 @@ const SettingsManager = {
         // Open Themes Folder
         if (this.openThemesFolderBtn) {
             this.openThemesFolderBtn.onclick = () => {
-                window.api.sendCommand('OPEN_THEMES_FOLDER');
+                window.api.invoke('OPEN_THEMES_FOLDER');
+            };
+        }
+
+        // Refresh Themes
+        if (this.refreshThemesBtn) {
+            this.refreshThemesBtn.onclick = () => {
+                this.loadUserThemes();
+                // ボタンを回転させるアニメーション
+                const svg = this.refreshThemesBtn.querySelector('svg');
+                if (svg) {
+                    svg.style.transition = 'transform 0.5s ease';
+                    svg.style.transform = 'rotate(360deg)';
+                    setTimeout(() => {
+                        svg.style.transition = 'none';
+                        svg.style.transform = 'rotate(0deg)';
+                    }, 500);
+                }
             };
         }
     },
@@ -199,13 +217,12 @@ const SettingsManager = {
             opt.dataset.themeId = theme.id;
             opt.title = theme.name || theme.id;
             
-            // プレビュー色
+            // プレビュー表示の簡素化（斜め分割）
             const bg = theme.colors ? (theme.colors['--bg-main'] || '#1e1e1e') : '#1e1e1e';
             const accent = theme.colors ? (theme.colors['--accent-color'] || '#007acc') : '#007acc';
             
             opt.innerHTML = `
-                <div class="theme-preview" style="background:${bg}; border:1px solid ${accent}; display:flex; align-items:center; justify-content:center;">
-                    <div style="width:12px; height:12px; border-radius:50%; background:${accent};"></div>
+                <div class="theme-preview" style="background: linear-gradient(135deg, ${bg} 50%, ${accent} 50%); border:1px solid var(--border-main);">
                 </div>
             `;
             
