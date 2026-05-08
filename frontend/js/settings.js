@@ -253,7 +253,25 @@ const SettingsManager = {
 
         // Theme Preset
         const theme = localStorage.getItem('app-theme') || (isDark ? 'default' : 'snow');
-        this.applyThemePreset(theme);
+        
+        if (theme.startsWith('custom-')) {
+            const customData = localStorage.getItem('custom-theme-data');
+            if (customData) {
+                try {
+                    const themeObj = JSON.parse(customData);
+                    if (typeof applyTheme === 'function') {
+                        applyTheme(null, themeObj);
+                    }
+                } catch (e) {
+                    console.error('Failed to load custom theme data:', e);
+                    this.applyThemePreset('default');
+                }
+            } else {
+                this.applyThemePreset('default');
+            }
+        } else {
+            this.applyThemePreset(theme);
+        }
 
         // Font Size
         const fontSize = localStorage.getItem('settings-font-size') || '13';
@@ -293,19 +311,6 @@ const SettingsManager = {
 
         // User Themes
         this.loadUserThemes();
-
-        // 初期状態でカスタムテーマが選ばれている場合
-        const customData = localStorage.getItem('custom-theme-data');
-        if (theme.startsWith('custom-') && customData) {
-            try {
-                const themeObj = JSON.parse(customData);
-                if (typeof applyTheme === 'function') {
-                    applyTheme(null, themeObj);
-                }
-            } catch (e) {
-                console.error('Failed to load custom theme data:', e);
-            }
-        }
     },
 
     applyHighContrast(enabled) {
