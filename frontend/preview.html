@@ -32,7 +32,24 @@
         </div>
     </div>
 
+    <button id="btn-open-file" class="preview-action-btn" title="ファイルを既定のアプリで開く">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+    </button>
+
     <script>
+        let currentFilePath = null;
+        const openBtn = document.getElementById('btn-open-file');
+
+        openBtn.onclick = () => {
+            if (currentFilePath) {
+                window.api.sendCommand('OPEN|' + currentFilePath);
+            }
+        };
+
         // メインプロセスからの指示を待機
         window.api.onBackendResponse((obj) => {
             if (obj.type === 'UPDATE_PREVIEW') {
@@ -52,7 +69,13 @@
         }
 
         async function updatePreview(file) {
-            if (!file) return;
+            if (!file) {
+                openBtn.classList.remove('visible');
+                return;
+            }
+
+            currentFilePath = file.srcPath;
+            openBtn.classList.add('visible');
 
             try {
                 const ext = file.name.split('.').pop().toLowerCase();

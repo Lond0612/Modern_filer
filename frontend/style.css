@@ -1939,6 +1939,57 @@ input[type="range"] {
     text-align: right;
 }
 
+
+/* ==========================================================================
+   10. Preview Actions (プレビューアクション)
+   ========================================================================== */
+.preview-action-btn {
+    position: absolute;
+    top: 48px; /* ヘッダー(38px)の下に少し余裕を持って配置 */
+    right: 15px;
+    width: 34px;
+    height: 34px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+}
+
+.preview-action-btn.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.preview-action-btn:hover {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+    transform: scale(1.05);
+    box-shadow: 0 6px 15px rgba(0, 122, 204, 0.4);
+}
+
+.preview-action-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* 別ウィンドウプレビュー (preview.html) での調整 */
+body > .preview-action-btn {
+    top: 15px;
+}
+
 @keyframes slideInRight {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }

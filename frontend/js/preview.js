@@ -14,6 +14,7 @@ const PreviewManager = {
         this.filename = document.getElementById('preview-filename');
         this.closeBtn = document.getElementById('btn-close-preview');
         this.toggleBtn = document.getElementById('btn-preview-toggle');
+        this.openBtn = document.getElementById('btn-open-file');
     },
 
     bindEvents() {
@@ -22,6 +23,13 @@ const PreviewManager = {
         }
         if (this.toggleBtn) {
             this.toggleBtn.onclick = () => this.toggle();
+        }
+        if (this.openBtn) {
+            this.openBtn.onclick = () => {
+                if (this.currentFile) {
+                    window.api.sendCommand('OPEN|' + this.currentFile);
+                }
+            };
         }
 
         // ウィンドウが外部で閉じられた際の同期
@@ -64,6 +72,7 @@ const PreviewManager = {
         this.pane.style.display = 'none';
         this.resizer.style.display = 'none';
         if (this.toggleBtn) this.toggleBtn.classList.remove('active');
+        if (this.openBtn) this.openBtn.classList.remove('visible');
         
         // ウィンドウモードならウィンドウを閉じる
         if (localStorage.getItem('settings-window-preview') === 'true') {
@@ -78,7 +87,10 @@ const PreviewManager = {
         const selected = typeof getSelectedItems === 'function' ? getSelectedItems() : [];
         
         if (selected.length === 0) {
-            if (!isWindowMode) this.renderPlaceholder();
+            if (!isWindowMode) {
+                this.renderPlaceholder();
+                if (this.openBtn) this.openBtn.classList.remove('visible');
+            }
             return;
         }
 
@@ -97,8 +109,11 @@ const PreviewManager = {
                 isDark,
                 highContrast
             });
+            if (this.openBtn) this.openBtn.classList.remove('visible');
             return;
         }
+
+        if (this.openBtn) this.openBtn.classList.add('visible');
         
         this.filename.textContent = file.name;
         this.renderLoading();
