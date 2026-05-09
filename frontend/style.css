@@ -1554,11 +1554,11 @@ body.compact-mode .file-list td {
 }
 
 .toggle-switch input:focus+.slider {
-    box-shadow: 0 0 1px #007acc;
+    box-shadow: 0 0 1px var(--accent-color);
 }
 
 .toggle-switch input:checked+.slider {
-    background-color: #007acc;
+    background-color: var(--accent-color);
 }
 
 .toggle-switch input:checked+.slider:before {

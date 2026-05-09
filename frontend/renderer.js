@@ -229,21 +229,21 @@ function updateSortMenuUI() {
 
 document.querySelectorAll('.sort-item').forEach(item => {
     item.onclick = (e) => {
+        e.stopPropagation();
         currentSortKey = parseInt(item.dataset.sortKey);
         updateSortMenuUI();
         window.api.sendCommand(`SORT|${currentSortKey}|${currentSortOrder}`);
         if (currentPath) window.api.sendCommand(`LIST|${currentPath}`);
-        sortMenu.classList.remove('visible');
     };
 });
 
 document.querySelectorAll('.sort-order').forEach(item => {
     item.onclick = (e) => {
+        e.stopPropagation();
         currentSortOrder = parseInt(item.dataset.sortOrder);
         updateSortMenuUI();
         window.api.sendCommand(`SORT|${currentSortKey}|${currentSortOrder}`);
         if (currentPath) window.api.sendCommand(`LIST|${currentPath}`);
-        sortMenu.classList.remove('visible');
     };
 });
 
@@ -264,6 +264,7 @@ function updateViewMenuUI() {
 
 document.querySelectorAll('.view-mode').forEach(item => {
     item.onclick = (e) => {
+        e.stopPropagation();
         currentViewMode = item.dataset.viewMode;
         if (currentViewMode === 'compact') {
             document.body.classList.add('compact-mode');
@@ -281,7 +282,6 @@ document.querySelectorAll('.view-mode').forEach(item => {
         }
         
         updateViewMenuUI();
-        viewMenu.classList.remove('visible');
         window.api.sendCommand(`LIST|${currentPath}`); // Reload
     };
 });
