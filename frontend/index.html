@@ -141,14 +141,7 @@
                         <span class="check-icon" style="opacity: 0;"></span>その他
                         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto; width:14px; height:14px;"><polyline points="9 18 15 12 9 6"></polyline></svg>
                         <div class="submenu dropdown-menu">
-                            <div class="menu-item has-submenu">
-                                <span>レイアウト</span>
-                                <div class="submenu">
-                                    <div class="menu-item toggle-layout" data-layout="sidebar">サイドバーを表示</div>
-                                    <div class="menu-item toggle-layout" data-layout="terminal">ターミナルを表示</div>
-                                    <div class="menu-item toggle-layout" data-layout="preview">プレビューを表示</div>
-                                </div>
-                            </div>
+
                             <div class="menu-item view-toggle" data-toggle="hidden"><span class="check-icon" style="opacity: 0;">✓</span>隠しファイル</div>
                             <div class="menu-item view-toggle" data-toggle="extension"><span class="check-icon" style="opacity: 1;">✓</span>ファイル名拡張子</div>
                         </div>
@@ -228,7 +221,7 @@
 
                     <!-- ファイルリスト画面 -->
                     <div id="explorer-view" class="explorer-view" style="display: none;">
-                        <table class="file-list">
+                        <table id="file-table" class="file-list">
                             <thead>
                                 <tr>
                                     <th style="width: 300px;">Name<div class="col-resizer"></div></th>

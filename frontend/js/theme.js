@@ -33,7 +33,7 @@ const IconThemeManager = {
         if (ext === 'cs') return this.customIcons.csharp;
         if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'].includes(ext)) return this.customIcons.image;
         if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return this.customIcons.archive;
-        if (['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv'].includes(ext)) return this.customIcons.media;
+        if (['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'wmv', 'flv'].includes(ext)) return this.customIcons.media;
         if (['mp3', 'wav', 'aac', 'flac', 'ogg', 'm4a'].includes(ext)) return this.customIcons.audio;
         if (['exe', 'bat', 'cmd', 'ps1', 'sh', 'msi', 'dll'].includes(ext)) return this.customIcons.exe;
         if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'txt', 'md', 'rtf'].includes(ext)) return this.customIcons.doc;

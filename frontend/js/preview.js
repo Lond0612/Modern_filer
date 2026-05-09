@@ -121,11 +121,14 @@ const PreviewManager = {
 
         try {
             const ext = file.name.split('.').pop().toLowerCase();
-            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'ico'].includes(ext);
+            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'].includes(ext);
+            const isVideo = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'wmv', 'flv'].includes(ext);
             const isText = ['txt', 'js', 'json', 'c', 'cpp', 'h', 'hpp', 'py', 'md', 'html', 'css', 'sql', 'sh', 'bat', 'ps1'].includes(ext);
 
             if (isImage) {
                 this.renderImage(file.srcPath);
+            } else if (isVideo) {
+                this.renderVideo(file.srcPath);
             } else if (isText) {
                 await this.renderText(file.srcPath);
             } else {
@@ -167,6 +170,15 @@ const PreviewManager = {
         this.content.innerHTML = `
             <div class="preview-image-container">
                 <img src="${imgUrl}" alt="Preview" />
+            </div>
+        `;
+    },
+    
+    renderVideo(path) {
+        const videoUrl = `file:///${path.replace(/\\/g, '/')}`;
+        this.content.innerHTML = `
+            <div class="preview-video-container" style="display: flex; align-items: center; justify-content: center; height: 100%; background: #000;">
+                <video src="${videoUrl}" controls autoplay muted style="max-width: 100%; max-height: 100%;"></video>
             </div>
         `;
     },

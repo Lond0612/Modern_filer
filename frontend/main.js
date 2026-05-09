@@ -159,7 +159,7 @@ ipcMain.handle('get-system-paths', () => {
 ipcMain.handle('GET_USER_THEMES', async () => {
   const themesPath = path.join(app.getPath('userData'), 'themes');
   const themesFile = path.join(themesPath, 'user_themes.json');
-  
+
   try {
     await fs.mkdir(themesPath, { recursive: true });
     try {

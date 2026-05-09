@@ -109,6 +109,9 @@ if (btnView) {
     btnView.onclick = (e) => {
         e.stopPropagation();
         viewMenu.classList.toggle('visible');
+        if (viewMenu.classList.contains('visible')) {
+            updateViewMenuUI();
+        }
         newMenu.classList.remove('visible');
         if (sortMenu) sortMenu.classList.remove('visible');
     };
@@ -247,14 +250,16 @@ document.querySelectorAll('.sort-order').forEach(item => {
 // 表示メニューのイベント
 function updateViewMenuUI() {
     document.querySelectorAll('.view-mode .check-icon').forEach(icon => icon.style.opacity = '0');
-    const activeMode = document.querySelector(`.view-mode[data-view-mode="${currentViewMode}"] .check-icon`);
-    if (activeMode) activeMode.style.opacity = '1';
+    document.querySelectorAll(`.view-mode[data-view-mode="${currentViewMode}"] .check-icon`).forEach(icon => {
+        icon.style.opacity = '1';
+    });
 
-    const hiddenIcon = document.querySelector(`.view-toggle[data-toggle="hidden"] .check-icon`);
-    if (hiddenIcon) hiddenIcon.style.opacity = showHiddenFiles ? '1' : '0';
-
-    const extIcon = document.querySelector(`.view-toggle[data-toggle="extension"] .check-icon`);
-    if (extIcon) extIcon.style.opacity = showExtensions ? '1' : '0';
+    document.querySelectorAll(`.view-toggle[data-toggle="hidden"] .check-icon`).forEach(icon => {
+        icon.style.opacity = showHiddenFiles ? '1' : '0';
+    });
+    document.querySelectorAll(`.view-toggle[data-toggle="extension"] .check-icon`).forEach(icon => {
+        icon.style.opacity = showExtensions ? '1' : '0';
+    });
 }
 
 document.querySelectorAll('.view-mode').forEach(item => {
@@ -647,6 +652,11 @@ function getFileNameWithoutExtension(name) {
 function isImageExtension(name) {
     const ext = name.split('.').pop().toLowerCase();
     return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'].includes(ext);
+}
+
+function isVideoExtension(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    return ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'wmv', 'flv'].includes(ext);
 }
 
 function formatDate(timestampMs) {
@@ -1258,28 +1268,7 @@ function navigateSelection(direction) {
 }
 
 // レイアウト切り替えロジック
-document.querySelectorAll('.toggle-layout').forEach(item => {
-    item.onclick = () => {
-        const layout = item.dataset.layout;
-        if (layout === 'sidebar') {
-            const sidebar = document.querySelector('.sidebar');
-            const resizer = document.getElementById('resizer-sidebar');
-            const isHidden = sidebar.style.display === 'none';
-            sidebar.style.display = isHidden ? 'flex' : 'none';
-            resizer.style.display = isHidden ? 'block' : 'none';
-        } else if (layout === 'terminal') {
-            const terminal = document.querySelector('.terminal-pane');
-            const resizer = document.getElementById('resizer-terminal');
-            const isHidden = terminal.style.display === 'none';
-            terminal.style.display = isHidden ? 'flex' : 'none';
-            resizer.style.display = isHidden ? 'block' : 'none';
-        } else if (layout === 'preview') {
-            if (typeof PreviewManager !== 'undefined') {
-                PreviewManager.toggle();
-            }
-        }
-    };
-});
+
 
 initResizers();
 
