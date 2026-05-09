@@ -19,7 +19,10 @@
       ]
     },
     "extraResources": [
-      "../filer_server.exe"
+      {
+        "from": "bin/filer_server.exe",
+        "to": "."
+      }
     ],
     "files": [
       "**/*",

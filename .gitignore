@@ -1,4 +1,8 @@
 node_modules/
+dist/
+bin/
 *.exe
 *.o
 *.log
+.DS_Store
+Thumbs.db
