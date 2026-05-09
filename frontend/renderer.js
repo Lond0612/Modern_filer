@@ -11,6 +11,30 @@ let clipboard = { mode: null, items: [] };
 // mode: 'copy' | 'cut'
 // items: [{ name: string, srcPath: string }]
 
+// クイックアクセス
+let quickAccessItems = JSON.parse(localStorage.getItem('quickAccessItems') || '[]').map(item => {
+    if (item.path && !item.path.endsWith('\\')) item.path += '\\';
+    return item;
+});
+let cachedSystemPaths = null;
+// お気に入り
+let favoriteItems = JSON.parse(localStorage.getItem('favoriteItems') || '[]').map(item => {
+    if (item.path && !item.path.endsWith('\\')) item.path += '\\';
+    return item;
+});
+let homeDisplayMode = localStorage.getItem('homeDisplayMode') || 'recent'; // 'recent' | 'favorite'
+
+// ナビゲーションロック
+let navigationLockUntil = 0;
+
+function isNavigationLocked() {
+    return Date.now() < navigationLockUntil;
+}
+
+function setNavigationLock(duration = 300) {
+    navigationLockUntil = Date.now() + duration;
+}
+
 const addressInput = document.getElementById('address-input');
 const btnSidebarHome = document.getElementById('btn-sidebar-home');
 const homeView = document.getElementById('home-view');
@@ -279,6 +303,7 @@ function updateNavButtons() {
 }
 
 btnBack.onclick = () => {
+    if (isNavigationLocked()) return;
     if (historyBack.length === 0) return;
     historyForward.push(currentPath);
     const prev = historyBack.pop();
@@ -286,6 +311,7 @@ btnBack.onclick = () => {
 };
 
 btnForward.onclick = () => {
+    if (isNavigationLocked()) return;
     if (historyForward.length === 0) return;
     historyBack.push(currentPath);
     const next = historyForward.shift();
@@ -293,6 +319,7 @@ btnForward.onclick = () => {
 };
 
 btnUp.onclick = () => {
+    if (isNavigationLocked()) return;
     if (!currentPath) return;
     const trimmed = currentPath.endsWith('\\') ? currentPath.slice(0, -1) : currentPath;
     const parent = trimmed.substring(0, trimmed.lastIndexOf('\\') + 1);
@@ -301,7 +328,10 @@ btnUp.onclick = () => {
     }
 };
 
-btnSidebarHome.onclick = () => showHome();
+btnSidebarHome.onclick = () => {
+    if (isNavigationLocked()) return;
+    showHome();
+};
 
 function showHome() {
     isHomeActive = true;
@@ -335,6 +365,7 @@ function showExplorer(path) {
 async function renderHomeContent() {
     const quickAccess = document.getElementById('home-quick-access');
     const recentList = document.getElementById('home-recent-list');
+    const favoriteList = document.getElementById('home-favorite-list');
     const greeting = document.getElementById('home-greeting');
     
     // 挨拶の更新
@@ -343,39 +374,63 @@ async function renderHomeContent() {
     else if (hour < 18) greeting.textContent = "こんにちは";
     else greeting.textContent = "こんばんは";
 
+    // 表示モードの同期
+    const btnRecent = document.getElementById('btn-home-recent');
+    const btnFavorite = document.getElementById('btn-home-favorite');
+    if (btnRecent && btnFavorite) {
+        btnRecent.classList.toggle('active', homeDisplayMode === 'recent');
+        btnFavorite.classList.toggle('active', homeDisplayMode === 'favorite');
+        recentList.style.display = homeDisplayMode === 'recent' ? 'flex' : 'none';
+        favoriteList.style.display = homeDisplayMode === 'favorite' ? 'flex' : 'none';
+    }
+
     // クイックアクセスの描画
     quickAccess.innerHTML = '';
-    const paths = await window.api.getSystemPaths();
-    if (paths) {
-        const items = [
-            { path: paths.desktop, label: "デスクトップ", icon: IconThemeManager.customIcons.desktop },
-            { path: paths.downloads, label: "ダウンロード", icon: IconThemeManager.customIcons.download },
-            { path: paths.documents, label: "ドキュメント", icon: IconThemeManager.customIcons.doc },
-            { path: paths.music, label: "ミュージック", icon: IconThemeManager.customIcons.audio },
-            { path: paths.pictures, label: "ピクチャ", icon: IconThemeManager.customIcons.image },
-            { path: paths.videos, label: "ビデオ", icon: IconThemeManager.customIcons.media }
-        ];
-
-        items.forEach(item => {
-            const tile = document.createElement('div');
-            tile.className = 'quick-tile';
-            tile.innerHTML = `
-                <div class="tile-icon">${item.icon}</div>
-                <span>${item.label}</span>
-            `;
-            tile.onclick = () => showExplorer(item.path);
-            quickAccess.appendChild(tile);
-        });
+    
+    if (quickAccessItems.length === 0 || !cachedSystemPaths) {
+        // 初回またはキャッシュがない場合の取得
+        const paths = await window.api.getSystemPaths();
+        if (paths) {
+            cachedSystemPaths = paths;
+            if (quickAccessItems.length === 0) {
+                const normalize = p => p.endsWith('\\') ? p : p + '\\';
+                quickAccessItems = [
+                    { path: normalize(paths.desktop), label: "デスクトップ", icon: 'desktop' },
+                    { path: normalize(paths.downloads), label: "ダウンロード", icon: 'download' },
+                    { path: normalize(paths.documents), label: "ドキュメント", icon: 'doc' },
+                    { path: normalize(paths.music), label: "ミュージック", icon: 'audio' },
+                    { path: normalize(paths.pictures), label: "ピクチャ", icon: 'image' },
+                    { path: normalize(paths.videos), label: "ビデオ", icon: 'media' }
+                ];
+                localStorage.setItem('quickAccessItems', JSON.stringify(quickAccessItems));
+            }
+        }
     }
+
+    quickAccessItems.forEach(item => {
+        const tile = document.createElement('div');
+        tile.className = 'quick-tile';
+        tile.dataset.path = item.path;
+        tile.dataset.label = item.label;
+        const iconHtml = IconThemeManager.customIcons[item.icon] || IconThemeManager.customIcons.folder;
+        tile.innerHTML = `
+            <div class="tile-icon">${iconHtml}</div>
+            <span>${item.label}</span>
+        `;
+        tile.onclick = () => showExplorer(item.path);
+        quickAccess.appendChild(tile);
+    });
 
     // 最近使用したフォルダの描画
     recentList.innerHTML = '';
     if (recentFolders.length === 0) {
-        recentList.innerHTML = '<div style="color:var(--text-muted); font-size:13px;">履歴はありません</div>';
+        recentList.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding: 20px; text-align: center;">履歴はありません</div>';
     } else {
         recentFolders.slice(0, 8).forEach(folder => {
             const item = document.createElement('div');
             item.className = 'recent-item';
+            item.dataset.path = folder.path;
+            item.dataset.label = folder.name;
             item.innerHTML = `
                 <div class="recent-icon">${IconThemeManager.customIcons.folder}</div>
                 <div class="recent-info">
@@ -385,6 +440,29 @@ async function renderHomeContent() {
             `;
             item.onclick = () => showExplorer(folder.path);
             recentList.appendChild(item);
+        });
+    }
+
+    // お気に入りの描画
+    favoriteList.innerHTML = '';
+    if (favoriteItems.length === 0) {
+        favoriteList.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding: 20px; text-align: center;">お気に入りは登録されていません</div>';
+    } else {
+        favoriteItems.forEach(folder => {
+            const item = document.createElement('div');
+            item.className = 'recent-item'; // 同じスタイルを流用
+            item.dataset.path = folder.path;
+            item.dataset.label = folder.label;
+            const iconHtml = IconThemeManager.customIcons[folder.icon] || IconThemeManager.customIcons.folder;
+            item.innerHTML = `
+                <div class="recent-icon">${iconHtml}</div>
+                <div class="recent-info">
+                    <span class="recent-name">${folder.label}</span>
+                    <span class="recent-path">${folder.path}</span>
+                </div>
+            `;
+            item.onclick = () => showExplorer(folder.path);
+            favoriteList.appendChild(item);
         });
     }
 }
@@ -416,6 +494,7 @@ function loadPath(path, isUserClick = false) {
     addToRecentFolders(path);
 
     if (isUserClick) {
+        setNavigationLock();
         window.api.sendCommand(`CD|${currentPath}`);
     } else {
         window.api.sendCommand(`LIST|${currentPath}`);
@@ -657,6 +736,7 @@ function addFileRow(data) {
     }
 
     element.onclick = (e) => {
+        if (isNavigationLocked()) return;
         if (e.ctrlKey) {
             element.classList.toggle('selected');
         } else {
@@ -667,6 +747,7 @@ function addFileRow(data) {
     };
 
     element.ondblclick = () => {
+        if (isNavigationLocked()) return;
         if (type === 'D') {
             loadPath(currentPath + name + '\\', true);
         } else {
@@ -936,16 +1017,31 @@ let treeLoadingPath = '';
 async function initTree(rootPath) {
     treeView.innerHTML = '';
     
-    // クイックアクセス
-    const paths = await window.api.getSystemPaths();
-    if (paths) {
-        createTreeNode(paths.desktop, treeView, true, IconThemeManager.customIcons.desktop, "デスクトップ", true);
-        createTreeNode(paths.downloads, treeView, true, IconThemeManager.customIcons.download, "ダウンロード", true);
-        createTreeNode(paths.documents, treeView, true, IconThemeManager.customIcons.doc, "ドキュメント", true);
-        createTreeNode(paths.music, treeView, true, IconThemeManager.customIcons.audio, "ミュージック", true);
-        createTreeNode(paths.pictures, treeView, true, IconThemeManager.customIcons.image, "ピクチャ", true);
-        createTreeNode(paths.videos, treeView, true, IconThemeManager.customIcons.media, "ビデオ", true);
+    // クイックアクセスの初期化確認
+    if (quickAccessItems.length === 0 || !cachedSystemPaths) {
+        const paths = await window.api.getSystemPaths();
+        if (paths) {
+            cachedSystemPaths = paths;
+            if (quickAccessItems.length === 0) {
+                const normalize = p => p.endsWith('\\') ? p : p + '\\';
+                quickAccessItems = [
+                    { path: normalize(paths.desktop), label: "デスクトップ", icon: 'desktop' },
+                    { path: normalize(paths.downloads), label: "ダウンロード", icon: 'download' },
+                    { path: normalize(paths.documents), label: "ドキュメント", icon: 'doc' },
+                    { path: normalize(paths.music), label: "ミュージック", icon: 'audio' },
+                    { path: normalize(paths.pictures), label: "ピクチャ", icon: 'image' },
+                    { path: normalize(paths.videos), label: "ビデオ", icon: 'media' }
+                ];
+                localStorage.setItem('quickAccessItems', JSON.stringify(quickAccessItems));
+            }
+        }
     }
+
+    // クイックアクセス
+    quickAccessItems.forEach(item => {
+        const iconHtml = IconThemeManager.customIcons[item.icon] || IconThemeManager.customIcons.folder;
+        createTreeNode(item.path, treeView, true, iconHtml, item.label, true, true);
+    });
     
     // セパレーター
     const sep = document.createElement('div');
@@ -956,11 +1052,12 @@ async function initTree(rootPath) {
     window.api.sendCommand('GET_DRIVES');
 }
 
-function createTreeNode(fullPath, container, isRoot = false, customIcon = null, labelName = null, hideExpander = false) {
+function createTreeNode(fullPath, container, isRoot = false, customIcon = null, labelName = null, hideExpander = false, isQuickAccess = false) {
     const name = labelName || (isRoot ? fullPath : fullPath.split('\\').filter(Boolean).pop());
     const node = document.createElement('div');
     node.className = 'tree-node';
     node.dataset.path = fullPath.endsWith('\\') ? fullPath : fullPath + '\\';
+    if (isQuickAccess) node.dataset.isQuickAccess = 'true';
 
     const item = document.createElement('div');
     item.className = 'tree-item';
@@ -1004,6 +1101,7 @@ function createTreeNode(fullPath, container, isRoot = false, customIcon = null, 
     };
 
     item.onclick = (e) => {
+        if (isNavigationLocked()) return;
         e.stopPropagation();
         document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
         item.classList.add('active');
@@ -1015,6 +1113,7 @@ function createTreeNode(fullPath, container, isRoot = false, customIcon = null, 
     };
 
     item.ondblclick = (e) => {
+        if (isNavigationLocked()) return;
         e.stopPropagation();
         loadPath(node.dataset.path, true);
     };
@@ -1232,20 +1331,22 @@ let contextTarget = null; // 右クリック対象のデータ
 window.addEventListener('contextmenu', (e) => {
     e.preventDefault();
     
-    if (isHomeActive) return;
-
     const fileRow = e.target.closest('#file-list-body tr, .grid-item');
+    const treeItem = e.target.closest('.tree-item');
+    const homeItem = e.target.closest('.quick-tile, .recent-item');
     const isFilePane = e.target.closest('.file-pane');
     
-    if (!isFilePane) {
+    if (!isFilePane && !treeItem) {
         contextMenu.style.display = 'none';
         return;
     }
     
     if (fileRow) {
+        let path = currentPath + fileRow.dataset.name;
+        if (fileRow.dataset.type === 'D' && !path.endsWith('\\')) path += '\\';
         contextTarget = {
             name: fileRow.dataset.name,
-            path: currentPath + fileRow.dataset.name,
+            path: path,
             isDir: fileRow.dataset.type === 'D'
         };
         
@@ -1253,9 +1354,27 @@ window.addEventListener('contextmenu', (e) => {
             document.querySelectorAll('#file-list-body tr, .grid-item').forEach(el => el.classList.remove('selected'));
             fileRow.classList.add('selected');
         }
+    } else if (treeItem) {
+        const node = treeItem.closest('.tree-node');
+        const path = node.dataset.path;
+        contextTarget = {
+            name: path.split('\\').filter(Boolean).pop() || path,
+            path: path,
+            isDir: true
+        };
+        
+        document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
+        treeItem.classList.add('active');
+    } else if (homeItem) {
+        let path = homeItem.dataset.path;
+        if (!path.endsWith('\\')) path += '\\';
+        contextTarget = {
+            name: homeItem.dataset.label,
+            path: path,
+            isDir: true
+        };
     } else {
         contextTarget = null;
-        // 空白部分の右クリックでは既存の選択を解除する
         document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(el => el.classList.remove('selected'));
     }
 
@@ -1266,9 +1385,40 @@ window.addEventListener('contextmenu', (e) => {
 
     // アイテム選択の有無に応じた制御
     const hasSelection = contextTarget !== null;
-    ['ctx-open', 'ctx-cut', 'ctx-copy', 'ctx-rename', 'ctx-delete'].forEach(id => {
-        document.getElementById(id).classList.toggle('disabled', !hasSelection);
+    ['ctx-open', 'ctx-cut', 'ctx-copy', 'ctx-rename', 'ctx-delete', 'ctx-quick-access', 'ctx-favorite'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('disabled', !hasSelection);
     });
+
+    // クイックアクセスのテキスト切り替え
+    if (hasSelection && contextTarget.isDir) {
+        const qaItem = document.getElementById('ctx-quick-access');
+        if (qaItem) {
+            const isQAEntry = treeItem && treeItem.closest('.tree-node').dataset.isQuickAccess === 'true';
+            const isRegistered = quickAccessItems.some(item => item.path === contextTarget.path);
+            
+            if (isQAEntry || isRegistered) {
+                qaItem.querySelector('span').textContent = 'クイックアクセスから解除';
+            } else {
+                qaItem.querySelector('span').textContent = 'クイックアクセスに登録';
+            }
+        }
+    } else if (hasSelection && !contextTarget.isDir) {
+        // ファイルの場合はクイックアクセス・お気に入り無効
+        const qaItem = document.getElementById('ctx-quick-access');
+        if (qaItem) qaItem.classList.add('disabled');
+        const favItem = document.getElementById('ctx-favorite');
+        if (favItem) favItem.classList.add('disabled');
+    }
+
+    // お気に入りのテキスト切り替え
+    if (hasSelection && contextTarget.isDir) {
+        const favItem = document.getElementById('ctx-favorite');
+        if (favItem) {
+            const isRegistered = favoriteItems.some(item => item.path === contextTarget.path);
+            favItem.querySelector('span').textContent = isRegistered ? 'お気に入りから解除' : 'お気に入りに追加';
+        }
+    }
     
     // 貼り付けの制御
     const canPaste = clipboard.mode && clipboard.items.length > 0;
@@ -1291,6 +1441,90 @@ window.addEventListener('contextmenu', (e) => {
 window.addEventListener('click', () => {
     contextMenu.style.display = 'none';
 });
+
+// クイックアクセス操作
+const btnCtxQuickAccess = document.getElementById('ctx-quick-access');
+if (btnCtxQuickAccess) {
+    btnCtxQuickAccess.onclick = () => {
+        if (!contextTarget || !contextTarget.isDir) return;
+        
+        const index = quickAccessItems.findIndex(item => item.path === contextTarget.path);
+        if (index !== -1) {
+            quickAccessItems.splice(index, 1);
+        } else {
+            let icon = 'folder';
+            if (cachedSystemPaths) {
+                const normalize = p => p.endsWith('\\') ? p : p + '\\';
+                if (contextTarget.path === normalize(cachedSystemPaths.desktop)) icon = 'desktop';
+                else if (contextTarget.path === normalize(cachedSystemPaths.downloads)) icon = 'download';
+                else if (contextTarget.path === normalize(cachedSystemPaths.documents)) icon = 'doc';
+                else if (contextTarget.path === normalize(cachedSystemPaths.music)) icon = 'audio';
+                else if (contextTarget.path === normalize(cachedSystemPaths.pictures)) icon = 'image';
+                else if (contextTarget.path === normalize(cachedSystemPaths.videos)) icon = 'media';
+            }
+
+            quickAccessItems.push({
+                path: contextTarget.path,
+                label: contextTarget.name,
+                icon: icon
+            });
+        }
+        
+        localStorage.setItem('quickAccessItems', JSON.stringify(quickAccessItems));
+        refreshQuickAccessUI();
+    };
+}
+
+// お気に入り操作
+const btnCtxFavorite = document.getElementById('ctx-favorite');
+if (btnCtxFavorite) {
+    btnCtxFavorite.onclick = () => {
+        if (!contextTarget || !contextTarget.isDir) return;
+        
+        const index = favoriteItems.findIndex(item => item.path === contextTarget.path);
+        if (index !== -1) {
+            favoriteItems.splice(index, 1);
+        } else {
+            let icon = 'folder';
+            if (cachedSystemPaths) {
+                const normalize = p => p.endsWith('\\') ? p : p + '\\';
+                if (contextTarget.path === normalize(cachedSystemPaths.desktop)) icon = 'desktop';
+                else if (contextTarget.path === normalize(cachedSystemPaths.downloads)) icon = 'download';
+                else if (contextTarget.path === normalize(cachedSystemPaths.documents)) icon = 'doc';
+                else if (contextTarget.path === normalize(cachedSystemPaths.music)) icon = 'audio';
+                else if (contextTarget.path === normalize(cachedSystemPaths.pictures)) icon = 'image';
+                else if (contextTarget.path === normalize(cachedSystemPaths.videos)) icon = 'media';
+            }
+
+            favoriteItems.push({
+                path: contextTarget.path,
+                label: contextTarget.name,
+                icon: icon
+            });
+        }
+        
+        localStorage.setItem('favoriteItems', JSON.stringify(favoriteItems));
+        if (isHomeActive) renderHomeContent();
+    };
+}
+
+// HOMEタブ切り替え
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'btn-home-recent') {
+        homeDisplayMode = 'recent';
+        localStorage.setItem('homeDisplayMode', 'recent');
+        renderHomeContent();
+    } else if (e.target.id === 'btn-home-favorite') {
+        homeDisplayMode = 'favorite';
+        localStorage.setItem('homeDisplayMode', 'favorite');
+        renderHomeContent();
+    }
+});
+
+function refreshQuickAccessUI() {
+    initTree(currentPath);
+    if (isHomeActive) renderHomeContent();
+}
 
 // コンテキストメニューのアクション
 document.getElementById('ctx-open').onclick = () => {
@@ -1339,7 +1573,7 @@ document.getElementById('ctx-rename').onclick = () => {
     const selected = document.querySelector('.selected');
     if (selected) {
         const nameCell = selected.querySelector('.file-name');
-        if (nameCell) startRename(nameCell, selected.dataset.name);
+        if (nameCell) startRename(selected); // 修正: 引数を要素全体に変更（元々の startRename(selectedRows[0]) に合わせる）
     }
 };
 

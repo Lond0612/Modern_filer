@@ -209,9 +209,18 @@
                             </div>
                             
                             <div class="home-section">
-                                <h2 class="section-title">最近使用したディレクトリ</h2>
+                                <div class="section-header">
+                                    <h2 class="section-title">コンテンツ</h2>
+                                    <div class="tab-toggle-group">
+                                        <button id="btn-home-recent" class="tab-toggle-btn active">最近の項目</button>
+                                        <button id="btn-home-favorite" class="tab-toggle-btn">お気に入り</button>
+                                    </div>
+                                </div>
                                 <div id="home-recent-list" class="recent-folders-list">
                                     <!-- Recent folders will be generated here -->
+                                </div>
+                                <div id="home-favorite-list" class="recent-folders-list" style="display: none;">
+                                    <!-- Favorite folders will be generated here -->
                                 </div>
                             </div>
                         </div>

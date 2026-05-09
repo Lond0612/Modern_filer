@@ -994,6 +994,44 @@ body {
     color: var(--text-main);
 }
 
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.tab-toggle-group {
+    display: flex;
+    background: var(--bg-input);
+    padding: 2px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+}
+
+.tab-toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.tab-toggle-btn:hover {
+    color: var(--text-main);
+}
+
+.tab-toggle-btn.active {
+    background: var(--accent-color);
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 .recent-folders-list {
     display: flex;
     flex-direction: column;
