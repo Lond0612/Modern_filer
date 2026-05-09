@@ -4,13 +4,16 @@
 #include <ctype.h>
 #include "search.h"
 
+#include <wchar.h>
+#include <wctype.h>
+
 // --- SearchQuery の初期化 ---
-SearchQuery searchquery_create(const char *keyword, SearchMatchType match_type,
+SearchQuery searchquery_create(const wchar_t *keyword, SearchMatchType match_type,
                                int include_dirs, int case_sensitive)
 {
     SearchQuery q;
-    strncpy(q.keyword, keyword, MAX_PATH - 1);
-    q.keyword[MAX_PATH - 1] = '\0';
+    wcsncpy(q.keyword, keyword, MAX_PATH - 1);
+    q.keyword[MAX_PATH - 1] = L'\0';
     q.match_type = match_type;
     q.include_dirs = include_dirs;
     q.case_sensitive = case_sensitive;
@@ -18,40 +21,39 @@ SearchQuery searchquery_create(const char *keyword, SearchMatchType match_type,
 }
 
 // --- 文字列一致判定ヘルパー ---
-static int match_keyword(const char *target, const SearchQuery *query)
+static int match_keyword(const wchar_t *target, const SearchQuery *query)
 {
-    const char *kw = query->keyword;
+    const wchar_t *kw = query->keyword;
 
-    // case_insensitive の strstr は標準にないので自前で処理
-    // target を小文字コピーして検索する
-    char t_lower[MAX_PATH], k_lower[MAX_PATH];
+    // case_insensitive の wcsstr は標準にないので自前で処理
+    wchar_t t_lower[MAX_PATH], k_lower[MAX_PATH];
     if (!query->case_sensitive)
     {
-        strncpy(t_lower, target, MAX_PATH - 1);
-        t_lower[MAX_PATH - 1] = '\0';
-        strncpy(k_lower, kw, MAX_PATH - 1);
-        k_lower[MAX_PATH - 1] = '\0';
-        for (char *p = t_lower; *p; p++)
-            *p = (char)tolower((unsigned char)*p);
-        for (char *p = k_lower; *p; p++)
-            *p = (char)tolower((unsigned char)*p);
+        wcsncpy(t_lower, target, MAX_PATH - 1);
+        t_lower[MAX_PATH - 1] = L'\0';
+        wcsncpy(k_lower, kw, MAX_PATH - 1);
+        k_lower[MAX_PATH - 1] = L'\0';
+        for (wchar_t *p = t_lower; *p; p++)
+            *p = towlower(*p);
+        for (wchar_t *p = k_lower; *p; p++)
+            *p = towlower(*p);
         target = t_lower;
         kw = k_lower;
     }
 
-    size_t tlen = strlen(target);
-    size_t klen = strlen(kw);
+    size_t tlen = wcslen(target);
+    size_t klen = wcslen(kw);
 
     switch (query->match_type)
     {
     case SEARCH_MATCH_PARTIAL:
-        return strstr(target, kw) != NULL;
+        return wcsstr(target, kw) != NULL;
     case SEARCH_MATCH_PREFIX:
-        return strncmp(target, kw, klen) == 0;
+        return wcsncmp(target, kw, klen) == 0;
     case SEARCH_MATCH_SUFFIX:
-        return tlen >= klen && strcmp(target + tlen - klen, kw) == 0;
+        return tlen >= klen && wcscmp(target + tlen - klen, kw) == 0;
     case SEARCH_MATCH_EXACT:
-        return strcmp(target, kw) == 0;
+        return wcscmp(target, kw) == 0;
     }
     return 0;
 }

@@ -42,9 +42,21 @@ function createWindow() {
 }
 
 function startServer() {
-  const serverPath = path.join(__dirname, '..', 'filer_server.exe');
+  let serverPath;
+  let serverCwd;
+
+  if (app.isPackaged) {
+    // パッケージング後は resources フォルダ直下に配置される想定
+    serverPath = path.join(process.resourcesPath, 'filer_server.exe');
+    serverCwd = process.resourcesPath;
+  } else {
+    // 開発環境
+    serverPath = path.join(__dirname, '..', 'filer_server.exe');
+    serverCwd = path.join(__dirname, '..');
+  }
+
   filerServer = spawn(serverPath, [], {
-    cwd: path.join(__dirname, '..')
+    cwd: serverCwd
   });
 
   filerServer.stdout.on('data', (data) => {

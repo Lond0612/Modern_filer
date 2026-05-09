@@ -14,13 +14,13 @@ typedef enum
 
 typedef struct
 {
-    char keyword[MAX_PATH];     // 検索キーワード
+    wchar_t keyword[MAX_PATH];     // 検索キーワード
     SearchMatchType match_type; // 一致条件
     int include_dirs;           // ディレクトリを含むか（1:含む 0:除外）
     int case_sensitive;         // 大文字小文字を区別するか（1:区別 0:無視）
 } SearchQuery;
 
-SearchQuery searchquery_create(const char *keyword, SearchMatchType match_type,
+SearchQuery searchquery_create(const wchar_t *keyword, SearchMatchType match_type,
                                int include_dirs, int case_sensitive);
 FileList filelist_search(FileList *list, const SearchQuery *query);
 
