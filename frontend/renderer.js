@@ -692,9 +692,9 @@ function addFileRow(data) {
         tr.dataset.fullname = name;
         tr.dataset.type = type;
         tr.innerHTML = `
-            <td class="file-name" title="${name}"><span style="margin-right: 6px;">${customIcon}</span> ${displayName}</td>
-            <td>${dateStr}</td>
-            <td>${isDir ? '' : formatSize(size)}</td>
+            <td class="file-name" title="${name}"><span class="cell-content"><span style="margin-right: 6px;">${customIcon}</span> ${displayName}</span></td>
+            <td><span class="cell-content">${dateStr}</span></td>
+            <td><span class="cell-content">${isDir ? '' : formatSize(size)}</span></td>
         `;
         fileListBody.appendChild(tr);
         element = tr;
@@ -733,8 +733,10 @@ function addFileRow(data) {
         }
         
         div.innerHTML = `
-            <div class="grid-icon">${iconHtml}</div>
-            <div class="grid-name file-name" title="${name}">${displayName}</div>
+            <div class="grid-content">
+                <div class="grid-icon">${iconHtml}</div>
+                <div class="grid-name file-name" title="${name}">${displayName}</div>
+            </div>
         `;
         fileGrid.appendChild(div);
         element = div;

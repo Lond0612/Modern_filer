@@ -9,6 +9,8 @@ class MouseManager {
         this.rectElement = null;
         this.marqueeStarted = false;
         this.initialSelection = new Set();
+        this.isDraggingItem = false;
+        this.draggedItem = null;
         
         // 矩形選択の対象となるコンテナ
         this.containerId = 'explorer-view';
@@ -50,17 +52,23 @@ class MouseManager {
         if (e.target.closest('thead')) return;
 
         const item = e.target.closest('#file-list-body tr, .grid-item');
-        const isTargetPrimary = e.target.closest('.file-name, .grid-icon');
+        const isContent = e.target.closest('.cell-content, .grid-content');
         
+        // 【重要】文字やアイコンのある「実コンテンツ領域」の上であれば、矩形選択を開始しない
+        // それ以外の隙間（セルのマージン部分など）であれば、アイテムの上であっても矩形選択を開始できる
+        if (isContent) {
+            this.isDraggingItem = true;
+            this.draggedItem = item;
+            return;
+        }
+
         this.isDragging = true;
         this.startX = e.clientX;
         this.startY = e.clientY;
         this.marqueeStarted = false;
-        
-        // アイテムがない（完全な余白）場合は、即座に矩形選択を開始可能にする
-        this.isPureEmptySpace = !item;
+        this.isPureEmptySpace = true; // ここに来る = itemがnullなので常にtrue
 
-        // ドラッグ開始時点での選択状態を保持（Ctrl併用時などのため）
+        // ドラッグ開始時点での選択状態を保持
         this.initialSelection = new Set();
         if (e.ctrlKey) {
             document.querySelectorAll('.selected').forEach(el => {
@@ -69,17 +77,13 @@ class MouseManager {
             });
         }
 
-        // 完全な余白なら即座に初期化して表示（以前の挙動を復元）
-        if (this.isPureEmptySpace) {
-            this.marqueeStarted = true;
-            this.updateRect(this.startX, this.startY, 0, 0);
-            this.rectElement.style.display = 'block';
-            
-            if (!e.ctrlKey) {
-                this.clearSelection();
-            }
-        } else {
-            this.rectElement.style.display = 'none';
+        // 余白クリックなので即座に初期化
+        this.marqueeStarted = true;
+        this.updateRect(this.startX, this.startY, 0, 0);
+        this.rectElement.style.display = 'block';
+        
+        if (!e.ctrlKey) {
+            this.clearSelection();
         }
 
         // テキスト選択を防止
@@ -134,6 +138,8 @@ class MouseManager {
         const diffY = Math.abs(currentY - this.startY);
 
         this.isDragging = false;
+        this.isDraggingItem = false;
+        this.draggedItem = null;
         this.marqueeStarted = false;
         this.rectElement.style.display = 'none';
         document.body.classList.remove('no-select');
