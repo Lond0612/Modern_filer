@@ -264,3 +264,12 @@ ipcMain.on('CLOSE_PREVIEW_WINDOW', () => {
     previewWindow.close();
   }
 });
+
+// 外部アプリへのドラッグ＆ドロップ
+ipcMain.on('ondragstart', (event, files) => {
+  // 注意: startDrag には有効な画像ファイルのパスが必要です
+  event.sender.startDrag({
+    files: files,
+    icon: path.join(__dirname, 'drag-icon.png')
+  });
+});

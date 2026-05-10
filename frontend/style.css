@@ -2082,4 +2082,16 @@ body > .preview-action-btn {
 /* 既存のファイルリストアイテムがドラッグ中に青くならないように調整 */
 #file-list-body tr, .grid-item {
     user-select: none;
-}
+}
+/* ---------------------------------------------------------------------------
+ * �h���b�O���h���b�v (Drag and Drop)
+ * --------------------------------------------------------------------------- */
+.drag-over {
+    background: color-mix(in srgb, var(--accent-color), transparent 80%) !important;
+    outline: 2px dashed var(--accent-color) !important;
+    outline-offset: -2px;
+}
+
+.dragging {
+    opacity: 0.5;
+}

@@ -691,11 +691,23 @@ function addFileRow(data) {
         tr.dataset.name = name;
         tr.dataset.fullname = name;
         tr.dataset.type = type;
+        tr.draggable = true;
         tr.innerHTML = `
             <td class="file-name" title="${name}"><span class="cell-content"><span style="margin-right: 6px;">${customIcon}</span> ${displayName}</span></td>
             <td><span class="cell-content">${dateStr}</span></td>
             <td><span class="cell-content">${isDir ? '' : formatSize(size)}</span></td>
         `;
+        
+        // D&D イベント
+        tr.ondragstart = handleDragStart;
+        tr.ondragend = handleDragEnd;
+        if (isDir) {
+            tr.ondragover = handleDragOver;
+            tr.ondragenter = handleDragOver;
+            tr.ondragleave = handleDragLeave;
+            tr.ondrop = handleDrop;
+        }
+
         fileListBody.appendChild(tr);
         element = tr;
     } else {
@@ -704,23 +716,12 @@ function addFileRow(data) {
         div.dataset.name = name;
         div.dataset.fullname = name;
         div.dataset.type = type;
+        div.draggable = true;
         
         let iconHtml = '';
         const isImg = isImageExtension(name);
         const isVid = isVideoExtension(name);
         
-        // アイコンタイプの決定
-        let iconType = 'file';
-        if (isDir) iconType = 'folder';
-        else if (isImg) iconType = 'image';
-        else if (isVid) iconType = 'media';
-        else {
-            const ext = name.split('.').pop().toLowerCase();
-            if (['exe', 'bat', 'cmd'].includes(ext)) iconType = 'exe';
-            else if (['zip', 'rar', '7z'].includes(ext)) iconType = 'archive';
-            // ... 他の判定は getIcon と同様だが、ここではプレースホルダー用
-        }
-
         if (isImg || isVid) {
             const fileUri = encodeURI(`file:///${currentPath}${name}`.replace(/\\/g, '/')).replace(/#/g, '%23');
             if (isImg) {
@@ -738,6 +739,17 @@ function addFileRow(data) {
                 <div class="grid-name file-name" title="${name}">${displayName}</div>
             </div>
         `;
+
+        // D&D イベント
+        div.ondragstart = handleDragStart;
+        div.ondragend = handleDragEnd;
+        if (isDir) {
+            div.ondragover = handleDragOver;
+            div.ondragenter = handleDragOver;
+            div.ondragleave = handleDragLeave;
+            div.ondrop = handleDrop;
+        }
+
         fileGrid.appendChild(div);
         element = div;
     }
@@ -1086,6 +1098,15 @@ function createTreeNode(fullPath, container, isRoot = false, customIcon = null, 
     item.appendChild(icon);
     item.appendChild(label);
     node.appendChild(item);
+
+    // D&D イベント (サイドバーは全てフォルダー)
+    item.draggable = true;
+    item.ondragstart = handleDragStart;
+    item.ondragend = handleDragEnd;
+    item.ondragover = handleDragOver;
+    item.ondragenter = handleDragOver;
+    item.ondragleave = handleDragLeave;
+    item.ondrop = handleDrop;
 
     const children = document.createElement('div');
     children.className = 'tree-children';
@@ -1573,3 +1594,122 @@ document.getElementById('ctx-delete').onclick = () => {
         }
     }
 };
+// ---------------------------------------------------------------------------
+// ドラッグ＆ドロップ (D&D) 制御
+// ---------------------------------------------------------------------------
+
+function handleDragStart(e) {
+    const item = e.target.closest('tr, .grid-item');
+    if (!item) return;
+
+    // もしドラッグされたアイテムが未選択なら、それだけを選択状態にする
+    if (!item.classList.contains('selected')) {
+        document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
+        item.classList.add('selected');
+        onSelectionChanged();
+    }
+
+    const selectedItems = getSelectedItems();
+    if (selectedItems.length === 0) return;
+
+    // ドラッグデータをセット
+    const paths = selectedItems.map(i => i.srcPath);
+    e.dataTransfer.setData('application/x-file-paths', JSON.stringify(paths));
+    e.dataTransfer.effectAllowed = 'move';
+
+    // ドラッグイメージ（ゴースト）の作成
+    const firstItem = selectedItems[0];
+    const dragIcon = document.createElement('div');
+    dragIcon.className = 'drag-ghost';
+    dragIcon.style.position = 'absolute';
+    dragIcon.style.top = '-1000px';
+    dragIcon.style.padding = '8px 12px';
+    dragIcon.style.background = 'var(--accent-color)';
+    dragIcon.style.color = 'white';
+    dragIcon.style.borderRadius = '4px';
+    dragIcon.style.fontSize = '12px';
+    dragIcon.style.display = 'flex';
+    dragIcon.style.alignItems = 'center';
+    dragIcon.style.gap = '8px';
+    dragIcon.style.zIndex = '-1';
+    
+    // アイコン（簡易版）
+    const countBadge = selectedItems.length > 1 ? `<span style="background: white; color: var(--accent-color); padding: 0 5px; border-radius: 10px; font-weight: bold;">${selectedItems.length}</span>` : '';
+    dragIcon.innerHTML = `<span>${firstItem.name}</span> ${countBadge}`;
+    
+    document.body.appendChild(dragIcon);
+    e.dataTransfer.setDragImage(dragIcon, 0, 0);
+    
+    // 後で削除
+    setTimeout(() => document.body.removeChild(dragIcon), 0);
+    
+    item.classList.add('dragging');
+
+    // 【外部アプリへのD&D対応】
+    if (window.api.send) {
+        window.api.send('ondragstart', paths);
+    }
+}
+
+function handleDragEnd(e) {
+    const item = e.target.closest('tr, .grid-item');
+    if (item) item.classList.remove('dragging');
+    
+    // 全てのハイライトを消去
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    const target = e.target.closest('tr[data-type="D"], .grid-item[data-type="D"], .tree-node');
+    if (target) {
+        // 自分自身へのドロップを防止
+        const pathsJson = e.dataTransfer.getData('application/x-file-paths');
+        const isSelf = false; // 簡易化のため一旦false。必要に応じてパス比較。
+        
+        if (!isSelf) {
+            target.classList.add('drag-over');
+        }
+    }
+}
+
+function handleDragLeave(e) {
+    const target = e.target.closest('tr[data-type="D"], .grid-item[data-type="D"], .tree-node');
+    if (target) {
+        target.classList.remove('drag-over');
+    }
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+    const target = e.target.closest('tr[data-type="D"], .grid-item[data-type="D"], .tree-node');
+    if (!target) return;
+
+    const pathsJson = e.dataTransfer.getData('application/x-file-paths');
+    if (!pathsJson) return;
+
+    const srcPaths = JSON.parse(pathsJson);
+    let destPath = '';
+
+    if (target.classList.contains('tree-node')) {
+        destPath = target.dataset.path;
+    } else {
+        destPath = currentPath + target.dataset.name + '\\';
+    }
+
+    if (!destPath) return;
+
+    srcPaths.forEach(srcPath => {
+        const fileName = srcPath.split('\\').pop();
+        const targetPath = destPath + fileName;
+        
+        // 自分自身の中に移動しようとしていないかチェック
+        if (srcPath !== targetPath && !destPath.startsWith(srcPath + '\\')) {
+            window.api.sendCommand(`MOVE|${srcPath}|${targetPath}`);
+        }
+    });
+}
