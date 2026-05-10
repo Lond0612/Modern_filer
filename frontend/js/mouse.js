@@ -128,11 +128,29 @@ class MouseManager {
         if (!this.isDragging) return;
 
         const wasMarquee = this.marqueeStarted;
+        const currentX = e.clientX;
+        const currentY = e.clientY;
+        const diffX = Math.abs(currentX - this.startX);
+        const diffY = Math.abs(currentY - this.startY);
 
         this.isDragging = false;
         this.marqueeStarted = false;
         this.rectElement.style.display = 'none';
         document.body.classList.remove('no-select');
+        
+        // 【選択解除の強化】
+        // 矩形選択が開始されず（移動距離が短く）、かつクリック対象がアイテムではなかった場合
+        if (!wasMarquee && diffX < 5 && diffY < 5) {
+            const item = e.target.closest('#file-list-body tr, .grid-item');
+            if (!item && !e.ctrlKey) {
+                // ファイルエクスプローラー領域内であることを再確認
+                const isExplorer = document.getElementById('explorer-view').style.display !== 'none';
+                const inFileArea = e.target.closest('.file-pane');
+                if (isExplorer && inFileArea && !e.target.closest('thead')) {
+                    this.clearSelection();
+                }
+            }
+        }
         
         // 矩形選択が行われた場合は通知
         if (wasMarquee && typeof onSelectionChanged === 'function') {

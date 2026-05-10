@@ -695,7 +695,6 @@ function addFileRow(data) {
             <td class="file-name" title="${name}"><span style="margin-right: 6px;">${customIcon}</span> ${displayName}</td>
             <td>${dateStr}</td>
             <td>${isDir ? '' : formatSize(size)}</td>
-            <td class="filler-col"></td>
         `;
         fileListBody.appendChild(tr);
         element = tr;

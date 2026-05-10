@@ -1129,7 +1129,7 @@ body {
 }
 
 .file-list {
-    width: 100%;
+    width: max-content;
     border-collapse: collapse;
     table-layout: fixed;
 }
