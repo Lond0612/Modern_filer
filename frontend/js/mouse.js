@@ -53,10 +53,11 @@ class MouseManager {
 
         const item = e.target.closest('#file-list-body tr, .grid-item');
         const isContent = e.target.closest('.cell-content, .grid-content');
+        const isSelected = item && item.classList.contains('selected');
         
-        // 【重要】文字やアイコンのある「実コンテンツ領域」の上であれば、矩形選択を開始しない
-        // それ以外の隙間（セルのマージン部分など）であれば、アイテムの上であっても矩形選択を開始できる
-        if (isContent) {
+        // 【重要】文字やアイコンのある「実コンテンツ領域」の上、
+        // または「すでに選択されているアイテム」の上であれば、矩形選択を開始せずドラッグ等のアイテム操作を優先する
+        if (isContent || isSelected) {
             this.isDraggingItem = true;
             this.draggedItem = item;
             return;

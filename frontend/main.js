@@ -267,9 +267,20 @@ ipcMain.on('CLOSE_PREVIEW_WINDOW', () => {
 
 // 外部アプリへのドラッグ＆ドロップ
 ipcMain.on('ondragstart', (event, files) => {
-  // 注意: startDrag には有効な画像ファイルのパスが必要です
-  event.sender.startDrag({
-    files: files,
-    icon: path.join(__dirname, 'drag-icon.png')
-  });
+  try {
+    if (!files || files.length === 0) return;
+
+    // Electronのバージョンやプラットフォームにより引数の形式が異なる場合があるため
+    // 互換性を考慮して単一ファイル(file)と複数ファイル(files)の両方を試みる
+    const dragConfig = {
+      files: files, 
+      file: files[0],
+      icon: path.join(__dirname, 'drag-icon.png')
+    };
+
+    console.log('Native drag start:', files);
+    event.sender.startDrag(dragConfig);
+  } catch (err) {
+    console.error('Failed to start native drag:', err);
+  }
 });
