@@ -1689,25 +1689,38 @@ function handleDrop(e) {
     const target = e.target.closest('tr[data-type="D"], .grid-item[data-type="D"], .tree-node');
     if (!target) return;
 
+    let srcPaths = [];
     const pathsJson = e.dataTransfer.getData('application/x-file-paths');
-    if (!pathsJson) return;
+    
+    if (pathsJson) {
+        srcPaths = JSON.parse(pathsJson);
+    } else {
+        // フォールバック: dataTransfer が空の場合は現在選択中のアイテムを使用
+        // (startDrag を使用すると renderer の dataTransfer がクリアされる場合があるため)
+        srcPaths = getSelectedItems().map(i => i.srcPath);
+    }
 
-    const srcPaths = JSON.parse(pathsJson);
+    if (srcPaths.length === 0) return;
+
     let destPath = '';
-
     if (target.classList.contains('tree-node')) {
         destPath = target.dataset.path;
-    } else {
+    } else if (target.dataset.name) {
         destPath = currentPath + target.dataset.name + '\\';
     }
 
     if (!destPath) return;
 
+    // ログ出力
+    if (typeof appendTerminal === 'function') {
+        appendTerminal(`Moving ${srcPaths.length} items to ${destPath}...`, 'command-echo');
+    }
+
     srcPaths.forEach(srcPath => {
         const fileName = srcPath.split('\\').pop();
         const targetPath = destPath + fileName;
         
-        // 自分自身の中に移動しようとしていないかチェック
+        // 自分自身の中、または同一箇所への移動を防止
         if (srcPath !== targetPath && !destPath.startsWith(srcPath + '\\')) {
             window.api.sendCommand(`MOVE|${srcPath}|${targetPath}`);
         }
