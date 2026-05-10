@@ -697,7 +697,7 @@ function addFileRow(data) {
             <td><span class="cell-content">${dateStr}</span></td>
             <td><span class="cell-content">${isDir ? '' : formatSize(size)}</span></td>
         `;
-        
+
         // D&D イベント
         tr.ondragstart = handleDragStart;
         tr.ondragend = handleDragEnd;
@@ -707,6 +707,30 @@ function addFileRow(data) {
             tr.ondragleave = handleDragLeave;
             tr.ondrop = handleDrop;
         }
+
+        // 選択ロジック
+        tr.onmousedown = (e) => {
+            if (isNavigationLocked()) return;
+            if (e.button !== 0) return;
+            if (e.ctrlKey) return; 
+            
+            if (!tr.classList.contains('selected')) {
+                document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
+                tr.classList.add('selected');
+                onSelectionChanged();
+            }
+        };
+
+        tr.onclick = (e) => {
+            if (isNavigationLocked()) return;
+            if (e.ctrlKey) {
+                tr.classList.toggle('selected');
+            } else {
+                document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
+                tr.classList.add('selected');
+            }
+            onSelectionChanged();
+        };
 
         fileListBody.appendChild(tr);
         element = tr;
@@ -750,20 +774,35 @@ function addFileRow(data) {
             div.ondrop = handleDrop;
         }
 
+        // 選択ロジック
+        div.onmousedown = (e) => {
+            if (isNavigationLocked()) return;
+            if (e.button !== 0) return;
+            if (e.ctrlKey) return;
+
+            if (!div.classList.contains('selected')) {
+                document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
+                div.classList.add('selected');
+                onSelectionChanged();
+            }
+        };
+
+        div.onclick = (e) => {
+            if (isNavigationLocked()) return;
+            if (e.ctrlKey) {
+                div.classList.toggle('selected');
+            } else {
+                document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
+                div.classList.add('selected');
+            }
+            onSelectionChanged();
+        };
+
         fileGrid.appendChild(div);
         element = div;
     }
 
-    element.onclick = (e) => {
-        if (isNavigationLocked()) return;
-        if (e.ctrlKey) {
-            element.classList.toggle('selected');
-        } else {
-            document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
-            element.classList.add('selected');
-        }
-        onSelectionChanged();
-    };
+    // (個別要素の onclick/onmousedown は作成時に登録済み)
 
     element.ondblclick = () => {
         if (isNavigationLocked()) return;
