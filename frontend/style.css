@@ -2034,7 +2034,29 @@ body > .preview-action-btn {
     to { transform: translateX(0); opacity: 1; }
 }
 
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
 }
+
+/* ---------------------------------------------------------------------------
+ * 矩形選択 (Marquee Selection)
+ * --------------------------------------------------------------------------- */
+.selection-rectangle {
+    position: fixed;
+    border: 1px solid rgba(0, 120, 215, 0.8);
+    background-color: rgba(0, 120, 215, 0.2);
+    pointer-events: none;
+    z-index: 9999;
+    display: none;
+}
+
+.no-select {
+    user-select: none !important;
+}
+
+/* 既存のファイルリストアイテムがドラッグ中に青くならないように調整 */
+#file-list-body tr, .grid-item {
+    user-select: none;
+}

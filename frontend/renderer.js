@@ -155,10 +155,6 @@ document.addEventListener('click', (e) => {
     if (!e.target.closest('.view-btn-wrapper') && viewMenu) {
         viewMenu.classList.remove('visible');
     }
-    // ファイルリスト行の外をクリックしたら選択解除
-    if (!e.target.closest('#file-list-body tr') && !e.target.closest('.grid-item')) {
-        document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
-    }
 });
 
 btnCut.onclick = () => {
