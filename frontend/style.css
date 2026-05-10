@@ -249,7 +249,7 @@ body.light-mode.high-contrast {
     --border-main: #000000;
     --border-light: #333333;
     --bg-item-hover: rgba(0, 0, 0, 0.1);
-    --bg-item-selected: #000000;
+    --bg-item-selected: var(--accent-color); /* 黒からアクセントカラーに変更 */
     --text-bright: #000000;
 }
 
@@ -286,8 +286,15 @@ body.high-contrast .grid-item {
 
 body.high-contrast .file-list tr.selected td,
 body.high-contrast .grid-item.selected {
+    background: var(--bg-item-selected) !important; /* ハイコントラスト時は透明度を適用しない */
     outline: 2px solid var(--accent-color);
     outline-offset: -2px;
+}
+
+/* 選択時のテキスト色を白に強制（ハイコントラスト用） */
+body.high-contrast .selected,
+body.high-contrast .selected * {
+    color: #ffffff !important;
 }
 
 /* ==========================================================================
