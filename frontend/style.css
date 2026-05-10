@@ -819,7 +819,7 @@ body {
 }
 
 .tree-item.active {
-    background: var(--tree-active);
+    background: color-mix(in srgb, var(--tree-active), transparent 30%);
     color: var(--accent-color);
     border-left-color: var(--accent-color);
 }
@@ -1169,7 +1169,7 @@ body {
 
 /* 選択状態・操作状態 */
 .file-list tr.selected td {
-    background: var(--bg-item-selected);
+    background: color-mix(in srgb, var(--bg-item-selected), transparent 40%);
 }
 
 .file-list tr.cut-item {
@@ -1322,8 +1322,8 @@ body.compact-mode .file-list td {
 }
 
 .grid-item.selected {
-    background: var(--bg-item-selected);
-    border-color: var(--accent-color);
+    background: color-mix(in srgb, var(--bg-item-selected), transparent 40%);
+    border-color: color-mix(in srgb, var(--accent-color), transparent 50%);
 }
 
 .grid-item.cut-item {
@@ -2045,8 +2045,8 @@ body > .preview-action-btn {
  * --------------------------------------------------------------------------- */
 .selection-rectangle {
     position: fixed;
-    border: 1px solid rgba(0, 120, 215, 0.8);
-    background-color: rgba(0, 120, 215, 0.2);
+    border: 1px solid color-mix(in srgb, var(--accent-color), transparent 20%);
+    background-color: color-mix(in srgb, var(--accent-color), transparent 85%);
     pointer-events: none;
     z-index: 9999;
     display: none;
