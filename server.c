@@ -359,6 +359,77 @@ void handle_rename(const char* old_path_utf8, const char* new_path_utf8) {
     }
 }
 
+void get_directory_info(const wchar_t* path, long long* total_size, int* file_count, int* dir_count) {
+    wchar_t search_path[MAX_PATH];
+    _snwprintf(search_path, MAX_PATH - 1, L"%s\\*", path);
+    
+    WIN32_FIND_DATAW fd;
+    HANDLE hFind = FindFirstFileW(search_path, &fd);
+    if (hFind == INVALID_HANDLE_VALUE) return;
+    
+    do {
+        if (wcscmp(fd.cFileName, L".") == 0 || wcscmp(fd.cFileName, L"..") == 0) continue;
+        
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            (*dir_count)++;
+            wchar_t sub_path[MAX_PATH];
+            _snwprintf(sub_path, MAX_PATH - 1, L"%s\\%s", path, fd.cFileName);
+            get_directory_info(sub_path, total_size, file_count, dir_count);
+        } else {
+            (*file_count)++;
+            ULARGE_INTEGER ull;
+            ull.LowPart = fd.nFileSizeLow;
+            ull.HighPart = fd.nFileSizeHigh;
+            *total_size += ull.QuadPart;
+        }
+    } while (FindNextFileW(hFind, &fd));
+    
+    FindClose(hFind);
+}
+
+static long long filetime_to_ms(FILETIME ft) {
+    ULARGE_INTEGER ull;
+    ull.LowPart = ft.dwLowDateTime;
+    ull.HighPart = ft.dwHighDateTime;
+    return (long long)((ull.QuadPart - 116444736000000000ULL) / 10000ULL);
+}
+
+void handle_prop(const char* path_utf8) {
+    wchar_t wpath[MAX_PATH];
+    MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
+    
+    WIN32_FILE_ATTRIBUTE_DATA attr;
+    if (!GetFileAttributesExW(wpath, GetFileExInfoStandard, &attr)) {
+        send_json_utf8("ERROR", "Failed to get file attributes");
+        return;
+    }
+    
+    long long size = 0;
+    int file_count = 0;
+    int dir_count = 0;
+    int is_dir = (attr.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+    
+    if (is_dir) {
+        get_directory_info(wpath, &size, &file_count, &dir_count);
+    } else {
+        ULARGE_INTEGER ull;
+        ull.LowPart = attr.nFileSizeLow;
+        ull.HighPart = attr.nFileSizeHigh;
+        size = ull.QuadPart;
+    }
+    
+    long long created = filetime_to_ms(attr.ftCreationTime);
+    long long modified = filetime_to_ms(attr.ftLastWriteTime);
+    long long accessed = filetime_to_ms(attr.ftLastAccessTime);
+    
+    char result[2048];
+    _snprintf(result, sizeof(result)-1, "%s|%lld|%lld|%lld|%lld|%lu|%d|%d",
+        path_utf8, size, created, modified, accessed, attr.dwFileAttributes,
+        file_count, dir_count);
+        
+    send_json_utf8("PROP_DATA", result);
+}
+
 void handle_prop_native(const char* path_utf8) {
     wchar_t wpath[MAX_PATH];
     MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
@@ -528,6 +599,9 @@ int main(void) {
         }
         else if (strncmp(line, "PROP_NATIVE|", 12) == 0) {
             handle_prop_native(line + 12);
+        }
+        else if (strncmp(line, "PROP|", 5) == 0) {
+            handle_prop(line + 5);
         }
         else if (strcmp(line, "GET_DRIVES") == 0) handle_get_drives();
         else if (strcmp(line, "QUIT") == 0) break;

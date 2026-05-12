@@ -576,6 +576,14 @@ window.api.onBackendResponse((obj) => {
             pendingRename = null;
             break;
 
+        case 'LOG':
+            appendTerminal(obj.content, 'command-echo');
+            break;
+
+        case 'PROP_DATA':
+            handlePropData(obj.content);
+            break;
+
         case 'START_SEARCH':
             searchResults.innerHTML = '<div class="search-searching">検索中...</div>';
             searchResults.style.display = 'block';
@@ -1675,18 +1683,111 @@ document.getElementById('ctx-properties').onclick = () => {
     if (!contextTarget) return;
     const useNative = localStorage.getItem('settings-native-properties') === 'true';
     if (useNative) {
-        // バックエンドにOS標準プロパティの表示を依頼
         window.api.sendCommand(`PROP_NATIVE|${contextTarget.path}`);
     } else {
-        // カスタムUI表示（予定）
-        appendTerminal(`Action: プロパティを表示します: ${contextTarget.path}`, 'command-echo');
         showPropertiesModal(contextTarget.path);
     }
 };
 
 function showPropertiesModal(path) {
-    // 後のステップで実装。現在はプレースホルダーログのみ
-    console.log("Show custom properties modal for:", path);
+    // バックエンドに情報を要求
+    window.api.sendCommand(`PROP|${path}`);
+    appendTerminal(`Action: プロパティを取得中...`, 'command-echo');
+}
+
+function handlePropData(content) {
+    const parts = content.split('|');
+    if (parts.length < 8) return;
+
+    const path = parts[0];
+    const size = parseInt(parts[1]);
+    const created = parseInt(parts[2]);
+    const modified = parseInt(parts[3]);
+    const accessed = parseInt(parts[4]);
+    const attr = parseInt(parts[5]);
+    const fileCount = parseInt(parts[6]);
+    const dirCount = parseInt(parts[7]);
+
+    const fileName = path.split('\\').filter(x => x).pop() || path;
+    const isDir = attr & 16; // FILE_ATTRIBUTE_DIRECTORY
+
+    document.getElementById('prop-name').value = fileName;
+    
+    // アイコンの設定 (IconThemeManagerを使用)
+    const iconWrapper = document.getElementById('prop-icon-wrapper');
+    if (iconWrapper) {
+        iconWrapper.innerHTML = IconThemeManager.getIcon(fileName, isDir);
+    }
+
+    document.getElementById('prop-type').textContent = isDir ? 'フォルダ' : (fileName.split('.').pop().toUpperCase() + ' ファイル');
+    document.getElementById('prop-location').textContent = path.substring(0, path.lastIndexOf('\\'));
+    
+    // サイズフォーマット
+    const formatSize = (bytes) => {
+        if (bytes === 0) return '0 バイト';
+        const k = 1024;
+        const sizes = ['バイト', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i] + ' (' + bytes.toLocaleString() + ' バイト)';
+    };
+    document.getElementById('prop-size').textContent = formatSize(size);
+
+    // 内容（フォルダのみ）
+    const containsRow = document.getElementById('prop-contains-row');
+    if (isDir) {
+        containsRow.style.display = 'flex';
+        document.getElementById('prop-contains').textContent = `${fileCount.toLocaleString()} ファイル、${dirCount.toLocaleString()} フォルダ`;
+    } else {
+        containsRow.style.display = 'none';
+    }
+
+    // 日付フォーマット
+    const formatDate = (ms) => {
+        const d = new Date(ms);
+        return d.toLocaleString('ja-JP');
+    };
+    document.getElementById('prop-created').textContent = formatDate(created);
+    document.getElementById('prop-modified').textContent = formatDate(modified);
+    document.getElementById('prop-accessed').textContent = formatDate(accessed);
+
+    // 属性
+    document.getElementById('prop-attr-readonly').checked = attr & 1; // READONLY
+    document.getElementById('prop-attr-hidden').checked = attr & 2;   // HIDDEN
+
+    // 表示
+    document.getElementById('property-modal').style.display = 'flex';
+}
+
+// モーダルを閉じる処理
+function initPropertyModal() {
+    const modal = document.getElementById('property-modal');
+    const closeBtn = document.getElementById('btn-close-prop');
+    const okBtn = document.getElementById('prop-ok-btn');
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+    if (okBtn) {
+        okBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
+}
+
+// 初期化時に実行
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPropertyModal);
+} else {
+    initPropertyModal();
 }
 
 // 空白エリアメニューのアクション

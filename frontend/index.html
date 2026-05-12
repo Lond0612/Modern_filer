@@ -304,21 +304,21 @@
                     <div class="tab-header">全般設定</div>
                     <div class="setting-group">
                         <div class="setting-label">
-                            <span class="main-label">Windows標準のプロパティを使用</span>
-                            <span class="sub-label">プロパティ表示にOS標準のダイアログを使用します</span>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="toggle-native-properties">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <div class="setting-group">
-                        <div class="setting-label">
                             <span class="main-label">ウィンドウを分けてプレビュー</span>
                             <span class="sub-label">プレビューを別のウィンドウで開きます</span>
                         </div>
                         <label class="toggle-switch">
                             <input type="checkbox" id="toggle-window-preview">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            <span class="main-label">Windows標準のプロパティを使用</span>
+                            <span class="sub-label">プロパティ表示にOS標準のダイアログを使用します</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle-native-properties">
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -539,6 +539,63 @@
     <script src="js/mouse.js"></script>
     <script src="renderer.js"></script>
     <script src="js/preview.js"></script>
+
+    <!-- プロパティモーダル -->
+    <div id="property-modal" class="modal-overlay" style="display: none;">
+        <div class="property-window">
+            <div class="property-header">
+                <div class="property-title-row">
+                    <div id="prop-icon-wrapper" class="prop-icon"></div>
+                    <input type="text" id="prop-name" class="prop-name-input" readonly>
+                </div>
+                <button class="modal-close-btn" id="btn-close-prop">&times;</button>
+            </div>
+            <div class="property-tabs">
+                <div class="prop-tab active">全般</div>
+            </div>
+            <div class="property-content">
+                <div class="prop-row">
+                    <span class="prop-label">種類:</span>
+                    <span id="prop-type" class="prop-value"></span>
+                </div>
+                <div class="prop-row">
+                    <span class="prop-label">場所:</span>
+                    <span id="prop-location" class="prop-value"></span>
+                </div>
+                <div class="prop-divider"></div>
+                <div class="prop-row">
+                    <span class="prop-label">サイズ:</span>
+                    <span id="prop-size" class="prop-value"></span>
+                </div>
+                <div id="prop-contains-row" class="prop-row" style="display: none;">
+                    <span class="prop-label">内容:</span>
+                    <span id="prop-contains" class="prop-value"></span>
+                </div>
+                <div class="prop-divider"></div>
+                <div class="prop-row">
+                    <span class="prop-label">作成日時:</span>
+                    <span id="prop-created" class="prop-value"></span>
+                </div>
+                <div class="prop-row">
+                    <span class="prop-label">更新日時:</span>
+                    <span id="prop-modified" class="prop-value"></span>
+                </div>
+                <div class="prop-row">
+                    <span class="prop-label">アクセス日:</span>
+                    <span id="prop-accessed" class="prop-value"></span>
+                </div>
+                <div class="prop-divider"></div>
+                <div class="prop-row attributes-row">
+                    <span class="prop-label">属性:</span>
+                    <label><input type="checkbox" id="prop-attr-readonly" disabled> 読み取り専用</label>
+                    <label><input type="checkbox" id="prop-attr-hidden" disabled> 隠しファイル</label>
+                </div>
+            </div>
+            <div class="property-footer">
+                <button class="btn-primary" id="prop-ok-btn">OK</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
