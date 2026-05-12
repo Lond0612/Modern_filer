@@ -359,6 +359,26 @@ void handle_rename(const char* old_path_utf8, const char* new_path_utf8) {
     }
 }
 
+void handle_prop_native(const char* path_utf8) {
+    wchar_t wpath[MAX_PATH];
+    MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
+    
+    SHELLEXECUTEINFOW sei = {0};
+    sei.cbSize = sizeof(sei);
+    sei.fMask = SEE_MASK_INVOKEIDLIST;
+    sei.lpVerb = L"properties";
+    sei.lpFile = wpath;
+    sei.nShow = SW_SHOW;
+    
+    if (!ShellExecuteExW(&sei)) {
+        char err[256];
+        _snprintf(err, sizeof(err)-1, "ShellExecuteEx failed: %lu", GetLastError());
+        send_json_utf8("ERROR", err);
+    } else {
+        send_json_utf8("LOG", "Native properties dialog opened");
+    }
+}
+
 void handle_delete(const char* path_utf8) {
     wchar_t wpath[MAX_PATH + 2];
     MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
@@ -505,6 +525,9 @@ int main(void) {
             wchar_t wpath[MAX_PATH];
             MultiByteToWideChar(CP_UTF8, 0, line + 5, -1, wpath, MAX_PATH);
             ShellExecuteW(NULL, L"open", wpath, NULL, NULL, SW_SHOWNORMAL);
+        }
+        else if (strncmp(line, "PROP_NATIVE|", 12) == 0) {
+            handle_prop_native(line + 12);
         }
         else if (strcmp(line, "GET_DRIVES") == 0) handle_get_drives();
         else if (strcmp(line, "QUIT") == 0) break;

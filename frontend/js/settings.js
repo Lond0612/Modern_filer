@@ -14,6 +14,7 @@ const SettingsManager = {
         
         // General
         this.windowPreviewToggle = document.getElementById('toggle-window-preview');
+        this.nativePropertiesToggle = document.getElementById('toggle-native-properties');
 
         // Theme
         this.themeOptions = document.querySelectorAll('.theme-option');
@@ -116,6 +117,14 @@ const SettingsManager = {
             this.windowPreviewToggle.onchange = () => {
                 const enabled = this.windowPreviewToggle.checked;
                 localStorage.setItem('settings-window-preview', enabled);
+            };
+        }
+
+        // Native Properties
+        if (this.nativePropertiesToggle) {
+            this.nativePropertiesToggle.onchange = () => {
+                const enabled = this.nativePropertiesToggle.checked;
+                localStorage.setItem('settings-native-properties', enabled);
             };
         }
 
@@ -307,6 +316,12 @@ const SettingsManager = {
         const windowPreviewEnabled = localStorage.getItem('settings-window-preview') === 'true';
         if (this.windowPreviewToggle) {
             this.windowPreviewToggle.checked = windowPreviewEnabled;
+        }
+
+        // Native Properties
+        const nativePropertiesEnabled = localStorage.getItem('settings-native-properties') === 'true';
+        if (this.nativePropertiesToggle) {
+            this.nativePropertiesToggle.checked = nativePropertiesEnabled;
         }
 
         // User Themes

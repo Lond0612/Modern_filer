@@ -304,6 +304,16 @@
                     <div class="tab-header">全般設定</div>
                     <div class="setting-group">
                         <div class="setting-label">
+                            <span class="main-label">Windows標準のプロパティを使用</span>
+                            <span class="sub-label">プロパティ表示にOS標準のダイアログを使用します</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle-native-properties">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-group">
+                        <div class="setting-label">
                             <span class="main-label">ウィンドウを分けてプレビュー</span>
                             <span class="sub-label">プレビューを別のウィンドウで開きます</span>
                         </div>
@@ -427,44 +437,100 @@
 
     <!-- コンテキストメニュー -->
     <div id="context-menu" class="context-menu">
-        <div class="context-horizontal-actions">
-            <div class="context-item icon-only" id="ctx-cut" title="切り取り">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
-                <span class="icon-label">切り取り</span>
+        <div id="ctx-group-item">
+            <div class="context-horizontal-actions">
+                <div class="context-item icon-only" id="ctx-cut" title="切り取り">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
+                    <span class="icon-label">切り取り</span>
+                </div>
+                <div class="context-item icon-only" id="ctx-copy" title="コピー">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span class="icon-label">コピー</span>
+                </div>
+                <div class="context-item icon-only" id="ctx-paste" title="貼り付け">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                    <span class="icon-label">貼付</span>
+                </div>
+                <div class="context-item icon-only" id="ctx-rename" title="名前の変更">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    <span class="icon-label">名前変更</span>
+                </div>
+                <div class="context-item icon-only delete" id="ctx-delete" title="削除">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    <span class="icon-label">削除</span>
+                </div>
             </div>
-            <div class="context-item icon-only" id="ctx-copy" title="コピー">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                <span class="icon-label">コピー</span>
+            
+            <div class="context-divider"></div>
+            
+            <div class="context-item" id="ctx-open">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                <span>開く</span>
             </div>
-            <div class="context-item icon-only" id="ctx-paste" title="貼り付け">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
-                <span class="icon-label">貼付</span>
+            
+            <div class="context-item disabled" id="ctx-quick-access">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                <span>クイックアクセスに登録</span>
             </div>
-            <div class="context-item icon-only" id="ctx-rename" title="名前の変更">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                <span class="icon-label">名前変更</span>
+            
+            <div class="context-item disabled" id="ctx-favorite">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <span>お気に入りに追加</span>
             </div>
-            <div class="context-item icon-only delete" id="ctx-delete" title="削除">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                <span class="icon-label">削除</span>
+
+            <div class="context-divider"></div>
+
+            <div class="context-item" id="ctx-properties">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <span>プロパティ</span>
             </div>
         </div>
-        
-        <div class="context-divider"></div>
-        
-        <div class="context-item" id="ctx-open">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-            <span>開く</span>
-        </div>
-        
-        <div class="context-item disabled" id="ctx-quick-access">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-            <span>クイックアクセスに登録</span>
-        </div>
-        
-        <div class="context-item disabled" id="ctx-favorite">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-            <span>お気に入りに追加</span>
+
+        <div id="ctx-group-empty" style="display: none;">
+            <div class="context-item has-submenu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <span>表示</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto; width:14px; height:14px;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <div class="submenu dropdown-menu">
+                    <div class="menu-item view-mode" data-view-mode="extralarge"><span class="check-icon">✓</span>特大アイコン</div>
+                    <div class="menu-item view-mode" data-view-mode="large"><span class="check-icon">✓</span>大アイコン</div>
+                    <div class="menu-item view-mode" data-view-mode="medium"><span class="check-icon">✓</span>中アイコン</div>
+                    <div class="menu-item view-mode" data-view-mode="small"><span class="check-icon">✓</span>小アイコン</div>
+                    <div class="separator" style="width: 100%; height: 1px; margin: 4px 0; background: var(--border-light);"></div>
+                    <div class="menu-item view-mode" data-view-mode="details"><span class="check-icon">✓</span>詳細</div>
+                    <div class="menu-item view-mode" data-view-mode="compact"><span class="check-icon">✓</span>コンパクト</div>
+                </div>
+            </div>
+
+            <div class="context-item has-submenu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                <span>並べ替え</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto; width:14px; height:14px;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <div class="submenu dropdown-menu">
+                    <div class="menu-item sort-item" data-sort-key="0"><span class="check-icon">✓</span>名前</div>
+                    <div class="menu-item sort-item" data-sort-key="2"><span class="check-icon">✓</span>更新日時</div>
+                    <div class="menu-item sort-item" data-sort-key="1"><span class="check-icon">✓</span>作成日時</div>
+                    <div class="menu-item sort-item" data-sort-key="3"><span class="check-icon">✓</span>種類</div>
+                    <div class="menu-item sort-item" data-sort-key="4"><span class="check-icon">✓</span>サイズ</div>
+                    <div class="separator" style="width: 100%; height: 1px; margin: 4px 0; background: var(--border-light);"></div>
+                    <div class="menu-item sort-order" data-sort-order="0"><span class="check-icon">✓</span>昇順</div>
+                    <div class="menu-item sort-order" data-sort-order="1"><span class="check-icon">✓</span>降順</div>
+                </div>
+            </div>
+
+            <div class="context-divider"></div>
+            <div class="context-item" id="ctx-empty-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                <span>要素１</span>
+            </div>
+            <div class="context-item" id="ctx-empty-2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span>要素２</span>
+            </div>
+            <div class="context-item" id="ctx-empty-3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                <span>要素３</span>
+            </div>
         </div>
     </div>
 

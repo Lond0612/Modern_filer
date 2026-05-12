@@ -1425,9 +1425,27 @@ window.addEventListener('contextmenu', (e) => {
             path: path,
             isDir: true
         };
+        document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(el => el.classList.remove('selected'));
     } else {
         contextTarget = null;
         document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(el => el.classList.remove('selected'));
+    }
+
+    // メニューグループの表示切り替え
+    const ctxGroupItem = document.getElementById('ctx-group-item');
+    const ctxGroupEmpty = document.getElementById('ctx-group-empty');
+    const isExplorer = e.target.closest('#explorer-view');
+    const isHome = e.target.closest('#home-view');
+
+    if (contextTarget) {
+        ctxGroupItem.style.display = 'block';
+        ctxGroupEmpty.style.display = 'none';
+    } else if (isFilePane) {
+        ctxGroupItem.style.display = 'none';
+        ctxGroupEmpty.style.display = 'block';
+    } else {
+        contextMenu.style.display = 'none';
+        return;
     }
 
     // すべてのメニュー項目を一度リセット
@@ -1437,7 +1455,7 @@ window.addEventListener('contextmenu', (e) => {
 
     // アイテム選択の有無に応じた制御
     const hasSelection = contextTarget !== null;
-    ['ctx-open', 'ctx-cut', 'ctx-copy', 'ctx-rename', 'ctx-delete', 'ctx-quick-access', 'ctx-favorite'].forEach(id => {
+    ['ctx-open', 'ctx-cut', 'ctx-copy', 'ctx-rename', 'ctx-delete', 'ctx-quick-access', 'ctx-favorite', 'ctx-properties'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.toggle('disabled', !hasSelection);
     });
@@ -1653,6 +1671,40 @@ document.getElementById('ctx-delete').onclick = () => {
         });
     }
 };
+document.getElementById('ctx-properties').onclick = () => {
+    if (!contextTarget) return;
+    const useNative = localStorage.getItem('settings-native-properties') === 'true';
+    if (useNative) {
+        // バックエンドにOS標準プロパティの表示を依頼
+        window.api.sendCommand(`PROP_NATIVE|${contextTarget.path}`);
+    } else {
+        // カスタムUI表示（予定）
+        appendTerminal(`Action: プロパティを表示します: ${contextTarget.path}`, 'command-echo');
+        showPropertiesModal(contextTarget.path);
+    }
+};
+
+function showPropertiesModal(path) {
+    // 後のステップで実装。現在はプレースホルダーログのみ
+    console.log("Show custom properties modal for:", path);
+}
+
+// 空白エリアメニューのアクション
+document.getElementById('ctx-empty-1').onclick = () => {
+    appendTerminal('Action: 要素１ が実行されました', 'command-echo');
+    window.api.sendCommand('LOG|Empty Menu Item 1 Clicked');
+};
+
+document.getElementById('ctx-empty-2').onclick = () => {
+    appendTerminal('Action: 要素２ が実行されました', 'command-echo');
+    window.api.sendCommand('LOG|Empty Menu Item 2 Clicked');
+};
+
+document.getElementById('ctx-empty-3').onclick = () => {
+    appendTerminal('Action: 要素３ が実行されました', 'command-echo');
+    window.api.sendCommand('LOG|Empty Menu Item 3 Clicked');
+};
+
 // ---------------------------------------------------------------------------
 // ドラッグ＆ドロップ (D&D) 制御
 // ---------------------------------------------------------------------------
