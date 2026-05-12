@@ -144,6 +144,44 @@ app.on('window-all-closed', () => {
 });
 
 ipcMain.on('send-command', (event, command) => {
+  if (!command) return;
+
+  // PROP_NATIVE: VBScript経由でWindowsプロパティを開く
+  // パスはコマンドライン引数で渡すことでVBSファイルを純ASCII化し
+  // 文字コード問題（UTF-8 vs ANSI）を回避する
+  if (command.startsWith('PROP_NATIVE|')) {
+    const filePath = command.substring('PROP_NATIVE|'.length);
+    const dir = path.dirname(filePath);
+    const fileName = path.basename(filePath);
+
+    // VBSファイルはASCIIのみ、パスは引数経由で受け取る
+    const vbsContent = [
+      'Set oShell = CreateObject("Shell.Application")',
+      'Dim sDir, sFile',
+      'sDir = WScript.Arguments(0)',
+      'sFile = WScript.Arguments(1)',
+      'Set oFolder = oShell.NameSpace(sDir)',
+      'Set oItem = oFolder.ParseName(sFile)',
+      'oItem.InvokeVerb "properties"',
+      'WScript.Sleep 120000'
+    ].join('\r\n');
+
+    const { tmpdir } = require('os');
+    const { writeFileSync, unlinkSync } = require('fs');
+    const tmpVbs = path.join(tmpdir(), `prop_${Date.now()}.vbs`);
+    // UTF-16 LE with BOM: wscript.exeが確実に認識できる文字コード
+    writeFileSync(tmpVbs, '\ufeff' + vbsContent, 'utf16le');
+
+    const proc = spawn('wscript.exe', [tmpVbs, dir, fileName], {
+      detached: true,
+      stdio: 'ignore'
+    });
+    proc.unref();
+
+    setTimeout(() => { try { unlinkSync(tmpVbs); } catch (e) {} }, 130000);
+    return;
+  }
+
   if (command.startsWith('OPEN|')) {
     const filePath = command.substring(5);
     shell.openPath(filePath).then((error) => {
