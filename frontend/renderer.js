@@ -835,14 +835,20 @@ function startRename(el) {
     input.value = oldName;
 
     nameCell.innerHTML = '';
+    let container = nameCell;
     if (el.tagName === 'TR') {
+        const contentSpan = document.createElement('span');
+        contentSpan.className = 'cell-content';
+        nameCell.appendChild(contentSpan);
+        container = contentSpan;
+
         const iconSpan = document.createElement('span');
         iconSpan.style.marginRight = '6px';
         iconSpan.innerHTML = currentIcon;
-        nameCell.appendChild(iconSpan);
+        container.appendChild(iconSpan);
     }
     
-    nameCell.appendChild(input);
+    container.appendChild(input);
     input.focus();
 
     // 入力内容に合わせて入力欄の幅を動的に調整
@@ -877,7 +883,7 @@ function startRename(el) {
             const currentIcon = IconThemeManager.getIcon(nameToUse, isDir);
             const displayName = isDir ? nameToUse : getFileNameWithoutExtension(nameToUse);
             if (el.tagName === 'TR') {
-                nameCell.innerHTML = `<span style="margin-right: 6px;">${currentIcon}</span> ${displayName}`;
+                nameCell.innerHTML = `<span class="cell-content"><span style="margin-right: 6px;">${currentIcon}</span> ${displayName}</span>`;
             } else {
                 nameCell.textContent = displayName;
                 // グリッドの場合はアイコンも更新（名前で変わる可能性があるため）
@@ -1626,11 +1632,9 @@ document.getElementById('ctx-rename').onclick = () => {
 document.getElementById('ctx-delete').onclick = () => {
     const items = getSelectedItems();
     if (items.length > 0) {
-        if (confirm(`${items.length}個のアイテムを削除しますか？`)) {
-            items.forEach(item => {
-                window.api.sendCommand(`DELETE|${item.srcPath}`);
-            });
-        }
+        items.forEach(item => {
+            window.api.sendCommand(`DELETE|${item.srcPath}`);
+        });
     }
 };
 // ---------------------------------------------------------------------------

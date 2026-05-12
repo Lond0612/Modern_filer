@@ -367,7 +367,12 @@ void handle_delete(const char* path_utf8) {
     SHFILEOPSTRUCTW op = {0};
     op.wFunc = FO_DELETE;
     op.pFrom = wpath;
-    op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
+    // FOF_NOCONFIRMATION: ゴミ箱への移動確認を出さない
+    // FOF_WANTNUKEWARNING: ゴミ箱に入らず完全削除になる場合のみ警告を出す
+#ifndef FOF_WANTNUKEWARNING
+#define FOF_WANTNUKEWARNING 0x4000
+#endif
+    op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_WANTNUKEWARNING | FOF_NOERRORUI | FOF_SILENT;
 
     int result = SHFileOperationW(&op);
     if (result == 0 && !op.fAnyOperationsAborted) {
