@@ -1578,6 +1578,22 @@ function refreshQuickAccessUI() {
     if (isHomeActive) renderHomeContent();
 }
 
+function reorderQuickAccess(srcPath, targetPath, isAfter) {
+    const srcIndex = quickAccessItems.findIndex(item => item.path === srcPath);
+    const targetIndex = quickAccessItems.findIndex(item => item.path === targetPath);
+    
+    if (srcIndex !== -1 && targetIndex !== -1) {
+        const item = quickAccessItems.splice(srcIndex, 1)[0];
+        // 移動によってインデックスがずれるのを防ぐため、再取得
+        let newTargetIndex = quickAccessItems.findIndex(item => item.path === targetPath);
+        const insertIndex = isAfter ? newTargetIndex + 1 : newTargetIndex;
+        
+        quickAccessItems.splice(insertIndex, 0, item);
+        localStorage.setItem('quickAccessItems', JSON.stringify(quickAccessItems));
+        refreshQuickAccessUI();
+    }
+}
+
 // コンテキストメニューのアクション
 document.getElementById('ctx-open').onclick = () => {
     if (contextTarget) {
@@ -1642,54 +1658,64 @@ document.getElementById('ctx-delete').onclick = () => {
 // ---------------------------------------------------------------------------
 
 function handleDragStart(e) {
-    const item = e.target.closest('tr, .grid-item');
+    const item = e.target.closest('tr, .grid-item, .tree-item');
     if (!item) return;
 
-    // もしドラッグされたアイテムが未選択なら、それだけを選択状態にする
-    if (!item.classList.contains('selected')) {
-        document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
-        item.classList.add('selected');
-        onSelectionChanged();
+    const node = item.closest('.tree-node');
+    const isQA = node && node.dataset.isQuickAccess === 'true';
+
+    let paths = [];
+    let dragName = '';
+    let count = 0;
+
+    if (isQA) {
+        paths = [node.dataset.path];
+        dragName = item.querySelector('.tree-label').textContent;
+        count = 1;
+        e.dataTransfer.setData('application/x-quick-access-path', node.dataset.path);
+    } else if (item.classList.contains('tree-item')) {
+        // 通常のツリー項目のD&D（ディレクトリ移動）は、バグ回避のため一旦無効化
+        return;
+    } else {
+        // ファイルリスト（グリッド/詳細）からのドラッグ
+        if (!item.classList.contains('selected')) {
+            document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
+            item.classList.add('selected');
+            onSelectionChanged();
+        }
+        const selectedItems = getSelectedItems();
+        if (selectedItems.length === 0) return;
+        paths = selectedItems.map(i => i.srcPath);
+        dragName = selectedItems[0].name;
+        count = selectedItems.length;
     }
 
-    const selectedItems = getSelectedItems();
-    if (selectedItems.length === 0) return;
-
     // ドラッグデータをセット
-    const paths = selectedItems.map(i => i.srcPath);
     e.dataTransfer.setData('application/x-file-paths', JSON.stringify(paths));
     e.dataTransfer.effectAllowed = 'move';
 
     // ドラッグイメージ（ゴースト）の作成
-    const firstItem = selectedItems[0];
     const dragIcon = document.createElement('div');
     dragIcon.className = 'drag-ghost';
     dragIcon.style.position = 'absolute';
     dragIcon.style.top = '-1000px';
-    dragIcon.style.padding = '8px 12px';
-    dragIcon.style.background = 'var(--accent-color)';
-    dragIcon.style.color = 'white';
-    dragIcon.style.borderRadius = '4px';
-    dragIcon.style.fontSize = '12px';
-    dragIcon.style.display = 'flex';
-    dragIcon.style.alignItems = 'center';
-    dragIcon.style.gap = '8px';
-    dragIcon.style.zIndex = '-1';
     
-    // アイコン（簡易版）
-    const countBadge = selectedItems.length > 1 ? `<span style="background: white; color: var(--accent-color); padding: 0 5px; border-radius: 10px; font-weight: bold;">${selectedItems.length}</span>` : '';
-    dragIcon.innerHTML = `<span>${firstItem.name}</span> ${countBadge}`;
+    // アイコンとバッジ
+    const folderIcon = IconThemeManager.customIcons.folder;
+    const countBadge = count > 1 ? `<span style="background: white; color: var(--accent-color); padding: 0 6px; border-radius: 12px; font-size: 11px; font-weight: 800;">${count}</span>` : '';
+    dragIcon.innerHTML = `<span style="display: flex; align-items: center; gap: 8px;">${folderIcon} ${dragName}</span> ${countBadge}`;
     
     document.body.appendChild(dragIcon);
     e.dataTransfer.setDragImage(dragIcon, 0, 0);
     
-    // 後で削除
-    setTimeout(() => document.body.removeChild(dragIcon), 0);
+    setTimeout(() => {
+        if (dragIcon.parentNode) document.body.removeChild(dragIcon);
+    }, 0);
     
     item.classList.add('dragging');
 
     // 【外部アプリへのD&D対応】
-    if (window.api.send) {
+    if (window.api.send && !isQA) {
         window.api.send('ondragstart', paths);
     }
 }
@@ -1706,31 +1732,61 @@ function handleDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     
-    const target = e.target.closest('tr[data-type="D"], .grid-item[data-type="D"], .tree-node');
-    if (target) {
-        // 自分自身へのドロップを防止
-        const pathsJson = e.dataTransfer.getData('application/x-file-paths');
-        const isSelf = false; // 簡易化のため一旦false。必要に応じてパス比較。
-        
-        if (!isSelf) {
-            target.classList.add('drag-over');
+    // クイックアクセスの並べ替え中か判定
+    const isQAMove = e.dataTransfer.types.includes('application/x-quick-access-path');
+    
+    if (isQAMove) {
+        const target = e.target.closest('.tree-node[data-is-quick-access="true"]');
+        if (target) {
+            const treeItem = target.querySelector('.tree-item');
+            const rect = treeItem.getBoundingClientRect();
+            const isAfter = e.clientY > (rect.top + rect.height / 2);
+            
+            // クラスの付け替え
+            treeItem.classList.remove('drag-gap-top', 'drag-gap-bottom');
+            treeItem.classList.add(isAfter ? 'drag-gap-bottom' : 'drag-gap-top');
+            e.dataTransfer.dropEffect = 'move';
+        }
+    } else {
+        const target = e.target.closest('tr[data-type="D"], .grid-item[data-type="D"], .tree-node');
+        if (target && target.dataset.isQuickAccess !== 'true') {
+            const highlightTarget = target.classList.contains('tree-node') ? target.querySelector('.tree-item') : target;
+            if (highlightTarget) highlightTarget.classList.add('drag-over');
         }
     }
 }
 
 function handleDragLeave(e) {
-    const target = e.target.closest('tr[data-type="D"], .grid-item[data-type="D"], .tree-node');
+    const target = e.target.closest('tr[data-type="D"], .grid-item[data-type="D"], .tree-node, .tree-item');
     if (target) {
-        target.classList.remove('drag-over');
+        const highlightTarget = target.classList.contains('tree-node') ? target.querySelector('.tree-item') : target;
+        if (highlightTarget) {
+            highlightTarget.classList.remove('drag-over', 'drag-gap-top', 'drag-gap-bottom');
+        }
     }
 }
 
 function handleDrop(e) {
     e.preventDefault();
-    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    document.querySelectorAll('.drag-over, .drag-gap-top, .drag-gap-bottom').forEach(el => {
+        el.classList.remove('drag-over', 'drag-gap-top', 'drag-gap-bottom');
+    });
+
+    // クイックアクセスの並べ替え
+    const qaPath = e.dataTransfer.getData('application/x-quick-access-path');
+    if (qaPath) {
+        const targetNode = e.target.closest('.tree-node[data-is-quick-access="true"]');
+        if (targetNode && targetNode.dataset.path !== qaPath) {
+            const treeItem = targetNode.querySelector('.tree-item');
+            const rect = treeItem.getBoundingClientRect();
+            const isAfter = e.clientY > (rect.top + rect.height / 2);
+            reorderQuickAccess(qaPath, targetNode.dataset.path, isAfter);
+        }
+        return;
+    }
 
     const target = e.target.closest('tr[data-type="D"], .grid-item[data-type="D"], .tree-node');
-    if (!target) return;
+    if (!target || target.dataset.isQuickAccess === 'true') return;
 
     let srcPaths = [];
     const pathsJson = e.dataTransfer.getData('application/x-file-paths');

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   0. Theme Variables (テーマ定数)
+   0. Theme Variables (繝��繝槫ｮ壽焚)
    ========================================================================== */
 :root {
     /* Dark Mode (Default) */
@@ -78,7 +78,7 @@ body.light-mode {
     --theme-preset-border: #005fa3;
 }
 
-/* Deep Blue (深青) Theme */
+/* Deep Blue (豺ｱ髱�) Theme */
 body.theme-deepblue {
     --bg-main: #001b36;
     --bg-toolbar: #002142;
@@ -114,7 +114,7 @@ body.theme-deepblue {
     --theme-preset-border: #0077cc;
 }
 
-/* Khaki (カーキ) Theme */
+/* Khaki (繧ｫ繝ｼ繧ｭ) Theme */
 body.theme-khaki {
     --bg-main: #2b2b1b;
     --bg-toolbar: #363622;
@@ -150,7 +150,7 @@ body.theme-khaki {
     --theme-preset-border: #8c7b4a;
 }
 
-/* Sakura (薄ピンク) Theme */
+/* Sakura (阮�ヴ繝ｳ繧ｯ) Theme */
 body.theme-sakura {
     --bg-main: #fffcfd;
     --bg-toolbar: #ffffff;
@@ -167,7 +167,7 @@ body.theme-sakura {
     --theme-preset-border: #f48fb1;
 }
 
-/* Amber (黄色系) Theme */
+/* Amber (鮟�牡邉ｻ) Theme */
 body.theme-amber {
     --bg-main: #fffbeb;
     --bg-toolbar: #ffffff;
@@ -184,7 +184,7 @@ body.theme-amber {
     --theme-preset-border: #b45309;
 }
 
-/* Sky (うっすい水色) Theme */
+/* Sky (縺�▲縺吶＞豌ｴ濶ｲ) Theme */
 body.theme-sky {
     --bg-main: #f0f9ff;
     --bg-toolbar: #ffffff;
@@ -201,7 +201,7 @@ body.theme-sky {
     --theme-preset-border: #0284c7;
 }
 
-/* Midnight Purple (黒に近い紫) Theme */
+/* Midnight Purple (鮟偵↓霑代＞邏ｫ) Theme */
 body.theme-midnight {
     --bg-main: #0f051a;
     --bg-toolbar: #1a0b2e;
@@ -237,7 +237,7 @@ body.theme-midnight {
     --theme-preset-border: #7b1fa2;
 }
 
-/* ハイコントラストモード */
+/* 繝上う繧ｳ繝ｳ繝医Λ繧ｹ繝医Δ繝ｼ繝� */
 body.high-contrast {
     --border-main: var(--accent-color);
     --border-light: var(--accent-color);
@@ -249,7 +249,7 @@ body.light-mode.high-contrast {
     --border-main: #000000;
     --border-light: #333333;
     --bg-item-hover: rgba(0, 0, 0, 0.1);
-    --bg-item-selected: var(--accent-color); /* 黒からアクセントカラーに変更 */
+    --bg-item-selected: var(--accent-color); /* 鮟偵°繧峨い繧ｯ繧ｻ繝ｳ繝医き繝ｩ繝ｼ縺ｫ螟画峩 */
     --text-bright: #000000;
 }
 
@@ -264,7 +264,7 @@ body.high-contrast .theme-option.active {
     outline-offset: 2px;
 }
 
-/* 選択項目のテキスト視認性確保 */
+/* 驕ｸ謚樣��岼縺ｮ繝�く繧ｹ繝郁ｦ冶ｪ肴ｧ遒ｺ菫� */
 body.high-contrast .settings-tab-btn.active {
     background: var(--accent-color) !important;
     color: var(--bg-main) !important;
@@ -275,7 +275,7 @@ body.high-contrast .settings-tab-btn.active svg {
     stroke: var(--bg-main) !important;
 }
 
-/* リストアイテムの境界線強調 */
+/* 繝ｪ繧ｹ繝医い繧､繝�Β縺ｮ蠅�阜邱壼ｼｷ隱ｿ */
 body.high-contrast .file-list td {
     border-bottom: 1px solid var(--border-main) !important;
 }
@@ -286,19 +286,19 @@ body.high-contrast .grid-item {
 
 body.high-contrast .file-list tr.selected td,
 body.high-contrast .grid-item.selected {
-    background: var(--bg-item-selected) !important; /* ハイコントラスト時は透明度を適用しない */
+    background: var(--bg-item-selected) !important; /* 繝上う繧ｳ繝ｳ繝医Λ繧ｹ繝域凾縺ｯ騾乗�蠎ｦ繧帝←逕ｨ縺励↑縺� */
     outline: 2px solid var(--accent-color);
     outline-offset: -2px;
 }
 
-/* 選択時のテキスト色を白に強制（ハイコントラスト用） */
+/* 驕ｸ謚樊凾縺ｮ繝�く繧ｹ繝郁牡繧堤區縺ｫ蠑ｷ蛻ｶ�医ワ繧､繧ｳ繝ｳ繝医Λ繧ｹ繝育畑�� */
 body.high-contrast .selected,
 body.high-contrast .selected * {
     color: #ffffff !important;
 }
 
 /* ==========================================================================
-   1. Base & Layout (全体の設定と大枠のレイアウト)
+   1. Base & Layout (蜈ｨ菴薙�險ｭ螳壹→螟ｧ譫�縺ｮ繝ｬ繧､繧｢繧ｦ繝�)
    ========================================================================== */
 .context-menu {
     position: fixed;
@@ -405,7 +405,7 @@ body {
     height: 100%;
 }
 
-/* スクロールバーのカスタマイズ (モダンデザイン) */
+/* 繧ｹ繧ｯ繝ｭ繝ｼ繝ｫ繝舌�縺ｮ繧ｫ繧ｹ繧ｿ繝槭う繧ｺ (繝｢繝繝ｳ繝�じ繧､繝ｳ) */
 ::-webkit-scrollbar {
     width: 14px;
     height: 14px;
@@ -431,7 +431,7 @@ body {
 }
 
 /* ==========================================================================
-   2. Toolbar (上部ツールバー: 戻る/進む/パス/検索)
+   2. Toolbar (荳企Κ繝��繝ｫ繝舌�: 謌ｻ繧�/騾ｲ繧/繝代せ/讀懃ｴ｢)
    ========================================================================== */
 .toolbar {
     padding: 10px;
@@ -486,7 +486,7 @@ body {
     border-radius: 4px;
 }
 
-/* 検索バー */
+/* 讀懃ｴ｢繝舌� */
 .search-container {
     position: relative;
     flex-shrink: 0;
@@ -581,7 +581,7 @@ body {
 }
 
 /* ==========================================================================
-   3. Actions Bar (アクションバー: 新規作成/カット/コピー等)
+   3. Actions Bar (繧｢繧ｯ繧ｷ繝ｧ繝ｳ繝舌�: 譁ｰ隕丈ｽ懈�/繧ｫ繝�ヨ/繧ｳ繝斐�遲�)
    ========================================================================== */
 .actions-bar {
     padding: 6px 10px;
@@ -625,7 +625,7 @@ body {
     margin: 0 8px;
 }
 
-/* 新規作成ボタン・メニュー */
+/* 譁ｰ隕丈ｽ懈�繝懊ち繝ｳ繝ｻ繝｡繝九Η繝ｼ */
 .new-btn-wrapper {
     position: relative;
 }
@@ -704,7 +704,7 @@ body {
     color: var(--accent-color);
 }
 
-/* チェックアイコン (ソートメニュー用) */
+/* 繝√ぉ繝�け繧｢繧､繧ｳ繝ｳ (繧ｽ繝ｼ繝医Γ繝九Η繝ｼ逕ｨ) */
 .check-icon {
     display: inline-block;
     width: 16px;
@@ -715,7 +715,7 @@ body {
 }
 
 /* ==========================================================================
-   4. Main Layout & Resizers (メイン画面の骨格とリサイズバー)
+   4. Main Layout & Resizers (繝｡繧､繝ｳ逕ｻ髱｢縺ｮ鬪ｨ譬ｼ縺ｨ繝ｪ繧ｵ繧､繧ｺ繝舌�)
    ========================================================================== */
 .main-layout {
     display: flex;
@@ -730,11 +730,11 @@ body {
     min-height: 0;
 }
 
-/* リサイズバー (判定は広く、見た目は細く) */
+/* 繝ｪ繧ｵ繧､繧ｺ繝舌� (蛻､螳壹�蠎�￥縲∬ｦ九◆逶ｮ縺ｯ邏ｰ縺�) */
 .resizer-h {
     width: 8px;
     margin: 0 -4px;
-    /* レイアウトの隙間を埋める */
+    /* 繝ｬ繧､繧｢繧ｦ繝医�髫咎俣繧貞沂繧√ｋ */
     background: transparent;
     cursor: col-resize;
     z-index: 100;
@@ -777,7 +777,7 @@ body {
 }
 
 /* ==========================================================================
-   5. Sidebar (サイドバー: フォルダツリー)
+   5. Sidebar (繧ｵ繧､繝峨ヰ繝ｼ: 繝輔か繝ｫ繝繝�Μ繝ｼ)
    ========================================================================== */
 .sidebar {
     width: calc(240px - 5vh);
@@ -804,7 +804,7 @@ body {
     padding: 5px 0;
 }
 
-/* ツリー項目 */
+/* 繝�Μ繝ｼ鬆�岼 */
 .tree-node {
     user-select: none;
 }
@@ -872,7 +872,7 @@ body {
 }
 
 /* ==========================================================================
-   11. Home View (ホーム画面)
+   11. Home View (繝帙�繝�逕ｻ髱｢)
    ========================================================================== */
 .sidebar-nav {
     padding: 10px;
@@ -1113,7 +1113,7 @@ body {
 }
 
 /* ==========================================================================
-   6. File Pane (ファイル一覧ペイン)
+   6. File Pane (繝輔ぃ繧､繝ｫ荳隕ｧ繝壹う繝ｳ)
    ========================================================================== */
 .file-pane {
     flex: 2;
@@ -1181,7 +1181,7 @@ body {
     background: var(--bg-item-hover);
 }
 
-/* 選択状態・操作状態 */
+/* 驕ｸ謚樒憾諷九�謫堺ｽ懃憾諷� */
 .file-list tr.selected td {
     background: color-mix(in srgb, var(--bg-item-selected), transparent 40%);
 }
@@ -1190,7 +1190,7 @@ body {
     opacity: 0.4;
 }
 
-/* ファイル名セル（アイコンとテキスト/入力が改行されないようにする） */
+/* 繝輔ぃ繧､繝ｫ蜷阪そ繝ｫ�医い繧､繧ｳ繝ｳ縺ｨ繝�く繧ｹ繝�/蜈･蜉帙′謾ｹ陦後＆繧後↑縺�ｈ縺�↓縺吶ｋ�� */
 .file-name {
     white-space: nowrap;
     overflow: hidden;
@@ -1204,7 +1204,7 @@ body {
     margin-right: 6px;
 }
 
-/* インラインリネーム */
+/* 繧､繝ｳ繝ｩ繧､繝ｳ繝ｪ繝阪�繝� */
 .rename-input {
     min-width: 20px;
     width: 100%;
@@ -1221,7 +1221,7 @@ body {
 }
 
 /* ==========================================================================
-   7. Terminal Pane (ターミナルペイン)
+   7. Terminal Pane (繧ｿ繝ｼ繝溘リ繝ｫ繝壹う繝ｳ)
    ========================================================================== */
 .terminal-pane {
     height: 140px;
@@ -1261,7 +1261,7 @@ body {
     font-family: 'Consolas', monospace;
 }
 
-/* ターミナルテキストカラー */
+/* 繧ｿ繝ｼ繝溘リ繝ｫ繝�く繧ｹ繝医き繝ｩ繝ｼ */
 .command-echo {
     color: var(--text-terminal-echo);
 }
@@ -1271,10 +1271,10 @@ body {
 }
 
 /* ==========================================================================
-   8. View Options & Layouts (表示モード、コンパクトモード等)
+   8. View Options & Layouts (陦ｨ遉ｺ繝｢繝ｼ繝峨√さ繝ｳ繝代け繝医Δ繝ｼ繝臥ｭ�)
    ========================================================================== */
 
-/* サブメニュー */
+/* 繧ｵ繝悶Γ繝九Η繝ｼ */
 .has-submenu {
     position: relative;
 }
@@ -1297,7 +1297,7 @@ body {
     display: block;
 }
 
-/* コンパクトモード */
+/* 繧ｳ繝ｳ繝代け繝医Δ繝ｼ繝� */
 body.compact-mode .tree-item {
     padding: 2px 10px;
     font-size: 12px;
@@ -1308,7 +1308,7 @@ body.compact-mode .file-list td {
     font-size: 12px;
 }
 
-/* グリッドビュー (アイコン表示) */
+/* 繧ｰ繝ｪ繝�ラ繝薙Η繝ｼ (繧｢繧､繧ｳ繝ｳ陦ｨ遉ｺ) */
 #file-grid {
     display: grid;
     gap: 10px;
@@ -1396,7 +1396,7 @@ body.compact-mode .file-list td {
     vertical-align: middle;
 }
 
-/* 各グリッドサイズでのアイコン調整 */
+/* 蜷�げ繝ｪ繝�ラ繧ｵ繧､繧ｺ縺ｧ縺ｮ繧｢繧､繧ｳ繝ｳ隱ｿ謨ｴ */
 .grid-size-extralarge .grid-icon-placeholder {
     font-size: 80px;
 }
@@ -1426,7 +1426,7 @@ body.compact-mode .file-list td {
     -webkit-box-orient: vertical;
 }
 
-/* グリッドサイズ定義 (16:9に合わせて横幅を調整) */
+/* 繧ｰ繝ｪ繝�ラ繧ｵ繧､繧ｺ螳夂ｾｩ (16:9縺ｫ蜷医ｏ縺帙※讓ｪ蟷�ｒ隱ｿ謨ｴ) */
 .grid-size-extralarge {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
@@ -1444,7 +1444,7 @@ body.compact-mode .file-list td {
 }
 
 /* ==========================================================================
-   9. Settings Screen (設定画面)
+   9. Settings Screen (險ｭ螳夂判髱｢)
    ========================================================================== */
 .settings-screen {
     position: fixed;
@@ -1537,7 +1537,7 @@ body.compact-mode .file-list td {
     font-size: 12px;
     color: var(--text-muted);
 }
-/* iOS風トグルスイッチ */
+/* iOS鬚ｨ繝医げ繝ｫ繧ｹ繧､繝�メ */
 .toggle-switch {
     position: relative;
     display: inline-block;
@@ -1618,7 +1618,7 @@ body.compact-mode .file-list td {
     position: relative;
 }
 
-/* サイドバー */
+/* 繧ｵ繧､繝峨ヰ繝ｼ */
 .settings-sidebar {
     width: 220px;
     background: var(--settings-sidebar-bg);
@@ -1689,7 +1689,7 @@ body.compact-mode .file-list td {
     transform: rotate(90deg);
 }
 
-/* メインコンテンツ */
+/* 繝｡繧､繝ｳ繧ｳ繝ｳ繝�Φ繝� */
 .settings-main {
     flex: 1;
     padding: 40px;
@@ -1712,7 +1712,7 @@ body.compact-mode .file-list td {
     color: var(--text-bright);
 }
 
-/* 設定グループ */
+/* 險ｭ螳壹げ繝ｫ繝ｼ繝� */
 .setting-group {
     display: flex;
     align-items: center;
@@ -1746,7 +1746,7 @@ body.compact-mode .file-list td {
     color: var(--text-muted);
 }
 
-/* コントロール要素 */
+/* 繧ｳ繝ｳ繝医Ο繝ｼ繝ｫ隕∫ｴ� */
 .slider-control {
     display: flex;
     align-items: center;
@@ -1773,7 +1773,7 @@ input[type="range"] {
     border-color: var(--accent-color);
 }
 
-/* テーマプリセット */
+/* 繝��繝槭�繝ｪ繧ｻ繝�ヨ */
 .theme-presets-container {
     display: flex;
     flex-direction: column;
@@ -1835,7 +1835,7 @@ input[type="range"] {
     box-sizing: border-box; /* Ensure border doesn't expand preview */
 }
 
-/* プレースホルダー */
+/* 繝励Ξ繝ｼ繧ｹ繝帙Ν繝繝ｼ */
 .placeholder-msg {
     text-align: center;
     color: var(--text-muted);
@@ -1850,7 +1850,7 @@ input[type="range"] {
 }
 
 /* ==========================================================================
-   6. Preview Pane (プレビューペイン)
+   6. Preview Pane (繝励Ξ繝薙Η繝ｼ繝壹う繝ｳ)
    ========================================================================== */
 .preview-pane {
     width: 300px;
@@ -1919,7 +1919,7 @@ input[type="range"] {
     justify-content: center;
 }
 
-/* プレースホルダー */
+/* 繝励Ξ繝ｼ繧ｹ繝帙Ν繝繝ｼ */
 .preview-placeholder {
     height: 100%;
     display: flex;
@@ -1942,7 +1942,7 @@ input[type="range"] {
     max-width: 200px;
 }
 
-/* 画像プレビュー */
+/* 逕ｻ蜒上�繝ｬ繝薙Η繝ｼ */
 .preview-image-container {
     width: 100%;
     height: 100%;
@@ -1959,7 +1959,7 @@ input[type="range"] {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* テキストプレビュー */
+/* 繝�く繧ｹ繝医�繝ｬ繝薙Η繝ｼ */
 .preview-text-container {
     width: 100%;
     background: var(--bg-terminal);
@@ -1975,7 +1975,7 @@ input[type="range"] {
     border: 1px solid var(--border-light);
 }
 
-/* ファイル情報表示 */
+/* 繝輔ぃ繧､繝ｫ諠��ｱ陦ｨ遉ｺ */
 .preview-info-card {
     width: 100%;
     background: var(--glass-bg);
@@ -2003,11 +2003,11 @@ input[type="range"] {
 
 
 /* ==========================================================================
-   10. Preview Actions (プレビューアクション)
+   10. Preview Actions (繝励Ξ繝薙Η繝ｼ繧｢繧ｯ繧ｷ繝ｧ繝ｳ)
    ========================================================================== */
 .preview-action-btn {
     position: absolute;
-    top: 48px; /* ヘッダー(38px)の下に少し余裕を持って配置 */
+    top: 48px; /* 繝倥ャ繝繝ｼ(38px)縺ｮ荳九↓蟆代＠菴呵｣輔ｒ謖√▲縺ｦ驟咲ｽｮ */
     right: 15px;
     width: 34px;
     height: 34px;
@@ -2047,7 +2047,7 @@ input[type="range"] {
     height: 18px;
 }
 
-/* 別ウィンドウプレビュー (preview.html) での調整 */
+/* 蛻･繧ｦ繧｣繝ｳ繝峨え繝励Ξ繝薙Η繝ｼ (preview.html) 縺ｧ縺ｮ隱ｿ謨ｴ */
 body > .preview-action-btn {
     top: 15px;
 }
@@ -2064,7 +2064,7 @@ body > .preview-action-btn {
 }
 
 /* ---------------------------------------------------------------------------
- * 矩形選択 (Marquee Selection)
+ * 遏ｩ蠖｢驕ｸ謚� (Marquee Selection)
  * --------------------------------------------------------------------------- */
 .selection-rectangle {
     position: fixed;
@@ -2079,19 +2079,81 @@ body > .preview-action-btn {
     user-select: none !important;
 }
 
-/* 既存のファイルリストアイテムがドラッグ中に青くならないように調整 */
+/* 譌｢蟄倥�繝輔ぃ繧､繝ｫ繝ｪ繧ｹ繝医い繧､繝�Β縺後ラ繝ｩ繝�げ荳ｭ縺ｫ髱偵￥縺ｪ繧峨↑縺�ｈ縺�↓隱ｿ謨ｴ */
 #file-list-body tr, .grid-item {
     user-select: none;
 }
 /* ---------------------------------------------------------------------------
- * �h���b�O���h���b�v (Drag and Drop)
+ * ドラッグ＆ドロップ (Drag and Drop)
  * --------------------------------------------------------------------------- */
 .drag-over {
-    background: color-mix(in srgb, var(--accent-color), transparent 80%) !important;
-    outline: 2px dashed var(--accent-color) !important;
-    outline-offset: -2px;
+    background: color-mix(in srgb, var(--accent-color), transparent 85%) !important;
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drag-over::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--accent-color);
+    box-shadow: 0 0 15px color-mix(in srgb, var(--accent-color), transparent 40%);
+    border-radius: inherit;
+    pointer-events: none;
+    animation: drag-pulse 1.5s infinite;
+    z-index: 100;
+}
+
+/* 並べ替え用の隙間エフェクト */
+.drag-gap-top, .drag-gap-bottom {
+    position: relative;
+}
+
+.drag-gap-top::before, .drag-gap-bottom::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    height: 3px;
+    background: var(--accent-color);
+    box-shadow: 0 0 10px var(--accent-color), 0 0 20px rgba(var(--accent-color-rgb), 0.5);
+    border-radius: 3px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.drag-gap-top::before {
+    top: -2px;
+}
+
+.drag-gap-bottom::after {
+    bottom: -2px;
+}
+
+@keyframes drag-pulse {
+    0% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.01); }
+    100% { opacity: 0.6; transform: scale(1); }
+}
+
+.drag-ghost {
+    background: var(--accent-color);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(8px);
+    z-index: 10000;
 }
 
 .dragging {
-    opacity: 0.5;
+    opacity: 0.3;
+    filter: grayscale(0.5);
+    transform: scale(0.98);
 }
