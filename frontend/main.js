@@ -184,16 +184,29 @@ ipcMain.handle('GET_USER_THEMES', async () => {
       // 初期ファイルを作成（コメント付きの文字列として作成）
       const initialContent = `[
   {
-    "id": "user-sample-dark",
-    "name": "サンプル・ネオン",
+    "id": "user-emerald-night",
+    "name": "エメラルド・ナイト",
     "colors": {
-      "--bg-main": "#050505",       // メインの背景色
-      "--bg-side": "#0a0a0a",       // サイドバーの背景色
-      "--accent-color": "#ff00ff",  // アクセントカラー（選択時など）
-      "--text-main": "#00ffff",     // メインの文字色
-      "--border-main": "#ff00ff",   // 境界線の色
-      "--icon-folder": "#ff00ff",   // フォルダアイコンの色
-      "--icon-file": "#00ffff"      // ファイルアイコンの色
+      "--bg-main": "#0b0f0e",       // メイン背景
+      "--bg-side": "#121817",       // サイドバー背景
+      "--accent-color": "#10b981",  // アクセント（エメラルド）
+      "--text-main": "#ecfdf5",     // テキスト
+      "--border-main": "#1e2927",   // 境界線
+      "--icon-folder": "#10b981",   // フォルダアイコン
+      "--icon-file": "#6ee7b7"      // ファイルアイコン
+    }
+  },
+  {
+    "id": "user-cyber-slate",
+    "name": "サイバー・スレート",
+    "colors": {
+      "--bg-main": "#0f172a",       // メイン背景（ミッドナイトブルー）
+      "--bg-side": "#1e293b",       // サイドバー背景
+      "--accent-color": "#f97316",  // アクセント（オレンジ）
+      "--text-main": "#f8fafc",     // テキスト
+      "--border-main": "#334155",   // 境界線
+      "--icon-folder": "#f97316",   // フォルダアイコン
+      "--icon-file": "#94a3b8"      // ファイルアイコン
     }
   }
 ]`;
