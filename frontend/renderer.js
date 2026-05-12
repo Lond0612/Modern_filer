@@ -1790,21 +1790,7 @@ if (document.readyState === 'loading') {
     initPropertyModal();
 }
 
-// 空白エリアメニューのアクション
-document.getElementById('ctx-empty-1').onclick = () => {
-    appendTerminal('Action: 要素１ が実行されました', 'command-echo');
-    window.api.sendCommand('LOG|Empty Menu Item 1 Clicked');
-};
 
-document.getElementById('ctx-empty-2').onclick = () => {
-    appendTerminal('Action: 要素２ が実行されました', 'command-echo');
-    window.api.sendCommand('LOG|Empty Menu Item 2 Clicked');
-};
-
-document.getElementById('ctx-empty-3').onclick = () => {
-    appendTerminal('Action: 要素３ が実行されました', 'command-echo');
-    window.api.sendCommand('LOG|Empty Menu Item 3 Clicked');
-};
 
 // ---------------------------------------------------------------------------
 // ドラッグ＆ドロップ (D&D) 制御
