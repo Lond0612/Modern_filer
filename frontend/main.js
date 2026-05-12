@@ -4,6 +4,13 @@ const fs = require('fs').promises;
 const { spawn } = require('child_process');
 const { StringDecoder } = require('string_decoder');
 
+// パッケージ時は実行ファイルと同じ階層のdataフォルダをuserDataとして使用する（ポータブルモード）
+if (app.isPackaged) {
+  const localDataPath = path.join(path.dirname(app.getPath('exe')), 'data');
+  app.setPath('userData', localDataPath);
+}
+
+
 let mainWindow;
 let filerServer;
 const decoder = new StringDecoder('utf8');
@@ -22,10 +29,15 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false
-    }
+    },
+    show: false // 準備ができるまで表示しない
   });
 
   mainWindow.loadFile('index.html');
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+  });
 
   mainWindow.webContents.on('did-finish-load', () => {
     isWindowReady = true;
@@ -108,6 +120,9 @@ function startServer() {
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
+  
+  // サーバーとウィンドウを並列で起動開始
+  startServer();
   createWindow();
 
   // 開発時以外でもF12でデバッグできるようにする（α版用）
@@ -117,8 +132,6 @@ app.whenReady().then(() => {
       event.preventDefault();
     }
   });
-
-  startServer();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

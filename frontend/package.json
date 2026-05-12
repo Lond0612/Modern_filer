@@ -15,12 +15,13 @@
     },
     "win": {
       "target": [
-        "portable"
+        "zip",
+        "dir"
       ]
     },
     "extraResources": [
       {
-        "from": "bin/filer_server.exe",
+        "from": "../filer_server.exe",
         "to": "."
       }
     ],
