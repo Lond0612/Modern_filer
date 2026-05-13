@@ -334,6 +334,12 @@ ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
   if (state.previewWindow) {
     state.previewWindow.show();
     state.previewWindow.webContents.send('backend-response', { type: 'UPDATE_PREVIEW', file: data.file });
+    state.previewWindow.webContents.send('backend-response', {
+      type: 'APPLY_THEME',
+      theme: data.theme,
+      isDark: data.isDark,
+      highContrast: data.highContrast
+    });
     return;
   }
 

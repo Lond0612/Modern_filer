@@ -65,10 +65,42 @@
 
         function applyTheme(theme, isDark, highContrast) {
             document.body.classList.remove('theme-deepblue', 'theme-khaki', 'theme-sakura', 'theme-amber', 'theme-sky', 'theme-midnight', 'light-mode', 'high-contrast');
+            
+            // カスタムスタイルのクリア
+            const existingStyle = document.getElementById('custom-theme-styles');
+            if (existingStyle) existingStyle.remove();
+
             if (!isDark) document.body.classList.add('light-mode');
-            if (theme !== 'default' && theme !== 'snow') document.body.classList.add(`theme-${theme}`);
             if (highContrast) document.body.classList.add('high-contrast');
+
+            if (theme && theme.startsWith('custom-')) {
+                const customData = localStorage.getItem('custom-theme-data');
+                if (customData) {
+                    const data = JSON.parse(customData);
+                    const style = document.createElement('style');
+                    style.id = 'custom-theme-styles';
+                    let css = 'body { ';
+                    if (data.colors) {
+                        for (const [key, value] of Object.entries(data.colors)) {
+                            css += `${key}: ${value} !important; `;
+                        }
+                    }
+                    css += ' }';
+                    style.textContent = css;
+                    document.head.appendChild(style);
+                }
+            } else if (theme !== 'default' && theme !== 'snow') {
+                document.body.classList.add(`theme-${theme}`);
+            }
         }
+
+        // 初期ロード時に即座にテーマを適用
+        (function() {
+            const theme = localStorage.getItem('app-theme') || 'default';
+            const isDark = localStorage.getItem('isDarkMode') !== 'false';
+            const highContrast = localStorage.getItem('settings-high-contrast') === 'true';
+            applyTheme(theme, isDark, highContrast);
+        })();
 
         async function updatePreview(file) {
             if (!file) {
@@ -124,6 +156,14 @@
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
+
+        // キーイベントで閉じる
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.key === 'Escape') {
+                e.preventDefault();
+                window.close();
+            }
+        });
     </script>
 </body>
 </html>
