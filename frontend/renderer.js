@@ -215,13 +215,13 @@ btnRename.onclick = () => {
 // ソートメニューのイベント
 function updateSortMenuUI() {
     document.querySelectorAll('.sort-item .check-icon').forEach(icon => icon.style.opacity = '0');
-    const activeItem = document.querySelector(`.sort-item[data-sort-key="${currentSortKey}"] .check-icon`);
-    if (activeItem) activeItem.style.opacity = '1';
+    document.querySelectorAll(`.sort-item[data-sort-key="${currentSortKey}"] .check-icon`).forEach(icon => icon.style.opacity = '1');
 
     document.querySelectorAll('.sort-order .check-icon').forEach(icon => icon.style.opacity = '0');
-    const activeOrder = document.querySelector(`.sort-order[data-sort-order="${currentSortOrder}"] .check-icon`);
-    if (activeOrder) activeOrder.style.opacity = '1';
+    document.querySelectorAll(`.sort-order[data-sort-order="${currentSortOrder}"] .check-icon`).forEach(icon => icon.style.opacity = '1');
 }
+// デフォルト状態（名前・昇順）のチェックマークを初期表示
+updateSortMenuUI();
 
 document.querySelectorAll('.sort-item').forEach(item => {
     item.onclick = (e) => {
@@ -243,7 +243,7 @@ document.querySelectorAll('.sort-order').forEach(item => {
     };
 });
 
-// 表示メニューのイベント
+// 表示メニューのイベント（ツールバー + コンテキストメニュー内のすべての .view-mode を対象）
 function updateViewMenuUI() {
     document.querySelectorAll('.view-mode .check-icon').forEach(icon => icon.style.opacity = '0');
     document.querySelectorAll(`.view-mode[data-view-mode="${currentViewMode}"] .check-icon`).forEach(icon => {
@@ -1463,7 +1463,7 @@ window.addEventListener('contextmenu', (e) => {
 
     // アイテム選択の有無に応じた制御
     const hasSelection = contextTarget !== null;
-    ['ctx-open', 'ctx-cut', 'ctx-copy', 'ctx-rename', 'ctx-delete', 'ctx-quick-access', 'ctx-favorite', 'ctx-properties'].forEach(id => {
+    ['ctx-open', 'ctx-cut', 'ctx-copy', 'ctx-rename', 'ctx-delete', 'ctx-quick-access', 'ctx-favorite', 'ctx-properties', 'ctx-copy-path'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.toggle('disabled', !hasSelection);
     });
@@ -1502,15 +1502,19 @@ window.addEventListener('contextmenu', (e) => {
     const canPaste = clipboard.mode && clipboard.items.length > 0;
     document.getElementById('ctx-paste').classList.toggle('disabled', !canPaste);
 
-    // 表示位置の計算
+    // チェックマーク同期（Bug Fix 2 & 3）
+    updateSortMenuUI();
+    updateViewMenuUI();
+
+    // 表示位置の計算（Bug Fix 1: 画面外クランプ対応）
     contextMenu.style.display = 'block';
     const menuWidth = contextMenu.offsetWidth;
     const menuHeight = contextMenu.offsetHeight;
     let x = e.clientX;
     let y = e.clientY;
 
-    if (x + menuWidth > window.innerWidth) x -= menuWidth;
-    if (y + menuHeight > window.innerHeight) y -= menuHeight;
+    x = Math.max(0, x + menuWidth > window.innerWidth ? x - menuWidth : x);
+    y = Math.max(0, y + menuHeight > window.innerHeight ? y - menuHeight : y);
 
     contextMenu.style.left = `${x}px`;
     contextMenu.style.top = `${y}px`;
@@ -1518,6 +1522,38 @@ window.addEventListener('contextmenu', (e) => {
 
 window.addEventListener('click', () => {
     contextMenu.style.display = 'none';
+});
+
+// ---------------------------------------------------------------------------
+// サブメニュー位置制御（右端はみ出し防止）
+// ---------------------------------------------------------------------------
+// CSSホバーでサブメニューを表示する前に位置を調整するため、
+// mouseenterイベントで毎回方向を計算して切り替える
+document.querySelectorAll('.has-submenu').forEach(item => {
+    item.addEventListener('mouseenter', () => {
+        const submenu = item.querySelector('.submenu');
+        if (!submenu) return;
+
+        // 実際の幅を取得するため、一時的にvisibility:hiddenで表示
+        submenu.style.visibility = 'hidden';
+        submenu.style.display = 'block';
+        const submenuWidth = submenu.offsetWidth;
+        submenu.style.display = '';
+        submenu.style.visibility = '';
+
+        // 要素の右端座標を取得
+        const rect = item.getBoundingClientRect();
+
+        if (rect.right + submenuWidth > window.innerWidth) {
+            // 右側に入らない → 左側に反転
+            submenu.style.left = 'auto';
+            submenu.style.right = '100%';
+        } else {
+            // 右側に余裕あり → デフォルト（右側）
+            submenu.style.left = '100%';
+            submenu.style.right = 'auto';
+        }
+    });
 });
 
 // クイックアクセス操作
@@ -1688,6 +1724,41 @@ document.getElementById('ctx-properties').onclick = () => {
         showPropertiesModal(contextTarget.path);
     }
 };
+
+// パスをコピー（Feature 2）
+document.getElementById('ctx-copy-path').onclick = () => {
+    if (!contextTarget) return;
+    navigator.clipboard.writeText(contextTarget.path).then(() => {
+        appendTerminal(`Copied path: ${contextTarget.path}`, 'command-echo');
+    }).catch(() => {
+        appendTerminal(`ERROR: クリップボードへのコピーに失敗しました`, 'error');
+    });
+};
+
+// 右クリックから新規作成（Feature 1）
+const btnCtxNewDir = document.getElementById('ctx-new-dir');
+if (btnCtxNewDir) {
+    btnCtxNewDir.onclick = (e) => {
+        e.stopPropagation();
+        if (!currentPath) return;
+        let defaultName = resolveNameConflict('新しいフォルダ');
+        pendingRename = defaultName;
+        window.api.sendCommand(`MKDIR|${currentPath}${defaultName}`);
+        contextMenu.style.display = 'none';
+    };
+}
+
+const btnCtxNewFile = document.getElementById('ctx-new-file');
+if (btnCtxNewFile) {
+    btnCtxNewFile.onclick = (e) => {
+        e.stopPropagation();
+        if (!currentPath) return;
+        let defaultName = resolveNameConflict('新規メモ.txt');
+        pendingRename = defaultName;
+        window.api.sendCommand(`NEW_FILE|${currentPath}${defaultName}`);
+        contextMenu.style.display = 'none';
+    };
+}
 
 function showPropertiesModal(path) {
     // バックエンドに情報を要求

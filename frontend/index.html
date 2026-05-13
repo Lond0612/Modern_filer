@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>fcmd</title>
+    <title>Orbiter</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -480,6 +480,13 @@
 
             <div class="context-divider"></div>
 
+            <div class="context-item" id="ctx-copy-path">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                <span>パスをコピー</span>
+            </div>
+
+            <div class="context-divider"></div>
+
             <div class="context-item" id="ctx-properties">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                 <span>プロパティ</span>
@@ -487,6 +494,24 @@
         </div>
 
         <div id="ctx-group-empty" style="display: none;">
+            <div class="context-item has-submenu" id="ctx-new-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>新規作成</span>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto; width:14px; height:14px;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <div class="submenu dropdown-menu">
+                    <div class="menu-item" id="ctx-new-dir">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        <span>新しいフォルダ</span>
+                    </div>
+                    <div class="menu-item" id="ctx-new-file">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                        <span>テキストファイル</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="context-divider"></div>
+
             <div class="context-item has-submenu">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 <span>表示</span>
