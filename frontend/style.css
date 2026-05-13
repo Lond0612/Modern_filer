@@ -580,6 +580,119 @@ body {
     font-size: 12px;
 }
 
+
+/* ==========================================================================
+   2.5 Tab Bar (タブバー)
+   ========================================================================== */
+.tab-bar {
+    display: flex;
+    align-items: center;
+    background: var(--bg-toolbar);
+    border-bottom: 1px solid var(--border-main);
+    padding: 0 10px;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    height: 36px;
+}
+
+.tab-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.tab-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    max-width: 160px;
+    min-width: 100px;
+    height: 30px;
+    margin-top: 6px;
+    transition: all 0.15s ease;
+    position: relative;
+    user-select: none;
+}
+
+.tab-item:hover {
+    background: var(--bg-item-hover);
+    color: var(--text-main);
+}
+
+.tab-item.active {
+    background: var(--bg-main);
+    color: var(--text-bright);
+    border-color: var(--border-main);
+    z-index: 1;
+}
+
+.tab-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--bg-main);
+}
+
+.tab-title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+}
+
+.tab-close {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 14px;
+    opacity: 0;
+    transition: all 0.2s;
+}
+
+.tab-item:hover .tab-close,
+.tab-item.active .tab-close {
+    opacity: 0.6;
+}
+
+.tab-close:hover {
+    background: var(--bg-item-hover);
+    opacity: 1 !important;
+}
+
+.tab-add-btn {
+    width: 28px;
+    height: 28px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    margin-top: 6px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.tab-add-btn:hover {
+    background: var(--bg-item-hover);
+    color: var(--text-bright);
+}
+
 /* ==========================================================================
    3. Actions Bar (郢ｧ・｢郢ｧ・ｯ郢ｧ・ｷ郢晢ｽｧ郢晢ｽｳ郢晁・・ｽ: 隴・ｽｰ髫穂ｸ茨ｽｽ諛茨ｿｽ/郢ｧ・ｫ郢晢ｿｽ繝ｨ/郢ｧ・ｳ郢晄鱒・ｽ驕ｲ・ｽ)
    ========================================================================== */

@@ -1,8 +1,48 @@
 // ---------------------------------------------------------------------------
-// 状態変数
+// 状態変数・タブ管理
 // ---------------------------------------------------------------------------
-let currentPath = '';
-let isHomeActive = true;
+
+class Tab {
+    constructor(id, path = 'HOME') {
+        this.id = id;
+        this.path = path;
+        this.isHomeActive = (path === 'HOME');
+        this.historyBack = [];
+        this.historyForward = [];
+        this.scrollPosition = 0;
+    }
+
+    get title() {
+        if (this.isHomeActive || this.path === 'HOME') return 'ホーム';
+        const trimmed = this.path.endsWith('\\') ? this.path.slice(0, -1) : this.path;
+        return trimmed.split('\\').pop() || this.path;
+    }
+}
+
+let tabs = [];
+let activeTabId = null;
+
+function getActiveTab() {
+    return tabs.find(t => t.id === activeTabId);
+}
+
+// 互換性のためのゲッター/セッター（既存コードの修正を最小限にするため、
+// 内部で activeTab のプロパティを参照するようにする）
+// ※ 最終的にはこれらもリファクタリングして getActiveTab().path 等に置き換えるのが望ましい
+
+function getCurrentPath() { return getActiveTab()?.path || ''; }
+function setCurrentPath(val) { if (getActiveTab()) getActiveTab().path = val; }
+function getIsHomeActive() { return getActiveTab()?.isHomeActive ?? true; }
+function setIsHomeActive(val) { if (getActiveTab()) getActiveTab().isHomeActive = val; }
+function getHistoryBack() { return getActiveTab()?.historyBack || []; }
+function getHistoryForward() { return getActiveTab()?.historyForward || []; }
+
+// 既存コードとの互換性のためにグローバル変数としてアクセス可能にする
+Object.defineProperty(window, 'currentPath', { get: getCurrentPath, set: setCurrentPath, configurable: true });
+Object.defineProperty(window, 'isHomeActive', { get: getIsHomeActive, set: setIsHomeActive, configurable: true });
+Object.defineProperty(window, 'historyBack', { get: getHistoryBack, configurable: true });
+Object.defineProperty(window, 'historyForward', { get: getHistoryForward, configurable: true });
+
 let recentFolders = JSON.parse(localStorage.getItem('recentFolders') || '[]');
 let pendingRename = null; // 作成直後のリネーム待ちファイル名
 
@@ -43,10 +83,6 @@ const fileListBody = document.getElementById('file-list-body');
 const terminalOutput = document.getElementById('terminal-output');
 const terminalInput = document.getElementById('terminal-input');
 
-// 履歴管理
-let historyBack = [];   // 戻るスタック
-let historyForward = []; // 進むスタック
-
 // ナビゲーションボタン
 const btnBack = document.getElementById('btn-back');
 const btnForward = document.getElementById('btn-forward');
@@ -72,18 +108,95 @@ let currentViewMode = 'details';
 let showHiddenFiles = false;
 let showExtensions = true;
 
+
 // ---------------------------------------------------------------------------
 // 初期化
 // ---------------------------------------------------------------------------
 window.onload = () => {
     // 起動時はバックエンドのREADYを待つ
+    initTabs();
 };
 
-// サムネイル読み込み失敗時の共通ハンドラ
-window.handleThumbError = (el, iconType) => {
-    const icon = IconThemeManager.customIcons[iconType] || IconThemeManager.customIcons.file;
-    el.outerHTML = `<div class="grid-icon-placeholder">${icon}</div>`;
-};
+function initTabs() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialPath = urlParams.get('path') || 'HOME';
+    addTab(initialPath);
+}
+
+function addTab(path = 'HOME') {
+    const id = Date.now().toString();
+    const newTab = new Tab(id, path);
+    tabs.push(newTab);
+    switchTab(id);
+    renderTabs();
+}
+
+function switchTab(id) {
+    const prevTab = getActiveTab();
+    if (prevTab) {
+        // 現在の表示状態を保存（必要に応じて）
+        prevTab.scrollPosition = explorerView.scrollTop;
+    }
+
+    activeTabId = id;
+    const tab = getActiveTab();
+
+    // UIの同期
+    if (tab.isHomeActive || tab.path === 'HOME') {
+        showHomeUI();
+    } else {
+        showExplorerUI(tab.path);
+    }
+    
+    addressInput.value = tab.path;
+    updateNavButtons();
+    renderTabs();
+
+    // ターミナルの同期（カレントディレクトリの移動）
+    if (tab.path && tab.path !== 'HOME') {
+        window.api.sendCommand(`CD|${tab.path}`);
+    }
+}
+
+function closeTab(id, e) {
+    if (e) e.stopPropagation();
+    if (tabs.length <= 1) return; // 最後のタブは閉じない
+
+    const index = tabs.findIndex(t => t.id === id);
+    const isActive = activeTabId === id;
+    
+    tabs.splice(index, 1);
+    
+    if (isActive) {
+        const nextTab = tabs[Math.min(index, tabs.length - 1)];
+        switchTab(nextTab.id);
+    } else {
+        renderTabs();
+    }
+}
+
+function renderTabs() {
+    const tabBar = document.getElementById('tab-bar');
+    if (!tabBar) return;
+
+    tabBar.innerHTML = '';
+    tabs.forEach(tab => {
+        const tabEl = document.createElement('div');
+        tabEl.className = `tab-item${tab.id === activeTabId ? ' active' : ''}`;
+        tabEl.innerHTML = `
+            <span class="tab-title">${tab.title}</span>
+            <span class="tab-close" onclick="closeTab('${tab.id}', event)">&times;</span>
+        `;
+        tabEl.onclick = () => switchTab(tab.id);
+        tabBar.appendChild(tabEl);
+    });
+
+    const addBtn = document.createElement('div');
+    addBtn.className = 'tab-add-btn';
+    addBtn.innerHTML = '+';
+    addBtn.onclick = () => addTab('HOME');
+    tabBar.appendChild(addBtn);
+}
 
 // ---------------------------------------------------------------------------
 // 各種ボタン・メニュー制御
@@ -300,24 +413,28 @@ document.querySelectorAll('.view-toggle').forEach(item => {
 // ナビゲーション
 // ---------------------------------------------------------------------------
 function updateNavButtons() {
-    btnBack.disabled = historyBack.length === 0;
-    btnForward.disabled = historyForward.length === 0;
-    btnUp.disabled = !currentPath || currentPath === 'HOME' || currentPath.split('\\').filter(Boolean).length <= 1;
+    const tab = getActiveTab();
+    if (!tab) return;
+    btnBack.disabled = tab.historyBack.length === 0;
+    btnForward.disabled = tab.historyForward.length === 0;
+    btnUp.disabled = !tab.path || tab.path === 'HOME' || tab.path.split('\\').filter(Boolean).length <= 1;
 }
 
 btnBack.onclick = () => {
     if (isNavigationLocked()) return;
-    if (historyBack.length === 0) return;
-    historyForward.push(currentPath);
-    const prev = historyBack.pop();
+    const tab = getActiveTab();
+    if (!tab || tab.historyBack.length === 0) return;
+    tab.historyForward.push(tab.path);
+    const prev = tab.historyBack.pop();
     navigateTo(prev, false);
 };
 
 btnForward.onclick = () => {
     if (isNavigationLocked()) return;
-    if (historyForward.length === 0) return;
-    historyBack.push(currentPath);
-    const next = historyForward.shift();
+    const tab = getActiveTab();
+    if (!tab || tab.historyForward.length === 0) return;
+    tab.historyBack.push(tab.path);
+    const next = tab.historyForward.shift();
     navigateTo(next, false);
 };
 
@@ -329,27 +446,31 @@ window.addEventListener('mousedown', (e) => {
     // テキスト入力中は無視（リネームやアドレスバー操作に影響しないよう）
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
+    const tab = getActiveTab();
+    if (!tab) return;
+
     if (e.button === 3) {
         e.preventDefault();
-        if (isNavigationLocked() || historyBack.length === 0) return;
-        historyForward.push(currentPath);
-        const prev = historyBack.pop();
+        if (isNavigationLocked() || tab.historyBack.length === 0) return;
+        tab.historyForward.push(tab.path);
+        const prev = tab.historyBack.pop();
         navigateTo(prev, false);
     } else if (e.button === 4) {
         e.preventDefault();
-        if (isNavigationLocked() || historyForward.length === 0) return;
-        historyBack.push(currentPath);
-        const next = historyForward.shift();
+        if (isNavigationLocked() || tab.historyForward.length === 0) return;
+        tab.historyBack.push(tab.path);
+        const next = tab.historyForward.shift();
         navigateTo(next, false);
     }
 });
 
 btnUp.onclick = () => {
     if (isNavigationLocked()) return;
-    if (!currentPath || currentPath === 'HOME') return;
-    const trimmed = currentPath.endsWith('\\') ? currentPath.slice(0, -1) : currentPath;
+    const path = getCurrentPath();
+    if (!path || path === 'HOME') return;
+    const trimmed = path.endsWith('\\') ? path.slice(0, -1) : path;
     const parent = trimmed.substring(0, trimmed.lastIndexOf('\\') + 1);
-    if (parent && parent !== currentPath) {
+    if (parent && parent !== path) {
         loadPath(parent, true);
     }
 };
@@ -359,13 +480,7 @@ btnSidebarHome.onclick = () => {
     showHome(true);
 };
 
-function showHome(isUserClick = false) {
-    if (isUserClick && currentPath && currentPath !== 'HOME') {
-        historyBack.push(currentPath);
-        historyForward = [];
-    }
-    currentPath = 'HOME';
-    isHomeActive = true;
+function showHomeUI() {
     homeView.style.display = 'block';
     explorerView.style.display = 'none';
     btnSidebarHome.classList.add('active');
@@ -383,14 +498,37 @@ function showHome(isUserClick = false) {
     if (typeof PreviewManager !== 'undefined') {
         PreviewManager.hide();
     }
-    updateNavButtons();
 }
 
-function showExplorer(path) {
-    isHomeActive = false;
+function showHome(isUserClick = false) {
+    const tab = getActiveTab();
+    if (!tab) return;
+
+    if (isUserClick && tab.path && tab.path !== 'HOME') {
+        tab.historyBack.push(tab.path);
+        tab.historyForward = [];
+    }
+    tab.path = 'HOME';
+    tab.isHomeActive = true;
+    showHomeUI();
+    updateNavButtons();
+    renderTabs();
+}
+
+function showExplorerUI(path) {
     homeView.style.display = 'none';
     explorerView.style.display = 'block';
     btnSidebarHome.classList.remove('active');
+    if (path) {
+        window.api.sendCommand(`LIST|${path}`);
+    }
+}
+
+function showExplorer(path) {
+    const tab = getActiveTab();
+    if (!tab) return;
+    tab.isHomeActive = false;
+    showExplorerUI(path);
     if (path) loadPath(path, true);
 }
 
@@ -521,28 +659,33 @@ function loadPath(path, isUserClick = false) {
         showHome(isUserClick);
         return;
     }
+    const tab = getActiveTab();
+    if (!tab) return;
+
     if (!path.endsWith('\\')) path += '\\';
-    if (isUserClick && currentPath && currentPath !== path) {
-        historyBack.push(currentPath);
-        historyForward = [];
+    if (isUserClick && tab.path && tab.path !== path) {
+        tab.historyBack.push(tab.path);
+        tab.historyForward = [];
     }
-    currentPath = path;
-    addressInput.value = currentPath;
+    tab.path = path;
+    addressInput.value = tab.path;
     updateNavButtons();
     addToRecentFolders(path);
 
-    if (isHomeActive) {
-        isHomeActive = false;
+    if (tab.isHomeActive) {
+        tab.isHomeActive = false;
         homeView.style.display = 'none';
         explorerView.style.display = 'block';
         btnSidebarHome.classList.remove('active');
     }
 
+    renderTabs();
+
     if (isUserClick) {
         setNavigationLock();
-        window.api.sendCommand(`CD|${currentPath}`);
+        window.api.sendCommand(`CD|${tab.path}`);
     } else {
-        window.api.sendCommand(`LIST|${currentPath}`);
+        window.api.sendCommand(`LIST|${tab.path}`);
     }
 }
 
@@ -551,19 +694,23 @@ function navigateTo(path) {
         showHome(false);
         return;
     }
+    const tab = getActiveTab();
+    if (!tab) return;
+
     if (!path.endsWith('\\')) path += '\\';
-    currentPath = path;
-    addressInput.value = currentPath;
+    tab.path = path;
+    addressInput.value = tab.path;
     updateNavButtons();
 
-    if (isHomeActive) {
-        isHomeActive = false;
+    if (tab.isHomeActive) {
+        tab.isHomeActive = false;
         homeView.style.display = 'none';
         explorerView.style.display = 'block';
         btnSidebarHome.classList.remove('active');
     }
 
-    window.api.sendCommand(`CD|${currentPath}`);
+    renderTabs();
+    window.api.sendCommand(`CD|${tab.path}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -587,6 +734,7 @@ window.api.onBackendResponse((obj) => {
             } else {
                 showHome();
             }
+            renderTabs();
             break;
 
         case 'START_LIST':
@@ -619,6 +767,7 @@ window.api.onBackendResponse((obj) => {
             currentPath = newPath;
             addressInput.value = currentPath;
             updateTreeActiveState();
+            renderTabs();
             break;
 
         case 'CMD_OUT':
