@@ -8,7 +8,7 @@
     "build": "electron-builder"
   },
   "build": {
-    "appId": "com.modernfiler.app",
+    "appId": "com.orbiter.app",
     "productName": "Orbiter",
     "directories": {
       "output": "dist"
@@ -16,7 +16,8 @@
     "win": {
       "target": [
         "zip"
-      ]
+      ],
+      "icon": "build/icon.ico"
     },
     "extraResources": [
       {
