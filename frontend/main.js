@@ -42,7 +42,11 @@ function createWindow(initialPath = null) {
 
   startServerForWindow(winId);
 
-  win.loadFile('index.html');
+  if (initialPath) {
+    win.loadFile('index.html', { query: { path: initialPath } });
+  } else {
+    win.loadFile('index.html');
+  }
 
   win.once('ready-to-show', () => {
     win.show();

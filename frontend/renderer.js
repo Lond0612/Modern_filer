@@ -575,7 +575,18 @@ window.api.onBackendResponse((obj) => {
             currentPath = obj.content;
             if (!currentPath.endsWith('\\')) currentPath += '\\';
             initTree(currentPath);
-            showHome();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('path')) {
+                isHomeActive = false;
+                homeView.style.display = 'none';
+                explorerView.style.display = 'block';
+                btnSidebarHome.classList.remove('active');
+                addressInput.value = currentPath;
+                updateNavButtons();
+            } else {
+                showHome();
+            }
             break;
 
         case 'START_LIST':
