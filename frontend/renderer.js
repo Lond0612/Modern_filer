@@ -1615,16 +1615,18 @@ document.querySelectorAll('.has-submenu').forEach(item => {
         const submenu = item.querySelector('.submenu');
         if (!submenu) return;
 
-        // 実際の幅を取得するため、一時的にvisibility:hiddenで表示
+        // 実際の幅と高さを取得するため、一時的にvisibility:hiddenで表示
         submenu.style.visibility = 'hidden';
         submenu.style.display = 'block';
         const submenuWidth = submenu.offsetWidth;
+        const submenuHeight = submenu.offsetHeight;
         submenu.style.display = '';
         submenu.style.visibility = '';
 
-        // 要素の右端座標を取得
+        // 要素の座標を取得
         const rect = item.getBoundingClientRect();
 
+        // 横幅の調整
         if (rect.right + submenuWidth > window.innerWidth) {
             // 右側に入らない → 左側に反転
             submenu.style.left = 'auto';
@@ -1633,6 +1635,17 @@ document.querySelectorAll('.has-submenu').forEach(item => {
             // 右側に余裕あり → デフォルト（右側）
             submenu.style.left = '100%';
             submenu.style.right = 'auto';
+        }
+
+        // 高さの調整
+        if (rect.top + submenuHeight > window.innerHeight) {
+            // 下側に入らない → 上に伸ばす
+            submenu.style.top = 'auto';
+            submenu.style.bottom = '0';
+        } else {
+            // 下側に余裕あり → デフォルト（下へ）
+            submenu.style.top = '-5px';
+            submenu.style.bottom = 'auto';
         }
     });
 });
