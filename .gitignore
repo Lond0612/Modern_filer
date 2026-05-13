@@ -6,4 +6,3 @@ bin/
 *.log
 .DS_Store
 Thumbs.db
-frontend/build/make_ico.ps1
