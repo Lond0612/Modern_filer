@@ -17,7 +17,7 @@
       "target": [
         "zip"
       ],
-      "icon": "build/icon.png"
+      "icon": "build/icon.ico"
     },
     "extraResources": [
       {
@@ -30,12 +30,18 @@
       "!dist"
     ]
   },
-  "keywords": ["file-explorer", "electron", "windows"],
+  "keywords": [
+    "file-explorer",
+    "electron",
+    "windows"
+  ],
   "author": "sugim",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
     "electron": "^41.3.0",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "jimp": "^0.16.1",
+    "png-to-ico": "^3.0.1"
   }
 }

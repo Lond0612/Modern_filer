@@ -25,7 +25,7 @@ function createWindow() {
     width: 1200,
     height: 800,
     backgroundColor: '#1e1e1e',
-    icon: path.join(__dirname, 'build', 'icon.png'),
+    icon: path.join(__dirname, 'build', 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -304,7 +304,7 @@ ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
     y: mainBounds.y + mainBounds.height - 330, // メインウィンドウの下側に寄せる
     title: 'Preview',
     backgroundColor: '#1e1e1e',
-    icon: path.join(__dirname, 'build', 'icon.png'),
+    icon: path.join(__dirname, 'build', 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
