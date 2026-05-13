@@ -13,7 +13,7 @@ if (app.isPackaged) {
 const windows = new Map();
 
 function createWindow(initialPath = null) {
-  const win = new BrowserWindow({
+  let windowOptions = {
     width: 1200,
     height: 800,
     backgroundColor: '#1e1e1e',
@@ -24,7 +24,17 @@ function createWindow(initialPath = null) {
       nodeIntegration: false
     },
     show: false // 準備ができるまで表示しない
-  });
+  };
+
+  // 既存のウィンドウがあれば位置を少しずらす
+  const focusedWin = BrowserWindow.getFocusedWindow();
+  if (focusedWin) {
+    const bounds = focusedWin.getBounds();
+    windowOptions.x = bounds.x + 30;
+    windowOptions.y = bounds.y + 30;
+  }
+
+  const win = new BrowserWindow(windowOptions);
 
   const winId = win.webContents.id;
   const state = {
