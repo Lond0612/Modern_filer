@@ -1,5 +1,5 @@
 /* ==========================================================================
-   0. Theme Variables (繝��E�繝槫�E�壽焁E
+   0. Theme Variables (郢晢ｿｽ・ｽ郢晄ｧｫ・ｮ螢ｽ辟・
    ========================================================================== */
 :root {
     /* Dark Mode (Default) */
@@ -78,7 +78,7 @@ body.light-mode {
     --theme-preset-border: #005fa3;
 }
 
-/* Deep Blue (豺�E�髱�E�) Theme */
+/* Deep Blue (雎ｺ・ｱ鬮ｱ・ｽ) Theme */
 body.theme-deepblue {
     --bg-main: #001b36;
     --bg-toolbar: #002142;
@@ -114,7 +114,7 @@ body.theme-deepblue {
     --theme-preset-border: #0077cc;
 }
 
-/* Khaki (繧�E�繝ｼ繧�E�) Theme */
+/* Khaki (郢ｧ・ｫ郢晢ｽｼ郢ｧ・ｭ) Theme */
 body.theme-khaki {
     --bg-main: #2b2b1b;
     --bg-toolbar: #363622;
@@ -150,7 +150,7 @@ body.theme-khaki {
     --theme-preset-border: #8c7b4a;
 }
 
-/* Sakura (阮�E�ヴ繝ｳ繧�E�) Theme */
+/* Sakura (髦ｮ・ｽ繝ｴ郢晢ｽｳ郢ｧ・ｯ) Theme */
 body.theme-sakura {
     --bg-main: #fffcfd;
     --bg-toolbar: #ffffff;
@@ -167,7 +167,7 @@ body.theme-sakura {
     --theme-preset-border: #f48fb1;
 }
 
-/* Amber (鮟�牡邉ｻ) Theme */
+/* Amber (魄滂ｿｽ迚｡驍会ｽｻ) Theme */
 body.theme-amber {
     --bg-main: #fffbeb;
     --bg-toolbar: #ffffff;
@@ -184,7 +184,7 @@ body.theme-amber {
     --theme-preset-border: #b45309;
 }
 
-/* Sky (縺�E�▲縺吶�E�豌ｴ濶�E�) Theme */
+/* Sky (邵ｺ・ｽ笆ｲ邵ｺ蜷ｶ・櫁ｱ鯉ｽｴ豼ｶ・ｲ) Theme */
 body.theme-sky {
     --bg-main: #f0f9ff;
     --bg-toolbar: #ffffff;
@@ -201,7 +201,7 @@ body.theme-sky {
     --theme-preset-border: #0284c7;
 }
 
-/* Midnight Purple (鮟�E↓霑代�E�邏�E�) Theme */
+/* Midnight Purple (魄溷・竊馴恆莉｣・樣ｏ・ｫ) Theme */
 body.theme-midnight {
     --bg-main: #0f051a;
     --bg-toolbar: #1a0b2e;
@@ -237,7 +237,7 @@ body.theme-midnight {
     --theme-preset-border: #7b1fa2;
 }
 
-/* 繝上う繧�E�繝ｳ繝医Λ繧�E�繝医Δ繝ｼ繝� */
+/* 郢昜ｸ翫≧郢ｧ・ｳ郢晢ｽｳ郢晏現ﾎ帷ｹｧ・ｹ郢晏現ﾎ皮ｹ晢ｽｼ郢晢ｿｽ */
 body.high-contrast {
     --border-main: var(--accent-color);
     --border-light: var(--accent-color);
@@ -249,7 +249,7 @@ body.light-mode.high-contrast {
     --border-main: #000000;
     --border-light: #333333;
     --bg-item-hover: rgba(0, 0, 0, 0.1);
-    --bg-item-selected: var(--accent-color); /* 鮟�E°繧峨ぁE���E�繧�E�繝ｳ繝医き繝ｩ繝ｼ縺�E�螟画峩 */
+    --bg-item-selected: var(--accent-color); /* 魄溷・ﾂｰ郢ｧ蟲ｨ縺・ｹｧ・ｯ郢ｧ・ｻ郢晢ｽｳ郢晏現縺咲ｹ晢ｽｩ郢晢ｽｼ邵ｺ・ｫ陞溽判蟲ｩ */
     --text-bright: #000000;
 }
 
@@ -264,7 +264,7 @@ body.high-contrast .theme-option.active {
     outline-offset: 2px;
 }
 
-/* 驕ｸ謚樣�E��E�岼縺�E�繝�く繧�E�繝郁�E�冶�E�肴�E�遒ｺ菫�E� */
+/* 鬩包ｽｸ隰壽ｨ｣・ｽ・ｽ蟯ｼ邵ｺ・ｮ郢晢ｿｽ縺冗ｹｧ・ｹ郢晞メ・ｦ蜀ｶ・ｪ閧ｴﾂ・ｧ驕抵ｽｺ闖ｫ・ｽ */
 body.high-contrast .settings-tab-btn.active {
     background: var(--accent-color) !important;
     color: var(--bg-main) !important;
@@ -275,7 +275,7 @@ body.high-contrast .settings-tab-btn.active svg {
     stroke: var(--bg-main) !important;
 }
 
-/* 繝ｪ繧�E�繝医ぁE���E�繝�Β縺�E�蠁E��阜邱壼�E��E�隱�E� */
+/* 郢晢ｽｪ郢ｧ・ｹ郢晏現縺・ｹｧ・､郢晢ｿｽﾎ堤ｸｺ・ｮ陟・ｿｽ髦憺こ螢ｼ・ｼ・ｷ髫ｱ・ｿ */
 body.high-contrast .file-list td {
     border-bottom: 1px solid var(--border-main) !important;
 }
@@ -286,19 +286,19 @@ body.high-contrast .grid-item {
 
 body.high-contrast .file-list tr.selected td,
 body.high-contrast .grid-item.selected {
-    background: var(--bg-item-selected) !important; /* 繝上う繧�E�繝ｳ繝医Λ繧�E�繝域凾縺�E�騾乗�蠎ｦ繧帝�E逕ｨ縺励↑縺�E� */
+    background: var(--bg-item-selected) !important; /* 郢昜ｸ翫≧郢ｧ・ｳ郢晢ｽｳ郢晏現ﾎ帷ｹｧ・ｹ郢晏沺蜃ｾ邵ｺ・ｯ鬨ｾ荵暦ｿｽ陟趣ｽｦ郢ｧ蟶昶・騾包ｽｨ邵ｺ蜉ｱ竊醍ｸｺ・ｽ */
     outline: 2px solid var(--accent-color);
     outline-offset: -2px;
 }
 
-/* 驕ｸ謚樊�E縺�E�繝�く繧�E�繝郁牡繧堤區縺�E�蠑ｷ蛻�E��E�医ワ繧�E�繧�E�繝ｳ繝医Λ繧�E�繝育畑��E� */
+/* 鬩包ｽｸ隰壽ｨ雁・邵ｺ・ｮ郢晢ｿｽ縺冗ｹｧ・ｹ郢晞メ迚｡郢ｧ蝣､蜊邵ｺ・ｫ陟托ｽｷ陋ｻ・ｶ・ｽ蛹ｻ繝ｯ郢ｧ・､郢ｧ・ｳ郢晢ｽｳ郢晏現ﾎ帷ｹｧ・ｹ郢晁ご逡托ｿｽ・ｽ */
 body.high-contrast .selected,
 body.high-contrast .selected * {
     color: #ffffff !important;
 }
 
 /* ==========================================================================
-   1. Base & Layout (蜈ｨ菴薙�險�E�螳壹→螟�E�譫�E�縺�E�繝ｬ繧�E�繧�E�繧�E�繝�)
+   1. Base & Layout (陷茨ｽｨ闖ｴ阮呻ｿｽ髫ｪ・ｭ陞ｳ螢ｹ竊定棔・ｧ隴ｫ・ｽ邵ｺ・ｮ郢晢ｽｬ郢ｧ・､郢ｧ・｢郢ｧ・ｦ郢晢ｿｽ)
    ========================================================================== */
 .context-menu {
     position: fixed;
@@ -405,7 +405,7 @@ body {
     height: 100%;
 }
 
-/* 繧�E�繧�E�繝ｭ繝ｼ繝ｫ繝�E�E�縺�E�繧�E�繧�E�繧�E�繝槭ぁE���E� (繝｢繝繝ｳ繝�じ繧�E�繝ｳ) */
+/* 郢ｧ・ｹ郢ｧ・ｯ郢晢ｽｭ郢晢ｽｼ郢晢ｽｫ郢晁・・ｽ邵ｺ・ｮ郢ｧ・ｫ郢ｧ・ｹ郢ｧ・ｿ郢晄ｧｭ縺・ｹｧ・ｺ (郢晢ｽ｢郢敖郢晢ｽｳ郢晢ｿｽ縺倡ｹｧ・､郢晢ｽｳ) */
 ::-webkit-scrollbar {
     width: 14px;
     height: 14px;
@@ -431,7 +431,7 @@ body {
 }
 
 /* ==========================================================================
-   2. Toolbar (荳企Κ繝��E�繝ｫ繝�E�E�: 謌ｻ繧�E�/騾�E�繧/繝代ぁE讀懁E���E�)
+   2. Toolbar (闕ｳ莨∃夂ｹ晢ｿｽ・ｽ郢晢ｽｫ郢晁・・ｽ: 隰鯉ｽｻ郢ｧ・ｽ/鬨ｾ・ｲ郢ｧﾂ/郢昜ｻ｣縺・隶諛・ｽｴ・｢)
    ========================================================================== */
 .toolbar {
     padding: 10px;
@@ -486,7 +486,7 @@ body {
     border-radius: 4px;
 }
 
-/* 讀懁E���E�繝�E�E� */
+/* 隶諛・ｽｴ・｢郢晁・・ｽ */
 .search-container {
     position: relative;
     flex-shrink: 0;
@@ -581,7 +581,7 @@ body {
 }
 
 /* ==========================================================================
-   3. Actions Bar (繧�E�繧�E�繧�E�繝ｧ繝ｳ繝�E�E�: 譁E��隕丈ｽ懈�/繧�E�繝�ヨ/繧�E�繝斐�E�遲�E�)
+   3. Actions Bar (郢ｧ・｢郢ｧ・ｯ郢ｧ・ｷ郢晢ｽｧ郢晢ｽｳ郢晁・・ｽ: 隴・ｽｰ髫穂ｸ茨ｽｽ諛茨ｿｽ/郢ｧ・ｫ郢晢ｿｽ繝ｨ/郢ｧ・ｳ郢晄鱒・ｽ驕ｲ・ｽ)
    ========================================================================== */
 .actions-bar {
     padding: 6px 10px;
@@ -625,7 +625,7 @@ body {
     margin: 0 8px;
 }
 
-/* 譁E��隕丈ｽ懈�繝懊ち繝ｳ繝ｻ繝｡繝九Η繝ｼ */
+/* 隴・ｽｰ髫穂ｸ茨ｽｽ諛茨ｿｽ郢晄㈱縺｡郢晢ｽｳ郢晢ｽｻ郢晢ｽ｡郢昜ｹ斟礼ｹ晢ｽｼ */
 .new-btn-wrapper {
     position: relative;
 }
@@ -704,7 +704,7 @@ body {
     color: var(--accent-color);
 }
 
-/* 繝�Eぉ繝�け繧�E�繧�E�繧�E�繝ｳ (繧�E�繝ｼ繝医Γ繝九Η繝ｼ逕ｨ) */
+/* 郢昶・縺臥ｹ晢ｿｽ縺醍ｹｧ・｢郢ｧ・､郢ｧ・ｳ郢晢ｽｳ (郢ｧ・ｽ郢晢ｽｼ郢晏現ﾎ鍋ｹ昜ｹ斟礼ｹ晢ｽｼ騾包ｽｨ) */
 .check-icon {
     display: inline-block;
     width: 16px;
@@ -715,7 +715,7 @@ body {
 }
 
 /* ==========================================================================
-   4. Main Layout & Resizers (繝｡繧�E�繝ｳ逕ｻ髱�E�縺�E�鬪�E�譬�E�縺�E�繝ｪ繧�E�繧�E�繧�E�繝�E�E�)
+   4. Main Layout & Resizers (郢晢ｽ｡郢ｧ・､郢晢ｽｳ騾包ｽｻ鬮ｱ・｢邵ｺ・ｮ鬯ｪ・ｨ隴ｬ・ｼ邵ｺ・ｨ郢晢ｽｪ郢ｧ・ｵ郢ｧ・､郢ｧ・ｺ郢晁・・ｽ)
    ========================================================================== */
 .main-layout {
     display: flex;
@@ -730,11 +730,11 @@ body {
     min-height: 0;
 }
 
-/* 繝ｪ繧�E�繧�E�繧�E�繝�E�E� (蛻�E�螳壹�E�蠎��E�縲∬�E�九◆逶�E�縺�E�邏ｰ縺�E�) */
+/* 郢晢ｽｪ郢ｧ・ｵ郢ｧ・､郢ｧ・ｺ郢晁・・ｽ (陋ｻ・､陞ｳ螢ｹ・ｽ陟趣ｿｽ・･邵ｲ竏ｬ・ｦ荵昶螺騾ｶ・ｮ邵ｺ・ｯ驍擾ｽｰ邵ｺ・ｽ) */
 .resizer-h {
     width: 8px;
     margin: 0 -4px;
-    /* 繝ｬ繧�E�繧�E�繧�E�繝医�E�髫咎俣繧貞沂繧√ａE*/
+    /* 郢晢ｽｬ郢ｧ・､郢ｧ・｢郢ｧ・ｦ郢晏現・ｽ鬮ｫ蜥惹ｿ｣郢ｧ雋樊ｲらｹｧ竏夲ｽ・*/
     background: transparent;
     cursor: col-resize;
     z-index: 100;
@@ -777,7 +777,7 @@ body {
 }
 
 /* ==========================================================================
-   5. Sidebar (繧�E�繧�E�繝峨ヰ繝ｼ: 繝輔か繝ｫ繝繝�Μ繝ｼ)
+   5. Sidebar (郢ｧ・ｵ郢ｧ・､郢晏ｳｨ繝ｰ郢晢ｽｼ: 郢晁ｼ斐°郢晢ｽｫ郢敖郢晢ｿｽﾎ懃ｹ晢ｽｼ)
    ========================================================================== */
 .sidebar {
     width: calc(240px - 5vh);
@@ -804,7 +804,7 @@ body {
     padding: 5px 0;
 }
 
-/* 繝�Μ繝ｼ鬁E��岼 */
+/* 郢晢ｿｽﾎ懃ｹ晢ｽｼ鬯・ｿｽ蟯ｼ */
 .tree-node {
     user-select: none;
 }
@@ -872,7 +872,7 @@ body {
 }
 
 /* ==========================================================================
-   11. Home View (繝帙�繝�逕ｻ髱�E�)
+   11. Home View (郢晏ｸ呻ｿｽ郢晢ｿｽ騾包ｽｻ鬮ｱ・｢)
    ========================================================================== */
 .sidebar-nav {
     padding: 10px;
@@ -1113,7 +1113,7 @@ body {
 }
 
 /* ==========================================================================
-   6. File Pane (繝輔ぃ繧�E�繝ｫ荳隕ｧ繝壹ぁE��ｳ)
+   6. File Pane (郢晁ｼ斐＜郢ｧ・､郢晢ｽｫ闕ｳﾂ髫包ｽｧ郢晏｣ｹ縺・ｹ晢ｽｳ)
    ========================================================================== */
 .file-pane {
     flex: 2;
@@ -1182,7 +1182,7 @@ body {
     background: var(--bg-item-hover);
 }
 
-/* 驕ｸ謚樒�E諷九�謫堺�E�懁E�E諷�E� */
+/* 鬩包ｽｸ隰壽ｨ呈・隲ｷ荵晢ｿｽ隰ｫ蝣ｺ・ｽ諛・・隲ｷ・ｽ */
 .file-list tr.selected td {
     background: color-mix(in srgb, var(--bg-item-selected), transparent 40%);
 }
@@ -1191,7 +1191,7 @@ body {
     opacity: 0.4;
 }
 
-/* 繝輔ぃ繧�E�繝ｫ蜷阪そ繝ｫ�E�医ぁE���E�繧�E�繝ｳ縺�E�繝�く繧�E�繝�/蜈･蜉帙′謾�E�陦後！E��後�E縺�E��E�縺�E�↓縺吶�E���E� */
+/* 郢晁ｼ斐＜郢ｧ・､郢晢ｽｫ陷ｷ髦ｪ縺晉ｹ晢ｽｫ・ｽ蛹ｻ縺・ｹｧ・､郢ｧ・ｳ郢晢ｽｳ邵ｺ・ｨ郢晢ｿｽ縺冗ｹｧ・ｹ郢晢ｿｽ/陷茨ｽ･陷牙ｸ吮ｲ隰ｾ・ｹ髯ｦ蠕鯉ｼ・ｹｧ蠕娯・邵ｺ・ｽ・育ｸｺ・ｽ竊鍋ｸｺ蜷ｶ・具ｿｽ・ｽ */
 .file-name {
     white-space: nowrap;
     overflow: hidden;
@@ -1205,7 +1205,7 @@ body {
     margin-right: 6px;
 }
 
-/* 繧�E�繝ｳ繝ｩ繧�E�繝ｳ繝ｪ繝阪�E�繝� */
+/* 郢ｧ・､郢晢ｽｳ郢晢ｽｩ郢ｧ・､郢晢ｽｳ郢晢ｽｪ郢晞亂・ｽ郢晢ｿｽ */
 .rename-input {
     min-width: 20px;
     width: 100%;
@@ -1222,7 +1222,7 @@ body {
 }
 
 /* ==========================================================================
-   7. Terminal Pane (繧�E�繝ｼ繝溘リ繝ｫ繝壹ぁE��ｳ)
+   7. Terminal Pane (郢ｧ・ｿ郢晢ｽｼ郢晄ｺ倥Μ郢晢ｽｫ郢晏｣ｹ縺・ｹ晢ｽｳ)
    ========================================================================== */
 .terminal-pane {
     height: 140px;
@@ -1262,7 +1262,7 @@ body {
     font-family: 'Consolas', monospace;
 }
 
-/* 繧�E�繝ｼ繝溘リ繝ｫ繝�く繧�E�繝医き繝ｩ繝ｼ */
+/* 郢ｧ・ｿ郢晢ｽｼ郢晄ｺ倥Μ郢晢ｽｫ郢晢ｿｽ縺冗ｹｧ・ｹ郢晏現縺咲ｹ晢ｽｩ郢晢ｽｼ */
 .command-echo {
     color: var(--text-terminal-echo);
 }
@@ -1272,10 +1272,10 @@ body {
 }
 
 /* ==========================================================================
-   8. View Options & Layouts (陦�E�遉ｺ繝｢繝ｼ繝峨√さ繝ｳ繝代け繝医Δ繝ｼ繝�E�E��E�)
+   8. View Options & Layouts (髯ｦ・ｨ驕会ｽｺ郢晢ｽ｢郢晢ｽｼ郢晏ｳｨﾂ竏壹＆郢晢ｽｳ郢昜ｻ｣縺醍ｹ晏現ﾎ皮ｹ晢ｽｼ郢晁・・ｭ・ｽ)
    ========================================================================== */
 
-/* 繧�E�繝悶Γ繝九Η繝ｼ */
+/* 郢ｧ・ｵ郢晄じﾎ鍋ｹ昜ｹ斟礼ｹ晢ｽｼ */
 .has-submenu {
     position: relative;
 }
@@ -1298,7 +1298,7 @@ body {
     display: block;
 }
 
-/* 繧�E�繝ｳ繝代け繝医Δ繝ｼ繝� */
+/* 郢ｧ・ｳ郢晢ｽｳ郢昜ｻ｣縺醍ｹ晏現ﾎ皮ｹ晢ｽｼ郢晢ｿｽ */
 body.compact-mode .tree-item {
     padding: 2px 10px;
     font-size: 12px;
@@ -1309,12 +1309,13 @@ body.compact-mode .file-list td {
     font-size: 12px;
 }
 
-/* 繧�E�繝ｪ繝�ラ繝薙Η繝ｼ (繧�E�繧�E�繧�E�繝ｳ陦�E�遉ｺ) */
+/* 郢ｧ・ｰ郢晢ｽｪ郢晢ｿｽ繝ｩ郢晁侭ﾎ礼ｹ晢ｽｼ (郢ｧ・｢郢ｧ・､郢ｧ・ｳ郢晢ｽｳ髯ｦ・ｨ驕会ｽｺ) */
 #file-grid {
     display: grid;
-    gap: 10px;
-    padding: 10px;
+    gap: 12px;
+    padding: 12px;
     align-content: start;
+    grid-auto-rows: min-content;
     overflow-y: auto;
     height: 100%;
     box-sizing: border-box;
@@ -1325,20 +1326,24 @@ body.compact-mode .file-list td {
     flex-direction: column;
     align-items: center;
     cursor: default;
-    border-radius: 4px;
+    border-radius: 6px;
     padding: 0;
     text-align: center;
     border: 1px solid transparent;
-    transition: background 0.1s;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
 }
 
 .grid-content {
-    padding: 8px;
+    padding: 10px;
     cursor: pointer;
-    display: inline-flex;
+    display: flex;
     flex-direction: column;
     align-items: center;
-    border-radius: 4px;
+    border-radius: 6px;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .grid-item:hover {
@@ -1397,7 +1402,7 @@ body.compact-mode .file-list td {
     vertical-align: middle;
 }
 
-/* 蜷�E�げ繝ｪ繝�ラ繧�E�繧�E�繧�E�縺�E�縺�E�繧�E�繧�E�繧�E�繝ｳ隱�E�謨�E� */
+/* 陷ｷ・ｽ縺堤ｹ晢ｽｪ郢晢ｿｽ繝ｩ郢ｧ・ｵ郢ｧ・､郢ｧ・ｺ邵ｺ・ｧ邵ｺ・ｮ郢ｧ・｢郢ｧ・､郢ｧ・ｳ郢晢ｽｳ髫ｱ・ｿ隰ｨ・ｴ */
 .grid-size-extralarge .grid-icon-placeholder {
     font-size: 80px;
 }
@@ -1417,17 +1422,20 @@ body.compact-mode .file-list td {
 .grid-name {
     width: 100%;
     font-size: 12px;
+    line-height: 1.4;
     color: var(--text-main);
     word-break: break-all;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    line-clamp: 2;
     -webkit-box-orient: vertical;
+    min-height: 2.8em; /* 2 lines * 1.4 line-height */
+    padding: 0 4px;
+    box-sizing: border-box;
 }
 
-/* 繧�E�繝ｪ繝�ラ繧�E�繧�E�繧�E�螳夂ｾ�E� (16:9縺�E�蜷医�E�縺帙※讓ｪ蟷�E��E�隱�E�謨�E�) */
+/* 郢ｧ・ｰ郢晢ｽｪ郢晢ｿｽ繝ｩ郢ｧ・ｵ郢ｧ・､郢ｧ・ｺ陞ｳ螟ゑｽｾ・ｩ (16:9邵ｺ・ｫ陷ｷ蛹ｻ・冗ｸｺ蟶吮ｻ隶難ｽｪ陝ｷ・ｽ・帝坡・ｿ隰ｨ・ｴ) */
 .grid-size-extralarge {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
@@ -1445,7 +1453,7 @@ body.compact-mode .file-list td {
 }
 
 /* ==========================================================================
-   9. Settings Screen (險�E�螳夂判髱�E�)
+   9. Settings Screen (髫ｪ・ｭ陞ｳ螟ょ愛鬮ｱ・｢)
    ========================================================================== */
 .settings-screen {
     position: fixed;
@@ -1538,7 +1546,7 @@ body.compact-mode .file-list td {
     font-size: 12px;
     color: var(--text-muted);
 }
-/* iOS鬚ｨ繝医げ繝ｫ繧�E�繧�E�繝�メ */
+/* iOS鬯夲ｽｨ郢晏現縺堤ｹ晢ｽｫ郢ｧ・ｹ郢ｧ・､郢晢ｿｽ繝｡ */
 .toggle-switch {
     position: relative;
     display: inline-block;
@@ -1619,7 +1627,7 @@ body.compact-mode .file-list td {
     position: relative;
 }
 
-/* 繧�E�繧�E�繝峨ヰ繝ｼ */
+/* 郢ｧ・ｵ郢ｧ・､郢晏ｳｨ繝ｰ郢晢ｽｼ */
 .settings-sidebar {
     width: 220px;
     background: var(--settings-sidebar-bg);
@@ -1690,7 +1698,7 @@ body.compact-mode .file-list td {
     transform: rotate(90deg);
 }
 
-/* 繝｡繧�E�繝ｳ繧�E�繝ｳ繝�Φ繝� */
+/* 郢晢ｽ｡郢ｧ・､郢晢ｽｳ郢ｧ・ｳ郢晢ｽｳ郢晢ｿｽﾎｦ郢晢ｿｽ */
 .settings-main {
     flex: 1;
     padding: 40px;
@@ -1713,7 +1721,7 @@ body.compact-mode .file-list td {
     color: var(--text-bright);
 }
 
-/* 險�E�螳壹げ繝ｫ繝ｼ繝� */
+/* 髫ｪ・ｭ陞ｳ螢ｹ縺堤ｹ晢ｽｫ郢晢ｽｼ郢晢ｿｽ */
 .setting-group {
     display: flex;
     align-items: center;
@@ -1747,7 +1755,7 @@ body.compact-mode .file-list td {
     color: var(--text-muted);
 }
 
-/* 繧�E�繝ｳ繝医Ο繝ｼ繝ｫ隕∫�E��E� */
+/* 郢ｧ・ｳ郢晢ｽｳ郢晏現ﾎ溽ｹ晢ｽｼ郢晢ｽｫ髫補悪・ｴ・ｽ */
 .slider-control {
     display: flex;
     align-items: center;
@@ -1774,7 +1782,7 @@ input[type="range"] {
     border-color: var(--accent-color);
 }
 
-/* 繝��E�繝槭�E�繝ｪ繧�E�繝�ヨ */
+/* 郢晢ｿｽ・ｽ郢晄ｧｭ・ｽ郢晢ｽｪ郢ｧ・ｻ郢晢ｿｽ繝ｨ */
 .theme-presets-container {
     display: flex;
     flex-direction: column;
@@ -1836,7 +1844,7 @@ input[type="range"] {
     box-sizing: border-box; /* Ensure border doesn't expand preview */
 }
 
-/* 繝励Ξ繝ｼ繧�E�繝帙Ν繝繝ｼ */
+/* 郢晏干ﾎ樒ｹ晢ｽｼ郢ｧ・ｹ郢晏ｸ厥晉ｹ敖郢晢ｽｼ */
 .placeholder-msg {
     text-align: center;
     color: var(--text-muted);
@@ -1851,7 +1859,7 @@ input[type="range"] {
 }
 
 /* ==========================================================================
-   6. Preview Pane (繝励Ξ繝薙Η繝ｼ繝壹ぁE��ｳ)
+   6. Preview Pane (郢晏干ﾎ樒ｹ晁侭ﾎ礼ｹ晢ｽｼ郢晏｣ｹ縺・ｹ晢ｽｳ)
    ========================================================================== */
 .preview-pane {
     width: 300px;
@@ -1920,7 +1928,7 @@ input[type="range"] {
     justify-content: center;
 }
 
-/* 繝励Ξ繝ｼ繧�E�繝帙Ν繝繝ｼ */
+/* 郢晏干ﾎ樒ｹ晢ｽｼ郢ｧ・ｹ郢晏ｸ厥晉ｹ敖郢晢ｽｼ */
 .preview-placeholder {
     height: 100%;
     display: flex;
@@ -1943,7 +1951,7 @@ input[type="range"] {
     max-width: 200px;
 }
 
-/* 逕ｻ蜒上�繝ｬ繝薙Η繝ｼ */
+/* 騾包ｽｻ陷剃ｸ奇ｿｽ郢晢ｽｬ郢晁侭ﾎ礼ｹ晢ｽｼ */
 .preview-image-container {
     width: 100%;
     height: 100%;
@@ -1960,7 +1968,7 @@ input[type="range"] {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* 繝�く繧�E�繝医�E�繝ｬ繝薙Η繝ｼ */
+/* 郢晢ｿｽ縺冗ｹｧ・ｹ郢晏現・ｽ郢晢ｽｬ郢晁侭ﾎ礼ｹ晢ｽｼ */
 .preview-text-container {
     width: 100%;
     background: var(--bg-terminal);
@@ -1976,7 +1984,7 @@ input[type="range"] {
     border: 1px solid var(--border-light);
 }
 
-/* 繝輔ぃ繧�E�繝ｫ諠�E��E��E�陦�E�遉ｺ */
+/* 郢晁ｼ斐＜郢ｧ・､郢晢ｽｫ隲�・ｽ・ｽ・ｱ髯ｦ・ｨ驕会ｽｺ */
 .preview-info-card {
     width: 100%;
     background: var(--glass-bg);
@@ -2004,11 +2012,11 @@ input[type="range"] {
 
 
 /* ==========================================================================
-   10. Preview Actions (繝励Ξ繝薙Η繝ｼ繧�E�繧�E�繧�E�繝ｧ繝ｳ)
+   10. Preview Actions (郢晏干ﾎ樒ｹ晁侭ﾎ礼ｹ晢ｽｼ郢ｧ・｢郢ｧ・ｯ郢ｧ・ｷ郢晢ｽｧ郢晢ｽｳ)
    ========================================================================== */
 .preview-action-btn {
     position: absolute;
-    top: 48px; /* 繝倥ャ繝繝ｼ(38px)縺�E�荳九�E蟁E���E�菴呵�E�輔ｒ謖�E▲縺�E�驟咲�E��E� */
+    top: 48px; /* 郢晏･繝｣郢敖郢晢ｽｼ(38px)邵ｺ・ｮ闕ｳ荵昶・陝・ｻ｣・�闖ｴ蜻ｵ・｣霈費ｽ定ｬ問・笆ｲ邵ｺ・ｦ鬩溷調・ｽ・ｮ */
     right: 15px;
     width: 34px;
     height: 34px;
@@ -2048,7 +2056,7 @@ input[type="range"] {
     height: 18px;
 }
 
-/* 蛻�E�繧�E�繧�E�繝ｳ繝峨え繝励Ξ繝薙Η繝ｼ (preview.html) 縺�E�縺�E�隱�E�謨�E� */
+/* 陋ｻ・･郢ｧ・ｦ郢ｧ・｣郢晢ｽｳ郢晏ｳｨ縺育ｹ晏干ﾎ樒ｹ晁侭ﾎ礼ｹ晢ｽｼ (preview.html) 邵ｺ・ｧ邵ｺ・ｮ髫ｱ・ｿ隰ｨ・ｴ */
 body > .preview-action-btn {
     top: 15px;
 }
@@ -2065,7 +2073,7 @@ body > .preview-action-btn {
 }
 
 /* ---------------------------------------------------------------------------
- * 遏ｩ蠖｢驕ｸ謚� (Marquee Selection)
+ * 驕擾ｽｩ陟厄ｽ｢鬩包ｽｸ隰夲ｿｽ (Marquee Selection)
  * --------------------------------------------------------------------------- */
 .selection-rectangle {
     position: fixed;
@@ -2080,12 +2088,12 @@ body > .preview-action-btn {
     user-select: none !important;
 }
 
-/* 譌｢蟁E���E�繝輔ぃ繧�E�繝ｫ繝ｪ繧�E�繝医ぁE���E�繝�Β縺後ラ繝ｩ繝�げ荳�E�縺�E�髱偵�E�縺�E�繧峨↑縺�E��E�縺�E�↓隱�E�謨�E� */
+/* 隴鯉ｽ｢陝・･・ｽ郢晁ｼ斐＜郢ｧ・､郢晢ｽｫ郢晢ｽｪ郢ｧ・ｹ郢晏現縺・ｹｧ・､郢晢ｿｽﾎ堤ｸｺ蠕後Λ郢晢ｽｩ郢晢ｿｽ縺定叉・ｭ邵ｺ・ｫ鬮ｱ蛛ｵ・･邵ｺ・ｪ郢ｧ蟲ｨ竊醍ｸｺ・ｽ・育ｸｺ・ｽ竊馴坡・ｿ隰ｨ・ｴ */
 #file-list-body tr, .grid-item {
     user-select: none;
 }
 /* ---------------------------------------------------------------------------
- * ドラチE���E�E��ロチE�E (Drag and Drop)
+ * 繝峨Λ繝・げ・・ラ繝ｭ繝・・ (Drag and Drop)
  * --------------------------------------------------------------------------- */
 .drag-over {
     background: color-mix(in srgb, var(--accent-color), transparent 85%) !important;
@@ -2105,7 +2113,7 @@ body > .preview-action-btn {
     z-index: 100;
 }
 
-/* 並べ替え用の隙間エフェクチE*/
+/* 荳ｦ縺ｹ譖ｿ縺育畑縺ｮ髫咎俣繧ｨ繝輔ぉ繧ｯ繝・*/
 .drag-gap-top, .drag-gap-bottom {
     position: relative;
 }
@@ -2159,7 +2167,7 @@ body > .preview-action-btn {
     transform: scale(0.98);
 }
 /* ==========================================================================
-   16. Properties Modal (�v���p�e�B���[�_��)
+   16. Properties Modal (プロパティモーダル)
    ========================================================================== */
 .modal-overlay {
     position: fixed;
@@ -2366,6 +2374,6 @@ body > .preview-action-btn {
 }
 
 .attributes-row input[type='checkbox']:disabled {
-    opacity: 1; /* �u���E�U�̃f�t�H���g�̖������X�^�C���i�����Ȃ�j���㏑�� */
+    opacity: 1; /* ブラウザのデフォルトの無効化スタイル（薄くなる）を上書き */
 }
 
