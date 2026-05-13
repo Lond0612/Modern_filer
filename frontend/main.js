@@ -16,6 +16,7 @@ function createWindow(initialPath = null) {
   let windowOptions = {
     width: 1200,
     height: 800,
+    minWidth: 770,
     backgroundColor: '#1e1e1e',
     icon: path.join(__dirname, 'build', 'icon.ico'),
     webPreferences: {
@@ -169,7 +170,7 @@ function startServerForWindow(winId) {
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
-  
+
   createWindow();
 
   app.on('activate', () => {
@@ -216,7 +217,7 @@ ipcMain.on('send-command', (event, command) => {
     });
     proc.unref();
 
-    setTimeout(() => { try { unlinkSync(tmpVbs); } catch (e) {} }, 130000);
+    setTimeout(() => { try { unlinkSync(tmpVbs); } catch (e) { } }, 130000);
     return;
   }
 
@@ -388,7 +389,7 @@ ipcMain.on('ondragstart', (event, files) => {
     // Electronのバージョンやプラットフォームにより引数の形式が異なる場合があるため
     // 互換性を考慮して単一ファイル(file)と複数ファイル(files)の両方を試みる
     const dragConfig = {
-      files: files, 
+      files: files,
       file: files[0],
       icon: path.join(__dirname, 'drag-icon.png')
     };
