@@ -90,6 +90,7 @@ window.handleThumbError = (el, iconType) => {
 // ---------------------------------------------------------------------------
 
 btnNew.onclick = (e) => {
+    if (isHomeActive) return;
     e.stopPropagation();
     newMenu.classList.toggle('visible');
     if (sortMenu) sortMenu.classList.remove('visible');
@@ -182,6 +183,7 @@ btnCopy.onclick = () => {
 };
 
 btnPaste.onclick = () => {
+    if (isHomeActive) return;
     if (!clipboard.mode || clipboard.items.length === 0) return;
     clipboard.items.forEach(item => {
         const dst = currentPath + item.name;
@@ -300,7 +302,7 @@ document.querySelectorAll('.view-toggle').forEach(item => {
 function updateNavButtons() {
     btnBack.disabled = historyBack.length === 0;
     btnForward.disabled = historyForward.length === 0;
-    btnUp.disabled = !currentPath || currentPath.split('\\').filter(Boolean).length <= 1;
+    btnUp.disabled = !currentPath || currentPath === 'HOME' || currentPath.split('\\').filter(Boolean).length <= 1;
 }
 
 btnBack.onclick = () => {
@@ -344,7 +346,7 @@ window.addEventListener('mousedown', (e) => {
 
 btnUp.onclick = () => {
     if (isNavigationLocked()) return;
-    if (!currentPath) return;
+    if (!currentPath || currentPath === 'HOME') return;
     const trimmed = currentPath.endsWith('\\') ? currentPath.slice(0, -1) : currentPath;
     const parent = trimmed.substring(0, trimmed.lastIndexOf('\\') + 1);
     if (parent && parent !== currentPath) {
@@ -354,10 +356,15 @@ btnUp.onclick = () => {
 
 btnSidebarHome.onclick = () => {
     if (isNavigationLocked()) return;
-    showHome();
+    showHome(true);
 };
 
-function showHome() {
+function showHome(isUserClick = false) {
+    if (isUserClick && currentPath && currentPath !== 'HOME') {
+        historyBack.push(currentPath);
+        historyForward = [];
+    }
+    currentPath = 'HOME';
     isHomeActive = true;
     homeView.style.display = 'block';
     explorerView.style.display = 'none';
@@ -376,6 +383,7 @@ function showHome() {
     if (typeof PreviewManager !== 'undefined') {
         PreviewManager.hide();
     }
+    updateNavButtons();
 }
 
 function showExplorer(path) {
@@ -501,12 +509,18 @@ function addToRecentFolders(path) {
 }
 
 btnRefresh.onclick = () => {
-    if (currentPath) {
+    if (currentPath === 'HOME') {
+        renderHomeContent();
+    } else if (currentPath) {
         window.api.sendCommand(`LIST|${currentPath}`);
     }
 };
 
 function loadPath(path, isUserClick = false) {
+    if (path === 'HOME' || path === 'HOME\\') {
+        showHome(isUserClick);
+        return;
+    }
     if (!path.endsWith('\\')) path += '\\';
     if (isUserClick && currentPath && currentPath !== path) {
         historyBack.push(currentPath);
@@ -517,6 +531,13 @@ function loadPath(path, isUserClick = false) {
     updateNavButtons();
     addToRecentFolders(path);
 
+    if (isHomeActive) {
+        isHomeActive = false;
+        homeView.style.display = 'none';
+        explorerView.style.display = 'block';
+        btnSidebarHome.classList.remove('active');
+    }
+
     if (isUserClick) {
         setNavigationLock();
         window.api.sendCommand(`CD|${currentPath}`);
@@ -526,10 +547,22 @@ function loadPath(path, isUserClick = false) {
 }
 
 function navigateTo(path) {
+    if (path === 'HOME' || path === 'HOME\\') {
+        showHome(false);
+        return;
+    }
     if (!path.endsWith('\\')) path += '\\';
     currentPath = path;
     addressInput.value = currentPath;
     updateNavButtons();
+
+    if (isHomeActive) {
+        isHomeActive = false;
+        homeView.style.display = 'none';
+        explorerView.style.display = 'block';
+        btnSidebarHome.classList.remove('active');
+    }
+
     window.api.sendCommand(`CD|${currentPath}`);
 }
 
@@ -1236,7 +1269,13 @@ function addTreeItem(folderName) {
 
 function findTreeNode(path) {
     const p = path.endsWith('\\') ? path : path + '\\';
-    return treeView.querySelector(`.tree-node[data-path="${p.replace(/\\/g, '\\\\')}"]`);
+    const escapedPath = p.replace(/\\/g, '\\\\');
+    
+    // クイックアクセス以外のノード（ドライブツリー内のノード）を優先的に探す
+    const node = treeView.querySelector(`.tree-node[data-path="${escapedPath}"]:not([data-is-quick-access="true"])`);
+    if (node) return node;
+    
+    return treeView.querySelector(`.tree-node[data-path="${escapedPath}"]`);
 }
 
 function updateTreeActiveState() {
@@ -1982,7 +2021,7 @@ function handleDragOver(e) {
         }
     } else {
         const target = e.target.closest('tr[data-type="D"], .grid-item[data-type="D"], .tree-node');
-        if (target && target.dataset.isQuickAccess !== 'true') {
+        if (target) {
             const highlightTarget = target.classList.contains('tree-node') ? target.querySelector('.tree-item') : target;
             if (highlightTarget) highlightTarget.classList.add('drag-over');
         }
@@ -2019,7 +2058,7 @@ function handleDrop(e) {
     }
 
     const target = e.target.closest('tr[data-type="D"], .grid-item[data-type="D"], .tree-node');
-    if (!target || target.dataset.isQuickAccess === 'true') return;
+    if (!target) return;
 
     let srcPaths = [];
     const pathsJson = e.dataTransfer.getData('application/x-file-paths');
