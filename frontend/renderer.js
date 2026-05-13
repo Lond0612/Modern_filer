@@ -319,6 +319,29 @@ btnForward.onclick = () => {
     navigateTo(next, false);
 };
 
+// ---------------------------------------------------------------------------
+// マウスサイドボタン（戻る/進む）ナビゲーション
+// ---------------------------------------------------------------------------
+// button=3: XButton1（戻るボタン）/ button=4: XButton2（進むボタン）
+window.addEventListener('mousedown', (e) => {
+    // テキスト入力中は無視（リネームやアドレスバー操作に影響しないよう）
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    if (e.button === 3) {
+        e.preventDefault();
+        if (isNavigationLocked() || historyBack.length === 0) return;
+        historyForward.push(currentPath);
+        const prev = historyBack.pop();
+        navigateTo(prev, false);
+    } else if (e.button === 4) {
+        e.preventDefault();
+        if (isNavigationLocked() || historyForward.length === 0) return;
+        historyBack.push(currentPath);
+        const next = historyForward.shift();
+        navigateTo(next, false);
+    }
+});
+
 btnUp.onclick = () => {
     if (isNavigationLocked()) return;
     if (!currentPath) return;

@@ -133,6 +133,13 @@ app.whenReady().then(() => {
     }
   });
 
+  // マウスの戻る/進むボタン（XButton1/2）による
+  // Electronデフォルトのページナビゲーションを抑制
+  // （ナビゲーション処理はrenderer.js側のmousedownイベントで行う）
+  mainWindow.webContents.on('will-navigate', (event) => {
+    event.preventDefault();
+  });
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
