@@ -165,6 +165,7 @@ const SettingsManager = {
     applyThemePreset(theme) {
         document.body.classList.remove('theme-deepblue', 'theme-khaki', 'theme-sakura', 'theme-amber', 'theme-sky', 'theme-midnight', 'light-mode');
         this.themeOptions.forEach(opt => opt.classList.remove('active'));
+        document.querySelectorAll('.user-theme-option').forEach(opt => opt.classList.remove('active'));
         
         const selectedOpt = Array.from(this.themeOptions).find(opt => opt.dataset.theme === theme);
         if (selectedOpt) selectedOpt.classList.add('active');
