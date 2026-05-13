@@ -302,6 +302,12 @@ ipcMain.handle('OPEN_THEMES_FOLDER', () => {
   createWindow(themesPath);
 });
 
+ipcMain.handle('OPEN_NEW_WINDOW', (event, targetPath) => {
+  if (targetPath) {
+    createWindow(targetPath);
+  }
+});
+
 ipcMain.handle('READ_FILE_TEXT', async (event, filePath) => {
   try {
     // セキュリティ上の配慮として、一定サイズ以上の場合は先頭のみ読み込む等の制限を設けるのが望ましい

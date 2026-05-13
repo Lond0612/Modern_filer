@@ -1541,7 +1541,7 @@ window.addEventListener('contextmenu', (e) => {
 
     // アイテム選択の有無に応じた制御
     const hasSelection = contextTarget !== null;
-    ['ctx-open', 'ctx-cut', 'ctx-copy', 'ctx-rename', 'ctx-delete', 'ctx-quick-access', 'ctx-favorite', 'ctx-properties', 'ctx-copy-path'].forEach(id => {
+    ['ctx-open', 'ctx-open-new-window', 'ctx-cut', 'ctx-copy', 'ctx-rename', 'ctx-delete', 'ctx-quick-access', 'ctx-favorite', 'ctx-properties', 'ctx-copy-path'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.toggle('disabled', !hasSelection);
     });
@@ -1565,6 +1565,9 @@ window.addEventListener('contextmenu', (e) => {
         if (qaItem) qaItem.classList.add('disabled');
         const favItem = document.getElementById('ctx-favorite');
         if (favItem) favItem.classList.add('disabled');
+        // 新しいウィンドウで開くも無効
+        const newWinItem = document.getElementById('ctx-open-new-window');
+        if (newWinItem) newWinItem.classList.add('disabled');
     }
 
     // お気に入りのテキスト切り替え
@@ -1742,6 +1745,12 @@ document.getElementById('ctx-open').onclick = () => {
         } else {
             window.api.sendCommand(`OPEN|${contextTarget.path}`);
         }
+    }
+};
+
+document.getElementById('ctx-open-new-window').onclick = () => {
+    if (contextTarget && contextTarget.isDir) {
+        window.api.invoke('OPEN_NEW_WINDOW', contextTarget.path);
     }
 };
 
