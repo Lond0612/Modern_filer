@@ -1453,6 +1453,11 @@ let contextTarget = null; // 右クリック対象のデータ
 window.addEventListener('contextmenu', (e) => {
     e.preventDefault();
     
+    // 他のドロップダウンメニューが開いている場合は閉じる
+    if (typeof newMenu !== 'undefined' && newMenu) newMenu.classList.remove('visible');
+    if (typeof sortMenu !== 'undefined' && sortMenu) sortMenu.classList.remove('visible');
+    if (typeof viewMenu !== 'undefined' && viewMenu) viewMenu.classList.remove('visible');
+    
     const fileRow = e.target.closest('#file-list-body tr, .grid-item');
     const treeItem = e.target.closest('.tree-item');
     const homeItem = e.target.closest('.quick-tile, .recent-item');
@@ -1584,7 +1589,7 @@ window.addEventListener('contextmenu', (e) => {
 
 window.addEventListener('click', () => {
     contextMenu.style.display = 'none';
-});
+}, true);
 
 // ---------------------------------------------------------------------------
 // サブメニュー位置制御（右端はみ出し防止）
