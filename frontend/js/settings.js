@@ -151,6 +151,28 @@ const SettingsManager = {
                 }
             };
         }
+
+        // ウィンドウ間の設定リアルタイム同期
+        let storageTimeout;
+        window.addEventListener('storage', (e) => {
+            const syncKeys = [
+                'app-theme', 'isDarkMode', 'custom-theme-data',
+                'settings-font-size', 'settings-custom-font',
+                'settings-zoom', 'settings-high-contrast',
+                'settings-window-preview', 'settings-native-properties'
+            ];
+            if (e.key && syncKeys.includes(e.key)) {
+                clearTimeout(storageTimeout);
+                storageTimeout = setTimeout(() => {
+                    this.loadSettings();
+                }, 100);
+            } else if (e.key === 'quickAccessItems' && typeof refreshQuickAccessUI === 'function') {
+                clearTimeout(storageTimeout);
+                storageTimeout = setTimeout(() => {
+                    refreshQuickAccessUI();
+                }, 100);
+            }
+        });
     },
 
     switchTab(tabId) {

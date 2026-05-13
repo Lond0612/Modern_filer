@@ -10,18 +10,10 @@ if (app.isPackaged) {
   app.setPath('userData', localDataPath);
 }
 
+const windows = new Map();
 
-let mainWindow;
-let filerServer;
-const decoder = new StringDecoder('utf8');
-let serverBuffer = '';
-let batchedCmdOut = '';
-let messageQueue = [];
-let isWindowReady = false;
-let previewWindow = null;
-
-function createWindow() {
-  mainWindow = new BrowserWindow({
+function createWindow(initialPath = null) {
+  const win = new BrowserWindow({
     width: 1200,
     height: 800,
     backgroundColor: '#1e1e1e',
@@ -34,27 +26,65 @@ function createWindow() {
     show: false // 準備ができるまで表示しない
   });
 
-  mainWindow.loadFile('index.html');
+  const winId = win.webContents.id;
+  const state = {
+    window: win,
+    filerServer: null,
+    decoder: new StringDecoder('utf8'),
+    serverBuffer: '',
+    batchedCmdOut: '',
+    messageQueue: [],
+    isWindowReady: false,
+    previewWindow: null,
+    initialPath: initialPath
+  };
+  windows.set(winId, state);
 
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
+  startServerForWindow(winId);
+
+  win.loadFile('index.html');
+
+  win.once('ready-to-show', () => {
+    win.show();
   });
 
-  mainWindow.webContents.on('did-finish-load', () => {
-    isWindowReady = true;
-    for (const msg of messageQueue) {
-      mainWindow.webContents.send('backend-response', msg);
+  win.webContents.on('did-finish-load', () => {
+    state.isWindowReady = true;
+    for (const msg of state.messageQueue) {
+      win.webContents.send('backend-response', msg);
     }
-    messageQueue = [];
+    state.messageQueue = [];
   });
-  mainWindow.on('closed', () => {
-    if (previewWindow && !previewWindow.isDestroyed()) {
-      previewWindow.close();
+
+  win.on('closed', () => {
+    if (state.previewWindow && !state.previewWindow.isDestroyed()) {
+      state.previewWindow.close();
     }
+    if (state.filerServer) {
+      state.filerServer.kill();
+    }
+    windows.delete(winId);
+  });
+
+  // 開発時以外でもF12でデバッグできるようにする（α版用）
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12') {
+      win.webContents.toggleDevTools();
+      event.preventDefault();
+    }
+  });
+
+  // マウスの戻る/進むボタン（XButton1/2）による
+  // Electronデフォルトのページナビゲーションを抑制
+  win.webContents.on('will-navigate', (event) => {
+    event.preventDefault();
   });
 }
 
-function startServer() {
+function startServerForWindow(winId) {
+  const state = windows.get(winId);
+  if (!state) return;
+
   let serverPath;
   let serverCwd;
 
@@ -68,34 +98,39 @@ function startServer() {
     serverCwd = path.join(__dirname, '..');
   }
 
-  filerServer = spawn(serverPath, [], {
+  if (state.initialPath) {
+    serverCwd = state.initialPath;
+  }
+
+  const filerServer = spawn(serverPath, [], {
     cwd: serverCwd
   });
+  state.filerServer = filerServer;
 
   filerServer.stdout.on('data', (data) => {
-    serverBuffer += decoder.write(data);
-    let lines = serverBuffer.split('\n');
-    serverBuffer = lines.pop();
+    state.serverBuffer += state.decoder.write(data);
+    let lines = state.serverBuffer.split('\n');
+    state.serverBuffer = lines.pop();
 
     for (let line of lines) {
       if (!line.includes('{')) continue;
       try {
         const obj = JSON.parse(line);
 
-        if (!isWindowReady) {
-          messageQueue.push(obj);
+        if (!state.isWindowReady) {
+          state.messageQueue.push(obj);
           continue;
         }
 
         if (obj.type === 'CMD_OUT') {
-          batchedCmdOut += obj.content;
+          state.batchedCmdOut += obj.content;
         } else {
           // If we have accumulated CMD_OUT, send them first
-          if (batchedCmdOut) {
-            mainWindow.webContents.send('backend-response', { type: 'CMD_OUT', content: batchedCmdOut });
-            batchedCmdOut = '';
+          if (state.batchedCmdOut) {
+            state.window.webContents.send('backend-response', { type: 'CMD_OUT', content: state.batchedCmdOut });
+            state.batchedCmdOut = '';
           }
-          mainWindow.webContents.send('backend-response', obj);
+          state.window.webContents.send('backend-response', obj);
         }
       } catch (e) {
         console.error('Failed to parse JSON:', line, e);
@@ -103,51 +138,32 @@ function startServer() {
     }
 
     // Final flush of batched content
-    if (batchedCmdOut && isWindowReady) {
-      mainWindow.webContents.send('backend-response', { type: 'CMD_OUT', content: batchedCmdOut });
-      batchedCmdOut = '';
+    if (state.batchedCmdOut && state.isWindowReady) {
+      state.window.webContents.send('backend-response', { type: 'CMD_OUT', content: state.batchedCmdOut });
+      state.batchedCmdOut = '';
     }
   });
 
   filerServer.stderr.on('data', (data) => {
-    console.error(`Backend Error: ${data}`);
+    console.error(`Backend Error [win ${winId}]: ${data}`);
   });
 
   filerServer.on('close', (code) => {
-    console.log(`Backend process exited with code ${code}`);
-    app.quit();
+    console.log(`Backend process for win ${winId} exited with code ${code}`);
   });
 }
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   
-  // サーバーとウィンドウを並列で起動開始
-  startServer();
   createWindow();
 
-  // 開発時以外でもF12でデバッグできるようにする（α版用）
-  mainWindow.webContents.on('before-input-event', (event, input) => {
-    if (input.key === 'F12') {
-      mainWindow.webContents.toggleDevTools();
-      event.preventDefault();
-    }
-  });
-
-  // マウスの戻る/進むボタン（XButton1/2）による
-  // Electronデフォルトのページナビゲーションを抑制
-  // （ナビゲーション処理はrenderer.js側のmousedownイベントで行う）
-  mainWindow.webContents.on('will-navigate', (event) => {
-    event.preventDefault();
-  });
-
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (windows.size === 0) createWindow();
   });
 });
 
 app.on('window-all-closed', () => {
-  if (filerServer) filerServer.kill();
   if (process.platform !== 'darwin') app.quit();
 });
 
@@ -198,8 +214,10 @@ ipcMain.on('send-command', (event, command) => {
     return;
   }
 
-  if (filerServer && !filerServer.killed) {
-    filerServer.stdin.write(command + '\n');
+  const state = windows.get(event.sender.id);
+
+  if (state && state.filerServer && !state.filerServer.killed) {
+    state.filerServer.stdin.write(command + '\n');
   }
 });
 
@@ -267,7 +285,7 @@ ipcMain.handle('GET_USER_THEMES', async () => {
 
 ipcMain.handle('OPEN_THEMES_FOLDER', () => {
   const themesPath = path.join(app.getPath('userData'), 'themes');
-  shell.openPath(themesPath).catch(err => console.error('Failed to open themes folder:', err));
+  createWindow(themesPath);
 });
 
 ipcMain.handle('READ_FILE_TEXT', async (event, filePath) => {
@@ -289,15 +307,18 @@ ipcMain.handle('READ_FILE_TEXT', async (event, filePath) => {
 });
 
 ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
-  if (previewWindow) {
-    previewWindow.show();
-    previewWindow.webContents.send('backend-response', { type: 'UPDATE_PREVIEW', file: data.file });
+  const state = windows.get(event.sender.id);
+  if (!state) return;
+
+  if (state.previewWindow) {
+    state.previewWindow.show();
+    state.previewWindow.webContents.send('backend-response', { type: 'UPDATE_PREVIEW', file: data.file });
     return;
   }
 
-  const mainBounds = mainWindow.getBounds();
+  const mainBounds = state.window.getBounds();
 
-  previewWindow = new BrowserWindow({
+  state.previewWindow = new BrowserWindow({
     width: 600,
     height: 338, // 16:9 ratio
     x: mainBounds.x + mainBounds.width - 400, // メインウィンドウの右側に寄せる
@@ -312,11 +333,11 @@ ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
     }
   });
 
-  previewWindow.loadFile('preview.html');
+  state.previewWindow.loadFile('preview.html');
 
-  previewWindow.webContents.on('did-finish-load', () => {
-    previewWindow.webContents.send('backend-response', { type: 'UPDATE_PREVIEW', file: data.file });
-    previewWindow.webContents.send('backend-response', {
+  state.previewWindow.webContents.on('did-finish-load', () => {
+    state.previewWindow.webContents.send('backend-response', { type: 'UPDATE_PREVIEW', file: data.file });
+    state.previewWindow.webContents.send('backend-response', {
       type: 'APPLY_THEME',
       theme: data.theme,
       isDark: data.isDark,
@@ -324,17 +345,18 @@ ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
     });
   });
 
-  previewWindow.on('closed', () => {
-    previewWindow = null;
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('backend-response', { type: 'PREVIEW_WINDOW_CLOSED' });
+  state.previewWindow.on('closed', () => {
+    state.previewWindow = null;
+    if (state.window && !state.window.isDestroyed()) {
+      state.window.webContents.send('backend-response', { type: 'PREVIEW_WINDOW_CLOSED' });
     }
   });
 });
 
-ipcMain.on('CLOSE_PREVIEW_WINDOW', () => {
-  if (previewWindow) {
-    previewWindow.close();
+ipcMain.on('CLOSE_PREVIEW_WINDOW', (event) => {
+  const state = windows.get(event.sender.id);
+  if (state && state.previewWindow) {
+    state.previewWindow.close();
   }
 });
 
