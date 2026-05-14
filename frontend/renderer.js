@@ -150,12 +150,16 @@ function initTabs() {
     addTab(initialPath);
 }
 
-function addTab(path = 'HOME') {
-    const id = Date.now().toString();
+function addTab(path = 'HOME', switchImmediately = true) {
+    const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
     const newTab = new Tab(id, path);
     tabs.push(newTab);
-    switchTab(id);
-    renderTabs();
+    
+    if (switchImmediately) {
+        switchTab(id);
+    } else {
+        renderTabs();
+    }
 }
 
 function switchTab(id) {
@@ -297,10 +301,16 @@ function renderTabs() {
 // タブのカスタムドラッグ＆ドロップ
 // ---------------------------------------------------------------------------
 function handleTabMouseDown(e, id) {
-    if (e.button !== 0) return; // 左クリックのみ
-    if (e.target.closest('.tab-close')) return; // 閉じるボタンは除外
+    if (e.button === 1) { // 中ボタンクリックでタブを閉じる
+        e.preventDefault();
+        e.stopPropagation();
+        closeTab(id);
+        return;
+    }
+    if (e.button !== 0) return; // 左クリック以外（右クリック等）は無視
+    if (e.target.closest('.tab-close')) return; 
 
-    e.preventDefault(); // テキスト選択などを防止
+    e.preventDefault();
     draggedTabId = id;
     tabDragStartX = e.clientX;
     tabDragOffsetX = 0;
@@ -390,7 +400,7 @@ function handleTabMouseDown(e, id) {
             }
 
             // ドラッグ距離が小さければタブ切り替え（クリック判定）
-            if (totalDragDistance < 5) {
+            if (totalDragDistance < 10) {
                 switchTab(id);
             }
 
@@ -798,6 +808,12 @@ async function renderHomeContent() {
             <span>${item.label}</span>
         `;
         tile.onclick = () => showExplorer(item.path);
+        tile.onauxclick = (e) => {
+            if (e.button === 1) { // ホイールクリック
+                e.preventDefault();
+                addTab(item.path, false); // バックグラウンドで開く
+            }
+        };
         quickAccess.appendChild(tile);
     });
 
@@ -819,6 +835,12 @@ async function renderHomeContent() {
                 </div>
             `;
             item.onclick = () => showExplorer(folder.path);
+            item.onauxclick = (e) => {
+                if (e.button === 1) { // ホイールクリック
+                    e.preventDefault();
+                    addTab(folder.path, false); // バックグラウンドで開く
+                }
+            };
             recentList.appendChild(item);
         });
     }
@@ -1240,6 +1262,16 @@ function addFileRow(data) {
         }
     };
 
+    element.onauxclick = (e) => {
+        if (e.button === 1) { // ホイールクリック
+            if (isNavigationLocked()) return;
+            if (type === 'D') {
+                e.preventDefault();
+                addTab(currentPath + name + '\\', false); // バックグラウンドで開く
+            }
+        }
+    };
+
     if (pendingRename && name === pendingRename) {
         pendingRename = null;
         setTimeout(() => startRename(element), 100);
@@ -1618,6 +1650,15 @@ function createTreeNode(fullPath, container, isRoot = false, customIcon = null, 
         if (isNavigationLocked()) return;
         e.stopPropagation();
         loadPath(node.dataset.path, true);
+    };
+
+    item.onauxclick = (e) => {
+        if (e.button === 1) { // ホイールクリック
+            if (isNavigationLocked()) return;
+            e.preventDefault();
+            e.stopPropagation();
+            addTab(node.dataset.path, false); // バックグラウンドで開く
+        }
     };
 
     container.appendChild(node);
