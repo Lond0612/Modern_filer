@@ -1832,27 +1832,47 @@ function onSelectionChanged() {
     }
 }
 
-// グローバルキーイベント
-window.addEventListener('keydown', (e) => {
-    // 入力エリアにフォーカスがある場合は無視
-    const active = document.activeElement;
-    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
-        return;
-    }
+// グローバルショートカットの登録
+function initShortcuts() {
+    if (typeof ShortcutManager === 'undefined') return;
 
-    if (e.code === 'Space') {
-        e.preventDefault();
-        if (typeof PreviewManager !== 'undefined') {
-            PreviewManager.toggle();
-        }
-    }
+    // プレビュー表示の切り替え
+    ShortcutManager.register('Space', () => {
+        if (typeof PreviewManager !== 'undefined') PreviewManager.toggle();
+    });
 
-    // 上下キーでの選択移動
-    if (e.code === 'ArrowDown' || e.code === 'ArrowUp') {
-        e.preventDefault();
-        navigateSelection(e.code === 'ArrowDown' ? 1 : -1);
+    // 選択項目の上下移動
+    ShortcutManager.register('ArrowDown', () => navigateSelection(1));
+    ShortcutManager.register('ArrowUp', () => navigateSelection(-1));
+
+    // タブ操作
+    ShortcutManager.register('Ctrl+t', () => addTab('HOME'));
+    ShortcutManager.register('Ctrl+w', () => closeTab(activeTabId));
+    
+    ShortcutManager.register('Ctrl+Tab', (e) => {
+        const index = tabs.findIndex(t => t.id === activeTabId);
+        const next = (index + 1) % tabs.length;
+        switchTab(tabs[next].id);
+    });
+    
+    ShortcutManager.register('Ctrl+Shift+Tab', (e) => {
+        const index = tabs.findIndex(t => t.id === activeTabId);
+        const prev = (index - 1 + tabs.length) % tabs.length;
+        switchTab(tabs[prev].id);
+    });
+
+    ShortcutManager.register('Ctrl+Shift+t', () => restoreRecentlyClosedTab());
+
+    // タブの数字キー切り替え (Ctrl+1 ~ 9)
+    for (let i = 1; i <= 9; i++) {
+        ShortcutManager.register(`Ctrl+${i}`, () => {
+            if (tabs[i - 1]) switchTab(tabs[i - 1].id);
+        });
     }
-});
+}
+
+// 初期化時に呼び出し
+initShortcuts();
 
 function navigateSelection(direction) {
     const items = Array.from(document.querySelectorAll('#file-list-body tr, .grid-item'));
@@ -2315,37 +2335,7 @@ tabContextMenu.addEventListener('mouseenter', () => {
     }
 });
 
-// ショートカットキーの実装
-window.addEventListener('keydown', (e) => {
-    if (e.ctrlKey) {
-        if (e.key === 't') {
-            e.preventDefault();
-            addTab('HOME');
-        } else if (e.key === 'w') {
-            e.preventDefault();
-            closeTab(activeTabId);
-        } else if (e.key === 'Tab') {
-            e.preventDefault();
-            const index = tabs.findIndex(t => t.id === activeTabId);
-            if (e.shiftKey) {
-                const prev = (index - 1 + tabs.length) % tabs.length;
-                switchTab(tabs[prev].id);
-            } else {
-                const next = (index + 1) % tabs.length;
-                switchTab(tabs[next].id);
-            }
-        } else if (e.key === 'T' && e.shiftKey) { // Ctrl + Shift + T
-            e.preventDefault();
-            restoreRecentlyClosedTab();
-        } else if (e.key >= '1' && e.key <= '9') {
-            const num = parseInt(e.key);
-            if (tabs[num - 1]) {
-                e.preventDefault();
-                switchTab(tabs[num - 1].id);
-            }
-        }
-    }
-});
+// 以前ここにあったショートカットキーの実装は initShortcuts に集約されました
 
 document.getElementById('ctx-cut').onclick = () => {
     const items = getSelectedItems();
