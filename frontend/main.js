@@ -237,14 +237,22 @@ ipcMain.on('send-command', (event, command) => {
 });
 
 ipcMain.handle('get-system-paths', () => {
+  const getAbsPath = (name) => {
+    try {
+      return path.resolve(app.getPath(name));
+    } catch (e) {
+      return null;
+    }
+  };
+
   return {
-    desktop: app.getPath('desktop'),
-    documents: app.getPath('documents'),
-    downloads: app.getPath('downloads'),
-    music: app.getPath('music'),
-    pictures: app.getPath('pictures'),
-    videos: app.getPath('videos'),
-    home: app.getPath('home')
+    desktop: getAbsPath('desktop'),
+    documents: getAbsPath('documents'),
+    downloads: getAbsPath('downloads'),
+    music: getAbsPath('music'),
+    pictures: getAbsPath('pictures'),
+    videos: getAbsPath('videos'),
+    home: getAbsPath('home')
   };
 });
 

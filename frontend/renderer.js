@@ -60,6 +60,27 @@ let quickAccessItems = JSON.parse(localStorage.getItem('quickAccessItems') || '[
     if (item.path && !item.path.endsWith('\\')) item.path += '\\';
     return item;
 });
+
+// 重複や不正なデータの簡易リペア（ミュージックが重複する等の不具合対策）
+function repairQuickAccess(paths) {
+    if (!paths) return;
+    const normalize = p => (p && !p.endsWith('\\')) ? p + '\\' : p;
+    
+    // システムパスに基づき、特定のラベルを持つアイテムのパスを強制修正
+    let changed = false;
+    quickAccessItems.forEach(item => {
+        if (item.label === "デスクトップ" && item.path !== normalize(paths.desktop)) { item.path = normalize(paths.desktop); changed = true; }
+        if (item.label === "ダウンロード" && item.path !== normalize(paths.downloads)) { item.path = normalize(paths.downloads); changed = true; }
+        if (item.label === "ドキュメント" && item.path !== normalize(paths.documents)) { item.path = normalize(paths.documents); changed = true; }
+        if (item.label === "ミュージック" && item.path !== normalize(paths.music)) { item.path = normalize(paths.music); changed = true; }
+        if (item.label === "ピクチャ" && item.path !== normalize(paths.pictures)) { item.path = normalize(paths.pictures); changed = true; }
+        if (item.label === "ビデオ" && item.path !== normalize(paths.videos)) { item.path = normalize(paths.videos); changed = true; }
+    });
+
+    if (changed) {
+        localStorage.setItem('quickAccessItems', JSON.stringify(quickAccessItems));
+    }
+}
 let cachedSystemPaths = null;
 // お気に入り
 let favoriteItems = JSON.parse(localStorage.getItem('favoriteItems') || '[]').map(item => {
@@ -704,6 +725,8 @@ async function renderHomeContent() {
                     { path: normalize(paths.videos), label: "ビデオ", icon: 'media' }
                 ];
                 localStorage.setItem('quickAccessItems', JSON.stringify(quickAccessItems));
+            } else {
+                repairQuickAccess(paths);
             }
         }
     }
@@ -1452,6 +1475,8 @@ async function initTree(rootPath) {
                     { path: normalize(paths.videos), label: "ビデオ", icon: 'media' }
                 ];
                 localStorage.setItem('quickAccessItems', JSON.stringify(quickAccessItems));
+            } else {
+                repairQuickAccess(paths);
             }
         }
     }
