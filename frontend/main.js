@@ -415,3 +415,13 @@ ipcMain.on('ondragstart', (event, files) => {
     console.error('Failed to start native drag:', err);
   }
 });
+ipcMain.on('TOGGLE_MAXIMIZE', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    if (win.isMaximized()) {
+      win.unmaximize();
+    } else {
+      win.maximize();
+    }
+  }
+});

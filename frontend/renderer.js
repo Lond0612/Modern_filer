@@ -77,6 +77,12 @@ Object.defineProperty(window, 'isHomeActive', { get: getIsHomeActive, set: setIs
 Object.defineProperty(window, 'historyBack', { get: getHistoryBack, configurable: true });
 Object.defineProperty(window, 'historyForward', { get: getHistoryForward, configurable: true });
 
+// 外部ショートカット管理用の公開
+Object.defineProperty(window, 'activeTabId', { get: () => activeTabId, set: (val) => activeTabId = val, configurable: true });
+Object.defineProperty(window, 'tabs', { get: () => tabs, set: (val) => tabs = val, configurable: true });
+Object.defineProperty(window, 'contextTarget', { get: () => contextTarget, set: (val) => contextTarget = val, configurable: true });
+Object.defineProperty(window, 'selectionAnchorIndex', { get: () => selectionAnchorIndex, set: (val) => selectionAnchorIndex = val, configurable: true });
+
 let recentFolders = JSON.parse(localStorage.getItem('recentFolders') || '[]');
 let pendingRename = null; // 作成直後のリネーム待ちファイル名
 
@@ -1243,11 +1249,21 @@ function addFileRow(data) {
 
         tr.onclick = (e) => {
             if (isNavigationLocked()) return;
-            if (e.ctrlKey) {
+            const items = Array.from(document.querySelectorAll('#file-list-body tr, .grid-item'));
+            const index = items.indexOf(tr);
+
+            if (e.shiftKey && selectionAnchorIndex !== -1) {
+                items.forEach(el => el.classList.remove('selected'));
+                const start = Math.min(selectionAnchorIndex, index);
+                const end = Math.max(selectionAnchorIndex, index);
+                for (let i = start; i <= end; i++) items[i].classList.add('selected');
+            } else if (e.ctrlKey) {
                 tr.classList.toggle('selected');
+                if (tr.classList.contains('selected')) selectionAnchorIndex = index;
             } else {
-                document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
+                items.forEach(r => r.classList.remove('selected'));
                 tr.classList.add('selected');
+                selectionAnchorIndex = index;
             }
             onSelectionChanged();
         };
@@ -1309,11 +1325,21 @@ function addFileRow(data) {
 
         div.onclick = (e) => {
             if (isNavigationLocked()) return;
-            if (e.ctrlKey) {
+            const items = Array.from(document.querySelectorAll('#file-list-body tr, .grid-item'));
+            const index = items.indexOf(div);
+
+            if (e.shiftKey && selectionAnchorIndex !== -1) {
+                items.forEach(el => el.classList.remove('selected'));
+                const start = Math.min(selectionAnchorIndex, index);
+                const end = Math.max(selectionAnchorIndex, index);
+                for (let i = start; i <= end; i++) items[i].classList.add('selected');
+            } else if (e.ctrlKey) {
                 div.classList.toggle('selected');
+                if (div.classList.contains('selected')) selectionAnchorIndex = index;
             } else {
-                document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
+                items.forEach(r => r.classList.remove('selected'));
                 div.classList.add('selected');
+                selectionAnchorIndex = index;
             }
             onSelectionChanged();
         };
@@ -1832,47 +1858,7 @@ function onSelectionChanged() {
     }
 }
 
-// グローバルショートカットの登録
-function initShortcuts() {
-    if (typeof ShortcutManager === 'undefined') return;
-
-    // プレビュー表示の切り替え
-    ShortcutManager.register('Space', () => {
-        if (typeof PreviewManager !== 'undefined') PreviewManager.toggle();
-    });
-
-    // 選択項目の上下移動
-    ShortcutManager.register('ArrowDown', () => navigateSelection(1));
-    ShortcutManager.register('ArrowUp', () => navigateSelection(-1));
-
-    // タブ操作
-    ShortcutManager.register('Ctrl+t', () => addTab('HOME'));
-    ShortcutManager.register('Ctrl+w', () => closeTab(activeTabId));
-    
-    ShortcutManager.register('Ctrl+Tab', (e) => {
-        const index = tabs.findIndex(t => t.id === activeTabId);
-        const next = (index + 1) % tabs.length;
-        switchTab(tabs[next].id);
-    });
-    
-    ShortcutManager.register('Ctrl+Shift+Tab', (e) => {
-        const index = tabs.findIndex(t => t.id === activeTabId);
-        const prev = (index - 1 + tabs.length) % tabs.length;
-        switchTab(tabs[prev].id);
-    });
-
-    ShortcutManager.register('Ctrl+Shift+t', () => restoreRecentlyClosedTab());
-
-    // タブの数字キー切り替え (Ctrl+1 ~ 9)
-    for (let i = 1; i <= 9; i++) {
-        ShortcutManager.register(`Ctrl+${i}`, () => {
-            if (tabs[i - 1]) switchTab(tabs[i - 1].id);
-        });
-    }
-}
-
-// 初期化時に呼び出し
-initShortcuts();
+// 以前ここにあったショートカット用ヘルパー関数と initShortcuts は js/shortcuts.js へ移動しました
 
 function navigateSelection(direction) {
     const items = Array.from(document.querySelectorAll('#file-list-body tr, .grid-item'));
