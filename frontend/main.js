@@ -348,13 +348,17 @@ ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
     return;
   }
 
-  const mainBounds = state.window.getBounds();
+  const { screen } = require('electron');
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+  const winWidth = 600;
+  const winHeight = 338;
 
   state.previewWindow = new BrowserWindow({
-    width: 600,
-    height: 338, // 16:9 ratio
-    x: mainBounds.x + mainBounds.width - 400, // メインウィンドウの右側に寄せる
-    y: mainBounds.y + mainBounds.height - 330, // メインウィンドウの下側に寄せる
+    width: winWidth,
+    height: winHeight, // 16:9 ratio
+    x: Math.round((screenWidth - winWidth) / 2 + 100),
+    y: Math.round((screenHeight - winHeight) / 2 + 100),
     title: 'Preview',
     backgroundColor: '#1e1e1e',
     icon: path.join(__dirname, 'build', 'icon.ico'),
