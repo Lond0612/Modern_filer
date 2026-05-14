@@ -1906,7 +1906,14 @@ function initColumnResizers() {
     function onMouseMove(e) {
         if (!currentTh) return;
         const dx = e.pageX - startX;
-        currentTh.style.width = `${startWidth + dx}px`;
+        let newWidth = startWidth + dx;
+        
+        // CSS の min-width を取得して尊重する（設定されていない場合はデフォルト 50px）
+        const computedStyle = window.getComputedStyle(currentTh);
+        const minW = parseInt(computedStyle.minWidth) || 50;
+        
+        if (newWidth < minW) newWidth = minW;
+        currentTh.style.width = `${newWidth}px`;
     }
 
     function onMouseUp() {
