@@ -113,10 +113,7 @@ function startServerForWindow(winId) {
     serverCwd = path.join(__dirname, '..');
   }
 
-  if (state.initialPath) {
-    serverCwd = state.initialPath;
-  }
-
+  // サーバーの起動
   const filerServer = spawn(serverPath, [], {
     cwd: serverCwd
   });

@@ -293,11 +293,23 @@ function handleTabMouseDown(e, id) {
         const tabEl = tabBar.querySelector(`.tab-item[data-id="${draggedTabId}"]`);
         
         if (tabEl) {
-            // 現在のドラッグ中タブの位置を更新
+            const tabBarRect = tabBar.getBoundingClientRect();
+            const offsetY = moveEvent.clientY - (tabBarRect.top + tabBarRect.height / 2);
+            const isDetached = Math.abs(offsetY) > 60; // 60px以上離れたら切り離しモード
+
             tabEl.style.transition = 'none';
-            tabEl.style.transform = `translateX(${tabDragOffsetX}px)`;
-            tabEl.style.zIndex = '100';
+            tabEl.style.zIndex = '1000';
             tabEl.classList.add('dragging');
+
+            if (isDetached && tabs.length > 1) {
+                // 切り離し中
+                tabEl.classList.add('detaching');
+                tabEl.style.transform = `translate(${tabDragOffsetX}px, ${offsetY}px) scale(0.85)`;
+                return; // 切り離し中は入れ替え判定を行わない
+            } else {
+                tabEl.classList.remove('detaching');
+                tabEl.style.transform = `translateX(${tabDragOffsetX}px)`;
+            }
 
             // 他のタブとの入れ替え判定
             const tabsElements = Array.from(tabBar.querySelectorAll('.tab-item:not(.dragging)'));
@@ -316,8 +328,7 @@ function handleTabMouseDown(e, id) {
                     // 右方向への入れ替え
                     const item = tabs.splice(srcIndex, 1)[0];
                     tabs.splice(otherIndex, 0, item);
-                    // オフセットを調整（新しい位置基準にするため）
-                    tabDragStartX += otherRect.width + 4; // 4はgap分
+                    tabDragStartX += otherRect.width + 4;
                     tabDragOffsetX = tabDragCurrentX - tabDragStartX;
                     renderTabs();
                     break;
@@ -325,7 +336,6 @@ function handleTabMouseDown(e, id) {
                     // 左方向への入れ替え
                     const item = tabs.splice(srcIndex, 1)[0];
                     tabs.splice(otherIndex, 0, item);
-                    // オフセットを調整
                     tabDragStartX -= otherRect.width + 4;
                     tabDragOffsetX = tabDragCurrentX - tabDragStartX;
                     renderTabs();
@@ -335,9 +345,26 @@ function handleTabMouseDown(e, id) {
         }
     };
 
-    const onMouseUp = () => {
+    const onMouseUp = (upEvent) => {
         if (draggedTabId) {
-            const id = draggedTabId;
+            const tabBar = document.getElementById('tab-bar');
+            const tabBarRect = tabBar.getBoundingClientRect();
+            const offsetY = upEvent.clientY - (tabBarRect.top + tabBarRect.height / 2);
+            
+            // 60px以上離れた場所で離した場合、かつタブが複数ある場合
+            if (Math.abs(offsetY) > 60 && tabs.length > 1) {
+                const tab = tabs.find(t => t.id === draggedTabId);
+                if (tab) {
+                    window.api.invoke('OPEN_NEW_WINDOW', tab.path);
+                    closeTab(tab.id);
+                    draggedTabId = null;
+                    tabDragOffsetX = 0;
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    return;
+                }
+            }
+
             draggedTabId = null;
             tabDragOffsetX = 0;
             renderTabs();
@@ -873,21 +900,14 @@ function navigateTo(path) {
 window.api.onBackendResponse((obj) => {
     switch (obj.type) {
         case 'READY':
-            currentPath = obj.content;
-            if (!currentPath.endsWith('\\')) currentPath += '\\';
-            initTree(currentPath);
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('path')) {
-                isHomeActive = false;
-                homeView.style.display = 'none';
-                explorerView.style.display = 'block';
-                btnSidebarHome.classList.remove('active');
-                addressInput.value = currentPath;
-                updateNavButtons();
+            const initialTab = getActiveTab();
+            if (initialTab && initialTab.path !== 'HOME') {
+                loadPath(initialTab.path, true); // バックエンドの状態を同期
             } else {
                 showHome();
             }
+            initTree('HOME');
+            getDrives();
             renderTabs();
             break;
 
