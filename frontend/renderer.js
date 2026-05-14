@@ -25,6 +25,8 @@ let draggedTabId = null;
 let tabDragStartX = 0;
 let tabDragCurrentX = 0;
 let tabDragOffsetX = 0;
+let contextTabId = null;
+const tabContextMenu = document.getElementById('tab-context-menu');
 
 function getActiveTab() {
     return tabs.find(t => t.id === activeTabId);
@@ -229,6 +231,25 @@ function renderTabs() {
         // 選択は onMouseUp で処理（ドラッグと区別するため）
         
         tabEl.onmousedown = (e) => handleTabMouseDown(e, tab.id);
+        
+        tabEl.oncontextmenu = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            contextTabId = tab.id;
+            
+            // 表示位置の計算
+            tabContextMenu.style.display = 'block';
+            const menuWidth = tabContextMenu.offsetWidth;
+            const menuHeight = tabContextMenu.offsetHeight;
+            let x = e.clientX;
+            let y = e.clientY;
+
+            x = Math.max(0, x + menuWidth > window.innerWidth ? x - menuWidth : x);
+            y = Math.max(0, y + menuHeight > window.innerHeight ? y - menuHeight : y);
+
+            tabContextMenu.style.left = `${x}px`;
+            tabContextMenu.style.top = `${y}px`;
+        };
         
         tabBar.appendChild(tabEl);
     });
@@ -1938,6 +1959,7 @@ window.addEventListener('contextmenu', (e) => {
 
 window.addEventListener('click', () => {
     contextMenu.style.display = 'none';
+    tabContextMenu.style.display = 'none';
 }, true);
 
 // ---------------------------------------------------------------------------
@@ -2105,6 +2127,41 @@ document.getElementById('ctx-open-new-tab').onclick = () => {
 document.getElementById('ctx-open-new-window').onclick = () => {
     if (contextTarget && contextTarget.isDir) {
         window.api.invoke('OPEN_NEW_WINDOW', contextTarget.path);
+    }
+};
+
+// ---------------------------------------------------------------------------
+// タブコンテキストメニューアクション
+// ---------------------------------------------------------------------------
+document.getElementById('ctx-tab-close').onclick = () => {
+    if (contextTabId) closeTab(contextTabId);
+};
+
+document.getElementById('ctx-tab-close-others').onclick = () => {
+    if (!contextTabId) return;
+    const tabToKeep = tabs.find(t => t.id === contextTabId);
+    tabs = [tabToKeep];
+    switchTab(tabToKeep.id);
+};
+
+document.getElementById('ctx-tab-close-right').onclick = () => {
+    if (!contextTabId) return;
+    const index = tabs.findIndex(t => t.id === contextTabId);
+    if (index !== -1) {
+        tabs = tabs.slice(0, index + 1);
+        if (!tabs.find(t => t.id === activeTabId)) {
+            switchTab(tabs[tabs.length - 1].id);
+        } else {
+            renderTabs();
+        }
+    }
+};
+
+document.getElementById('ctx-tab-duplicate').onclick = () => {
+    if (!contextTabId) return;
+    const srcTab = tabs.find(t => t.id === contextTabId);
+    if (srcTab) {
+        addTab(srcTab.path);
     }
 };
 
