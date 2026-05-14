@@ -1265,7 +1265,7 @@ body {
 }
 
 .file-list {
-    width: max-content;
+    width: 0;
     border-collapse: collapse;
     table-layout: fixed;
 }
@@ -1307,10 +1307,23 @@ body {
 }
 
 .cell-content {
-    display: inline-block;
+    display: flex;
+    align-items: center;
     padding: 6px 8px;
     cursor: pointer;
     vertical-align: middle;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.file-name-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
 }
 
 .file-list tr:hover {
@@ -1331,6 +1344,7 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .file-icon-svg {

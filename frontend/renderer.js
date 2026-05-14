@@ -1213,7 +1213,7 @@ function addFileRow(data) {
         tr.dataset.type = type;
         tr.draggable = true;
         tr.innerHTML = `
-            <td class="file-name" title="${name}"><span class="cell-content"><span style="margin-right: 6px;">${customIcon}</span> ${displayName}</span></td>
+            <td class="file-name" title="${name}"><span class="cell-content"><span style="margin-right: 6px; display: flex; align-items: center; flex-shrink: 0;">${customIcon}</span><span class="file-name-text">${displayName}</span></span></td>
             <td><span class="cell-content">${dateStr}</span></td>
             <td><span class="cell-content">${isDir ? '' : formatSize(size)}</span></td>
         `;
@@ -1413,7 +1413,7 @@ function startRename(el) {
             const currentIcon = IconThemeManager.getIcon(nameToUse, isDir);
             const displayName = isDir ? nameToUse : getFileNameWithoutExtension(nameToUse);
             if (el.tagName === 'TR') {
-                nameCell.innerHTML = `<span class="cell-content"><span style="margin-right: 6px;">${currentIcon}</span> ${displayName}</span>`;
+                nameCell.innerHTML = `<span class="cell-content"><span style="margin-right: 6px; display: flex; align-items: center; flex-shrink: 0;">${currentIcon}</span><span class="file-name-text">${displayName}</span></span>`;
             } else {
                 nameCell.textContent = displayName;
                 // グリッドの場合はアイコンも更新（名前で変わる可能性があるため）
