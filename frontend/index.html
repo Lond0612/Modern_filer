@@ -301,6 +301,10 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                     コンテンツ
                 </div>
+                <div class="settings-tab-btn" data-tab="shortcuts">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3z"></path><path d="M9 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3z"></path></svg>
+                    ショートカット
+                </div>
             </div>
             <div class="settings-main">
                 <!-- 全般タブ -->
@@ -433,6 +437,47 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- ショートカットタブ -->
+                <div id="tab-shortcuts" class="settings-tab-content">
+                    <div class="tab-header">ショートカット一覧</div>
+                    <div class="shortcut-list-container">
+                        <table class="shortcut-list">
+                            <thead>
+                                <tr>
+                                    <th>操作</th>
+                                    <th>キー</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>コピー</td><td><span class="shortcut-key">Ctrl + C</span></td></tr>
+                                <tr><td>切り取り</td><td><span class="shortcut-key">Ctrl + X</span></td></tr>
+                                <tr><td>貼り付け</td><td><span class="shortcut-key">Ctrl + V</span></td></tr>
+                                <tr><td>新規タブを開く</td><td><span class="shortcut-key">Ctrl + T</span></td></tr>
+                                <tr><td>タブを閉じる</td><td><span class="shortcut-key">Ctrl + W</span></td></tr>
+                                <tr><td>次のタブへ切り替え</td><td><span class="shortcut-key">Ctrl + Tab</span></td></tr>
+                                <tr><td>前のタブへ切り替え</td><td><span class="shortcut-key">Ctrl + Shift + Tab</span></td></tr>
+                                <tr><td>閉じたタブを復元</td><td><span class="shortcut-key">Ctrl + Shift + T</span></td></tr>
+                                <tr><td>名前の変更</td><td><span class="shortcut-key">F2</span></td></tr>
+                                <tr><td>すべて選択</td><td><span class="shortcut-key">Ctrl + A</span></td></tr>
+                                <tr><td>プレビュー表示の切替</td><td><span class="shortcut-key">Space</span></td></tr>
+                                <tr><td>上の階層へ移動</td><td><span class="shortcut-key">Alt + ↑</span></td></tr>
+                                <tr><td>戻る</td><td><span class="shortcut-key">Alt + ←</span></td></tr>
+                                <tr><td>進む</td><td><span class="shortcut-key">Alt + →</span></td></tr>
+                                <tr><td>新規フォルダー作成</td><td><span class="shortcut-key">Ctrl + Shift + N</span></td></tr>
+                                <tr><td>検索ボックスを選択</td><td><span class="shortcut-key">Ctrl + F / E</span> , <span class="shortcut-key">F3</span></td></tr>
+                                <tr><td>削除</td><td><span class="shortcut-key">Ctrl + D</span></td></tr>
+                                <tr><td>完全に削除</td><td><span class="shortcut-key">Shift + D</span></td></tr>
+                                <tr><td>プロパティを表示</td><td><span class="shortcut-key">Alt + Enter</span></td></tr>
+                                <tr><td>新規ウィンドウを開く</td><td><span class="shortcut-key">Ctrl + N</span></td></tr>
+                                <tr><td>ツリーをすべて展開</td><td><span class="shortcut-key">Ctrl + Shift + E</span></td></tr>
+                                <tr><td>ウィンドウを最大化トグル</td><td><span class="shortcut-key">F11</span></td></tr>
+                                <tr><td>表示モード切替(1〜6)</td><td><span class="shortcut-key">Ctrl + Shift + 1〜6</span></td></tr>
+                                <tr><td>タブ指定切替(1〜9)</td><td><span class="shortcut-key">Ctrl + 1〜9</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
 
                 </div>
             </div>

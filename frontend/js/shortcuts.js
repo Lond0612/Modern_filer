@@ -52,7 +52,12 @@ const ShortcutManager = {
         const hasShift = parts.some(p => p.toLowerCase() === 'shift');
         const hasAlt = parts.some(p => p.toLowerCase() === 'alt');
 
-        const keyMatch = e.key.toLowerCase() === mainKey || e.code.toLowerCase() === mainKey;
+        const keyMatch = e.key.toLowerCase() === mainKey || 
+                         e.code.toLowerCase() === mainKey ||
+                         e.code.toLowerCase() === 'digit' + mainKey ||
+                         e.code.toLowerCase() === 'key' + mainKey ||
+                         (mainKey === 'enter' && e.key === 'Enter') ||
+                         (mainKey === 'space' && e.key === ' ');
 
         return keyMatch && e.ctrlKey === hasCtrl && e.shiftKey === hasShift && e.altKey === hasAlt;
     },
@@ -71,10 +76,18 @@ const ShortcutManager = {
             window.api.invoke('OPEN_NEW_WINDOW', tab ? tab.path : 'HOME');
         });
         this.register('Alt+Enter', () => {
+            let targetPath = null;
             if (window.contextTarget) {
+                targetPath = window.contextTarget.path;
+            } else if (typeof getSelectedItems === 'function') {
+                const selected = getSelectedItems();
+                if (selected.length > 0) targetPath = selected[0].srcPath;
+            }
+
+            if (targetPath) {
                 const useNative = localStorage.getItem('settings-native-properties') === 'true';
-                if (useNative) window.api.sendCommand(`PROP_NATIVE|${window.contextTarget.path}`);
-                else if (typeof showPropertiesModal === 'function') showPropertiesModal(window.contextTarget.path);
+                if (useNative) window.api.sendCommand(`PROP_NATIVE|${targetPath}`);
+                else if (typeof showPropertiesModal === 'function') showPropertiesModal(targetPath);
             }
         });
         this.register('Ctrl+a', () => this.helpers.selectAllItems());

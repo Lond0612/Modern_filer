@@ -2526,3 +2526,57 @@ body > .preview-action-btn {
     opacity: 1; /* ブラウザのデフォルトの無効化スタイル（薄くなる）を上書き */
 }
 
+/* ==========================================================================
+   Shortcuts List (ショートカット一覧)
+   ========================================================================== */
+.shortcut-list-container {
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    border: 1px solid var(--border-main);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.shortcut-list {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.shortcut-list th, .shortcut-list td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.shortcut-list th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-sidebar);
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    z-index: 10;
+}
+
+.shortcut-list tr:last-child td {
+    border-bottom: none;
+}
+
+.shortcut-list tr:hover td {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.shortcut-key {
+    background: var(--bg-input);
+    border: 1px solid var(--border-main);
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    color: var(--accent-color);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+}
