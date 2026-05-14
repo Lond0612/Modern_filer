@@ -291,11 +291,12 @@ body.high-contrast .grid-item.selected {
     outline-offset: -2px;
 }
 
-/* 鬩包ｽｸ隰壽ｨ雁・邵ｺ・ｮ郢晢ｿｽ縺冗ｹｧ・ｹ郢晞メ迚｡郢ｧ蝣､蜊邵ｺ・ｫ陟托ｽｷ陋ｻ・ｶ・ｽ蛹ｻ繝ｯ郢ｧ・､郢ｧ・ｳ郢晢ｽｳ郢晏現ﾎ帷ｹｧ・ｹ郢晁ご逡托ｿｽ・ｽ */
+/* 鬩包ｽｸ隰壽ｨ雁・邵ｺ・ｮ郢晢ｽｽ縺冗ｹｧ・ｹ郢晞メ迚｡郢ｧ蝣､蜊€邵ｺ・ｫ陟托ｽｷ陋ｻ・ｶ・ｽ蛹ｻ繝ｯ郢ｧ・､郢ｧ・ｳ郢晢ｽｳ郢晏現ﾎ帷ｹｧ・ｹ郢晁ご逡托ｿｽ・ｽ */
 body.high-contrast .selected,
 body.high-contrast .selected * {
     color: #ffffff !important;
 }
+
 
 /* ==========================================================================
    1. Base & Layout (陷茨ｽｨ闖ｴ阮呻ｿｽ髫ｪ・ｭ陞ｳ螢ｹ竊定棔・ｧ隴ｫ・ｽ邵ｺ・ｮ郢晢ｽｬ郢ｧ・､郢ｧ・｢郢ｧ・ｦ郢晢ｿｽ)
@@ -584,19 +585,21 @@ body {
 /* ==========================================================================
    2.5 Tab Bar (タブバー)
    ========================================================================== */
-.tab-bar {
+#tab-bar {
     display: flex;
     align-items: center;
-    background: var(--bg-toolbar);
-    border-bottom: 1px solid var(--border-main);
-    padding: 0 10px;
+    background: var(--bg-sidebar);
+    padding: 4px 10px 0;
     gap: 4px;
+    height: 38px;
+    border-bottom: 1px solid var(--border-main);
     overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
     scrollbar-width: none;
-    height: 36px;
 }
 
-.tab-bar::-webkit-scrollbar {
+#tab-bar::-webkit-scrollbar {
     display: none;
 }
 
@@ -605,20 +608,33 @@ body {
     align-items: center;
     gap: 8px;
     padding: 0 12px;
-    background: transparent;
-    border: 1px solid transparent;
+    background: var(--bg-item);
+    border: 1px solid var(--border-main);
     border-bottom: none;
     border-radius: 6px 6px 0 0;
     color: var(--text-muted);
     font-size: 12px;
     cursor: pointer;
-    max-width: 160px;
-    min-width: 100px;
-    height: 30px;
-    margin-top: 6px;
-    transition: background 0.2s, opacity 0.2s, color 0.2s, border-color 0.2s;
+    max-width: 200px;
+    min-width: 120px;
+    height: 32px;
+    margin-top: 5px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     user-select: none;
+    flex-shrink: 0;
+}
+
+.tab-item.pinned {
+    min-width: 42px;
+    max-width: 42px;
+    justify-content: center;
+    padding: 0;
+}
+
+.tab-item.pinned .tab-title,
+.tab-item.pinned .tab-close {
+    display: none;
 }
 
 .tab-item:hover {
@@ -629,18 +645,8 @@ body {
 .tab-item.active {
     background: var(--bg-main);
     color: var(--text-bright);
-    border-color: var(--border-main);
-    z-index: 1;
-}
-
-.tab-item.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: var(--bg-main);
+    border-bottom: 1px solid var(--bg-main);
+    z-index: 2;
 }
 
 .tab-title {
@@ -648,7 +654,6 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    text-align: center;
 }
 
 .tab-close {
@@ -683,7 +688,7 @@ body {
     align-items: center;
     justify-content: center;
     border-radius: 4px;
-    margin-top: 6px;
+    margin-top: 5px;
     transition: all 0.2s;
     flex-shrink: 0;
 }

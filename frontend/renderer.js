@@ -3,9 +3,10 @@
 // ---------------------------------------------------------------------------
 
 class Tab {
-    constructor(id, path = 'HOME') {
+    constructor(id, path = 'HOME', isPinned = false) {
         this.id = id;
         this.path = path;
+        this.isPinned = isPinned;
         this.isHomeActive = (path === 'HOME');
         this.historyBack = [];
         this.historyForward = [];
@@ -26,7 +27,34 @@ let tabDragStartX = 0;
 let tabDragCurrentX = 0;
 let tabDragOffsetX = 0;
 let contextTabId = null;
+let recentlyClosedTabs = [];
 const tabContextMenu = document.getElementById('tab-context-menu');
+
+function saveTabsState() {
+    // ピン留めされたタブのみを保存対象とする
+    const pinnedTabs = tabs.filter(t => t.isPinned).map(t => ({
+        id: t.id,
+        path: t.path,
+        isPinned: true
+    }));
+    localStorage.setItem('pinnedTabsState', JSON.stringify(pinnedTabs));
+}
+
+function loadTabsState() {
+    const saved = localStorage.getItem('pinnedTabsState');
+    if (saved) {
+        try {
+            const pinned = JSON.parse(saved);
+            if (Array.isArray(pinned)) {
+                tabs = pinned.map(t => new Tab(t.id, t.path, true));
+                return true;
+            }
+        } catch (e) {
+            console.error('Failed to load pinned tabs state', e);
+        }
+    }
+    return false;
+}
 
 function getActiveTab() {
     return tabs.find(t => t.id === activeTabId);
@@ -145,6 +173,10 @@ window.onload = () => {
 };
 
 function initTabs() {
+    // 1. ピン留めタブを復元
+    loadTabsState();
+    
+    // 2. 常に新規HOMEタブを追加してアクティブにする
     const urlParams = new URLSearchParams(window.location.search);
     const initialPath = urlParams.get('path') || 'HOME';
     addTab(initialPath);
@@ -153,26 +185,33 @@ function initTabs() {
 function addTab(path = 'HOME', switchImmediately = true) {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
     const newTab = new Tab(id, path);
-    tabs.push(newTab);
+    
+    // ピン留めタブの後に挿入
+    const lastPinnedIndex = tabs.findLastIndex(t => t.isPinned);
+    if (lastPinnedIndex !== -1) {
+        tabs.splice(lastPinnedIndex + 1, 0, newTab);
+    } else {
+        tabs.push(newTab);
+    }
     
     if (switchImmediately) {
         switchTab(id);
     } else {
         renderTabs();
     }
+    saveTabsState();
 }
 
 function switchTab(id) {
     const prevTab = getActiveTab();
     if (prevTab) {
-        // 現在の表示状態を保存（必要に応じて）
         prevTab.scrollPosition = explorerView.scrollTop;
     }
 
     activeTabId = id;
     const tab = getActiveTab();
+    if (!tab) return;
 
-    // UIの同期
     if (tab.isHomeActive || tab.path === 'HOME') {
         showHomeUI();
     } else {
@@ -182,6 +221,14 @@ function switchTab(id) {
     addressInput.value = tab.path;
     updateNavButtons();
     renderTabs();
+    
+    // アクティブなタブを視界に入れる
+    const tabEl = document.querySelector(`.tab-item[data-id="${id}"]`);
+    if (tabEl) {
+        tabEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }
+    
+    saveTabsState();
 
     // ターミナルの同期（カレントディレクトリの移動）
     if (tab.path && tab.path !== 'HOME') {
@@ -191,21 +238,36 @@ function switchTab(id) {
 
 function closeTab(id, e) {
     if (e) e.stopPropagation();
+    
+    const index = tabs.findIndex(t => t.id === id);
+    if (index === -1) return;
+    
+    const tabToClose = tabs[index];
     if (tabs.length <= 1) {
         window.close();
         return;
     }
 
-    const index = tabs.findIndex(t => t.id === id);
+    // 閉じたタブをスタックに保存
+    recentlyClosedTabs.push({ path: tabToClose.path, isPinned: tabToClose.isPinned });
+    if (recentlyClosedTabs.length > 20) recentlyClosedTabs.shift();
+
     const isActive = activeTabId === id;
-    
     tabs.splice(index, 1);
-    
+
     if (isActive) {
-        const nextTab = tabs[Math.min(index, tabs.length - 1)];
-        switchTab(nextTab.id);
+        const nextActiveIndex = Math.min(index, tabs.length - 1);
+        switchTab(tabs[nextActiveIndex].id);
     } else {
         renderTabs();
+    }
+    saveTabsState();
+}
+
+function restoreRecentlyClosedTab() {
+    const last = recentlyClosedTabs.pop();
+    if (last) {
+        addTab(last.path);
     }
 }
 
@@ -223,11 +285,14 @@ function renderTabs() {
     tabBar.innerHTML = '';
     tabs.forEach(tab => {
         const tabEl = document.createElement('div');
-        tabEl.className = `tab-item${tab.id === activeTabId ? ' active' : ''}${tab.id === draggedTabId ? ' dragging' : ''}`;
-        tabEl.draggable = false; // カスタムドラッグのため無効化
+        tabEl.className = `tab-item${tab.id === activeTabId ? ' active' : ''}${tab.id === draggedTabId ? ' dragging' : ''}${tab.isPinned ? ' pinned' : ''}`;
+        tabEl.draggable = false;
         tabEl.dataset.id = tab.id;
         
+        const iconHtml = IconThemeManager.getIcon(tab.path, true);
+        
         tabEl.innerHTML = `
+            <span class="tab-icon">${iconHtml}</span>
             <span class="tab-title">${tab.title}</span>
             <span class="tab-close" onclick="closeTab('${tab.id}', event)">&times;</span>
         `;
@@ -263,6 +328,12 @@ function renderTabs() {
     addBtn.innerHTML = '+';
     addBtn.onclick = () => addTab('HOME');
     tabBar.appendChild(addBtn);
+
+    // ホイールでの横スクロール対応
+    tabBar.onwheel = (e) => {
+        e.preventDefault();
+        tabBar.scrollLeft += e.deltaY;
+    };
 
     // FLIP: Last, Invert, Play (新しい位置との差分をアニメーション)
     requestAnimationFrame(() => {
@@ -2196,6 +2267,7 @@ document.getElementById('ctx-tab-close-right').onclick = () => {
             renderTabs();
         }
     }
+    saveTabsState();
 };
 
 document.getElementById('ctx-tab-duplicate').onclick = () => {
@@ -2205,6 +2277,68 @@ document.getElementById('ctx-tab-duplicate').onclick = () => {
         addTab(srcTab.path);
     }
 };
+
+// ピン留めトグルをメニューに追加するための動的制御
+tabContextMenu.addEventListener('mouseenter', () => {
+    let pinItem = document.getElementById('ctx-tab-pin');
+    if (!pinItem) {
+        pinItem = document.createElement('div');
+        pinItem.className = 'context-item';
+        pinItem.id = 'ctx-tab-pin';
+        pinItem.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path><path d="m16.5 9.4 4.5 4.6"></path><path d="m21 9.5-4.5 4.5"></path><path d="M12 22v-5"></path></svg>
+            <span>タブをピン留め</span>
+        `;
+        tabContextMenu.appendChild(pinItem);
+    }
+    
+    if (contextTabId) {
+        const tab = tabs.find(t => t.id === contextTabId);
+        if (tab) {
+            pinItem.querySelector('span').textContent = tab.isPinned ? 'ピン留めを外す' : 'タブをピン留め';
+            pinItem.onclick = () => {
+                tab.isPinned = !tab.isPinned;
+                // ピン留めされたものを左に寄せ、かつ元の順序をなるべく維持
+                tabs.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+                renderTabs();
+                saveTabsState();
+                tabContextMenu.style.display = 'none';
+            };
+        }
+    }
+});
+
+// ショートカットキーの実装
+window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey) {
+        if (e.key === 't') {
+            e.preventDefault();
+            addTab('HOME');
+        } else if (e.key === 'w') {
+            e.preventDefault();
+            closeTab(activeTabId);
+        } else if (e.key === 'Tab') {
+            e.preventDefault();
+            const index = tabs.findIndex(t => t.id === activeTabId);
+            if (e.shiftKey) {
+                const prev = (index - 1 + tabs.length) % tabs.length;
+                switchTab(tabs[prev].id);
+            } else {
+                const next = (index + 1) % tabs.length;
+                switchTab(tabs[next].id);
+            }
+        } else if (e.key === 'T' && e.shiftKey) { // Ctrl + Shift + T
+            e.preventDefault();
+            restoreRecentlyClosedTab();
+        } else if (e.key >= '1' && e.key <= '9') {
+            const num = parseInt(e.key);
+            if (tabs[num - 1]) {
+                e.preventDefault();
+                switchTab(tabs[num - 1].id);
+            }
+        }
+    }
+});
 
 document.getElementById('ctx-cut').onclick = () => {
     const items = getSelectedItems();
