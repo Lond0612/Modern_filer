@@ -616,7 +616,7 @@ body {
     min-width: 100px;
     height: 30px;
     margin-top: 6px;
-    transition: all 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
     position: relative;
     user-select: none;
 }
@@ -691,6 +691,12 @@ body {
 .tab-add-btn:hover {
     background: var(--bg-item-hover);
     color: var(--text-bright);
+}
+
+/* Tab Drag & Drop visuals */
+.tab-item.dragging {
+    opacity: 0.4;
+    cursor: grabbing;
 }
 
 /* ==========================================================================

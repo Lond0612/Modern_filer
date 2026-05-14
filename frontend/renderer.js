@@ -182,12 +182,24 @@ function renderTabs() {
     tabBar.innerHTML = '';
     tabs.forEach(tab => {
         const tabEl = document.createElement('div');
-        tabEl.className = `tab-item${tab.id === activeTabId ? ' active' : ''}`;
+        tabEl.className = `tab-item${tab.id === activeTabId ? ' active' : ''}${tab.id === draggedTabId ? ' dragging' : ''}`;
+        tabEl.draggable = true;
+        tabEl.dataset.id = tab.id;
+        
         tabEl.innerHTML = `
             <span class="tab-title">${tab.title}</span>
             <span class="tab-close" onclick="closeTab('${tab.id}', event)">&times;</span>
         `;
+        
         tabEl.onclick = () => switchTab(tab.id);
+        
+        // ドラッグ＆ドロップイベント
+        tabEl.ondragstart = handleTabDragStart;
+        tabEl.ondragover = handleTabDragOver;
+        tabEl.ondragleave = handleTabDragLeave;
+        tabEl.ondrop = handleTabDrop;
+        tabEl.ondragend = handleTabDragEnd;
+        
         tabBar.appendChild(tabEl);
     });
 
@@ -196,6 +208,79 @@ function renderTabs() {
     addBtn.innerHTML = '+';
     addBtn.onclick = () => addTab('HOME');
     tabBar.appendChild(addBtn);
+}
+
+// ---------------------------------------------------------------------------
+// タブのドラッグ＆ドロップ
+// ---------------------------------------------------------------------------
+let draggedTabId = null;
+
+function handleTabDragStart(e) {
+    draggedTabId = e.target.closest('.tab-item').dataset.id;
+    e.dataTransfer.setData('application/x-tab-id', draggedTabId);
+    e.dataTransfer.effectAllowed = 'move';
+    
+    // ドラッグ中のスタイル
+    setTimeout(() => {
+        e.target.closest('.tab-item').classList.add('dragging');
+    }, 0);
+}
+
+function handleTabDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    const target = e.target.closest('.tab-item');
+    if (target && target.dataset.id !== draggedTabId) {
+        const rect = target.getBoundingClientRect();
+        const midpoint = rect.left + rect.width / 2;
+        
+        const srcIndex = tabs.findIndex(t => t.id === draggedTabId);
+        const targetIndex = tabs.findIndex(t => t.id === target.dataset.id);
+        
+        // 滑らかに位置を入れ替える
+        if (srcIndex < targetIndex && e.clientX > midpoint) {
+            const item = tabs.splice(srcIndex, 1)[0];
+            tabs.splice(targetIndex, 0, item);
+            renderTabs();
+        } else if (srcIndex > targetIndex && e.clientX < midpoint) {
+            const item = tabs.splice(srcIndex, 1)[0];
+            tabs.splice(targetIndex, 0, item);
+            renderTabs();
+        }
+    }
+}
+
+function handleTabDragLeave(e) {
+    const target = e.target.closest('.tab-item');
+    if (target) {
+        target.classList.remove('drag-gap-left', 'drag-gap-right');
+    }
+}
+
+function handleTabDrop(e) {
+    e.preventDefault();
+    draggedTabId = null;
+    renderTabs();
+}
+
+function handleTabDragEnd(e) {
+    draggedTabId = null;
+    renderTabs();
+}
+
+function reorderTabs(srcId, targetId, isAfter) {
+    const srcIndex = tabs.findIndex(t => t.id === srcId);
+    const targetIndex = tabs.findIndex(t => t.id === targetId);
+    
+    if (srcIndex !== -1 && targetIndex !== -1) {
+        const item = tabs.splice(srcIndex, 1)[0];
+        let newTargetIndex = tabs.findIndex(t => t.id === targetId);
+        const insertIndex = isAfter ? newTargetIndex + 1 : newTargetIndex;
+        
+        tabs.splice(insertIndex, 0, item);
+        renderTabs();
+    }
 }
 
 // ---------------------------------------------------------------------------
