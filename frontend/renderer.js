@@ -21,6 +21,10 @@ class Tab {
 
 let tabs = [];
 let activeTabId = null;
+let draggedTabId = null;
+let tabDragStartX = 0;
+let tabDragCurrentX = 0;
+let tabDragOffsetX = 0;
 
 function getActiveTab() {
     return tabs.find(t => t.id === activeTabId);
@@ -179,11 +183,18 @@ function renderTabs() {
     const tabBar = document.getElementById('tab-bar');
     if (!tabBar) return;
 
+    // FLIP: First (現在の位置を記録)
+    const oldRects = new Map();
+    tabBar.querySelectorAll('.tab-item').forEach(el => {
+        const id = el.dataset.id;
+        if (id) oldRects.set(id, el.getBoundingClientRect());
+    });
+
     tabBar.innerHTML = '';
     tabs.forEach(tab => {
         const tabEl = document.createElement('div');
         tabEl.className = `tab-item${tab.id === activeTabId ? ' active' : ''}${tab.id === draggedTabId ? ' dragging' : ''}`;
-        tabEl.draggable = true;
+        tabEl.draggable = false; // カスタムドラッグのため無効化
         tabEl.dataset.id = tab.id;
         
         tabEl.innerHTML = `
@@ -191,14 +202,11 @@ function renderTabs() {
             <span class="tab-close" onclick="closeTab('${tab.id}', event)">&times;</span>
         `;
         
-        tabEl.onclick = () => switchTab(tab.id);
+        tabEl.onclick = () => {
+            if (!tabDragOffsetX) switchTab(tab.id);
+        };
         
-        // ドラッグ＆ドロップイベント
-        tabEl.ondragstart = handleTabDragStart;
-        tabEl.ondragover = handleTabDragOver;
-        tabEl.ondragleave = handleTabDragLeave;
-        tabEl.ondrop = handleTabDrop;
-        tabEl.ondragend = handleTabDragEnd;
+        tabEl.onmousedown = (e) => handleTabMouseDown(e, tab.id);
         
         tabBar.appendChild(tabEl);
     });
@@ -208,79 +216,117 @@ function renderTabs() {
     addBtn.innerHTML = '+';
     addBtn.onclick = () => addTab('HOME');
     tabBar.appendChild(addBtn);
+
+    // FLIP: Last, Invert, Play (新しい位置との差分をアニメーション)
+    requestAnimationFrame(() => {
+        tabBar.querySelectorAll('.tab-item').forEach(el => {
+            const id = el.dataset.id;
+            
+            if (id === draggedTabId) {
+                // ドラッグ中のタブはオフセットを直接適用
+                el.style.transition = 'none';
+                el.style.transform = `translateX(${tabDragOffsetX}px)`;
+                el.style.zIndex = '100';
+                el.classList.add('dragging');
+                return;
+            }
+
+            const oldRect = oldRects.get(id);
+            if (oldRect) {
+                const newRect = el.getBoundingClientRect();
+                const dx = oldRect.left - newRect.left;
+                
+                if (dx !== 0) {
+                    el.style.transition = 'none';
+                    el.style.transform = `translateX(${dx}px)`;
+                    
+                    requestAnimationFrame(() => {
+                        el.style.transition = 'transform 0.3s cubic-bezier(0.2, 0, 0, 1)';
+                        el.style.transform = '';
+                    });
+                }
+            }
+        });
+    });
 }
 
 // ---------------------------------------------------------------------------
-// タブのドラッグ＆ドロップ
+// タブのカスタムドラッグ＆ドロップ
 // ---------------------------------------------------------------------------
-let draggedTabId = null;
+function handleTabMouseDown(e, id) {
+    if (e.button !== 0) return; // 左クリックのみ
+    if (e.target.closest('.tab-close')) return; // 閉じるボタンは除外
 
-function handleTabDragStart(e) {
-    draggedTabId = e.target.closest('.tab-item').dataset.id;
-    e.dataTransfer.setData('application/x-tab-id', draggedTabId);
-    e.dataTransfer.effectAllowed = 'move';
-    
-    // ドラッグ中のスタイル
-    setTimeout(() => {
-        e.target.closest('.tab-item').classList.add('dragging');
-    }, 0);
-}
+    e.preventDefault(); // テキスト選択などを防止
+    draggedTabId = id;
+    tabDragStartX = e.clientX;
+    tabDragOffsetX = 0;
 
-function handleTabDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    
-    const target = e.target.closest('.tab-item');
-    if (target && target.dataset.id !== draggedTabId) {
-        const rect = target.getBoundingClientRect();
-        const midpoint = rect.left + rect.width / 2;
+    const onMouseMove = (moveEvent) => {
+        if (!draggedTabId) return;
         
-        const srcIndex = tabs.findIndex(t => t.id === draggedTabId);
-        const targetIndex = tabs.findIndex(t => t.id === target.dataset.id);
+        tabDragCurrentX = moveEvent.clientX;
+        tabDragOffsetX = tabDragCurrentX - tabDragStartX;
+
+        const tabBar = document.getElementById('tab-bar');
+        const tabEl = tabBar.querySelector(`.tab-item[data-id="${draggedTabId}"]`);
         
-        // 滑らかに位置を入れ替える
-        if (srcIndex < targetIndex && e.clientX > midpoint) {
-            const item = tabs.splice(srcIndex, 1)[0];
-            tabs.splice(targetIndex, 0, item);
-            renderTabs();
-        } else if (srcIndex > targetIndex && e.clientX < midpoint) {
-            const item = tabs.splice(srcIndex, 1)[0];
-            tabs.splice(targetIndex, 0, item);
+        if (tabEl) {
+            // 現在のドラッグ中タブの位置を更新
+            tabEl.style.transition = 'none';
+            tabEl.style.transform = `translateX(${tabDragOffsetX}px)`;
+            tabEl.style.zIndex = '100';
+            tabEl.classList.add('dragging');
+
+            // 他のタブとの入れ替え判定
+            const tabsElements = Array.from(tabBar.querySelectorAll('.tab-item:not(.dragging)'));
+            const draggedRect = tabEl.getBoundingClientRect();
+            const draggedMid = draggedRect.left + draggedRect.width / 2;
+
+            const srcIndex = tabs.findIndex(t => t.id === draggedTabId);
+            
+            for (const otherEl of tabsElements) {
+                const otherId = otherEl.dataset.id;
+                const otherRect = otherEl.getBoundingClientRect();
+                const otherMid = otherRect.left + otherRect.width / 2;
+                const otherIndex = tabs.findIndex(t => t.id === otherId);
+
+                if (srcIndex < otherIndex && draggedMid > otherMid) {
+                    // 右方向への入れ替え
+                    const item = tabs.splice(srcIndex, 1)[0];
+                    tabs.splice(otherIndex, 0, item);
+                    // オフセットを調整（新しい位置基準にするため）
+                    tabDragStartX += otherRect.width + 4; // 4はgap分
+                    tabDragOffsetX = tabDragCurrentX - tabDragStartX;
+                    renderTabs();
+                    break;
+                } else if (srcIndex > otherIndex && draggedMid < otherMid) {
+                    // 左方向への入れ替え
+                    const item = tabs.splice(srcIndex, 1)[0];
+                    tabs.splice(otherIndex, 0, item);
+                    // オフセットを調整
+                    tabDragStartX -= otherRect.width + 4;
+                    tabDragOffsetX = tabDragCurrentX - tabDragStartX;
+                    renderTabs();
+                    break;
+                }
+            }
+        }
+    };
+
+    const onMouseUp = () => {
+        if (draggedTabId) {
+            const id = draggedTabId;
+            draggedTabId = null;
+            tabDragOffsetX = 0;
             renderTabs();
         }
-    }
-}
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+    };
 
-function handleTabDragLeave(e) {
-    const target = e.target.closest('.tab-item');
-    if (target) {
-        target.classList.remove('drag-gap-left', 'drag-gap-right');
-    }
-}
-
-function handleTabDrop(e) {
-    e.preventDefault();
-    draggedTabId = null;
-    renderTabs();
-}
-
-function handleTabDragEnd(e) {
-    draggedTabId = null;
-    renderTabs();
-}
-
-function reorderTabs(srcId, targetId, isAfter) {
-    const srcIndex = tabs.findIndex(t => t.id === srcId);
-    const targetIndex = tabs.findIndex(t => t.id === targetId);
-    
-    if (srcIndex !== -1 && targetIndex !== -1) {
-        const item = tabs.splice(srcIndex, 1)[0];
-        let newTargetIndex = tabs.findIndex(t => t.id === targetId);
-        const insertIndex = isAfter ? newTargetIndex + 1 : newTargetIndex;
-        
-        tabs.splice(insertIndex, 0, item);
-        renderTabs();
-    }
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
 }
 
 // ---------------------------------------------------------------------------

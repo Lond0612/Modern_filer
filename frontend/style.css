@@ -616,7 +616,7 @@ body {
     min-width: 100px;
     height: 30px;
     margin-top: 6px;
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    transition: background 0.2s, opacity 0.2s, color 0.2s, border-color 0.2s;
     position: relative;
     user-select: none;
 }
@@ -695,8 +695,12 @@ body {
 
 /* Tab Drag & Drop visuals */
 .tab-item.dragging {
-    opacity: 0.4;
+    opacity: 0.95;
     cursor: grabbing;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    background: var(--bg-main) !important;
+    border-color: var(--accent-color) !important;
+    z-index: 1000 !important;
 }
 
 /* ==========================================================================
