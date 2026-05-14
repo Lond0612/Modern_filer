@@ -185,7 +185,10 @@ function switchTab(id) {
 
 function closeTab(id, e) {
     if (e) e.stopPropagation();
-    if (tabs.length <= 1) return; // 最後のタブは閉じない
+    if (tabs.length <= 1) {
+        window.close();
+        return;
+    }
 
     const index = tabs.findIndex(t => t.id === id);
     const isActive = activeTabId === id;
@@ -223,9 +226,7 @@ function renderTabs() {
             <span class="tab-close" onclick="closeTab('${tab.id}', event)">&times;</span>
         `;
         
-        tabEl.onclick = () => {
-            if (!tabDragOffsetX) switchTab(tab.id);
-        };
+        // 選択は onMouseUp で処理（ドラッグと区別するため）
         
         tabEl.onmousedown = (e) => handleTabMouseDown(e, tab.id);
         
@@ -347,9 +348,11 @@ function handleTabMouseDown(e, id) {
 
     const onMouseUp = (upEvent) => {
         if (draggedTabId) {
+            const id = draggedTabId;
             const tabBar = document.getElementById('tab-bar');
             const tabBarRect = tabBar.getBoundingClientRect();
             const offsetY = upEvent.clientY - (tabBarRect.top + tabBarRect.height / 2);
+            const totalDragDistance = Math.sqrt(Math.pow(tabDragOffsetX, 2) + Math.pow(offsetY, 2));
             
             // 60px以上離れた場所で離した場合、かつタブが複数ある場合
             if (Math.abs(offsetY) > 60 && tabs.length > 1) {
@@ -363,6 +366,11 @@ function handleTabMouseDown(e, id) {
                     document.removeEventListener('mouseup', onMouseUp);
                     return;
                 }
+            }
+
+            // ドラッグ距離が小さければタブ切り替え（クリック判定）
+            if (totalDragDistance < 5) {
+                switchTab(id);
             }
 
             draggedTabId = null;
