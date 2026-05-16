@@ -1140,6 +1140,7 @@ function loadPath(path, isUserClick = false) {
     const tab = getActiveTab();
     if (!tab) return;
 
+    // パスの正規化（末尾のバックスラッシュが重複しないようにする）
     if (!path.endsWith('\\')) path += '\\';
     if (isUserClick && tab.path && tab.path !== path) {
         tab.historyBack.push(tab.path);
@@ -1256,6 +1257,10 @@ window.api.onBackendResponse((obj) => {
         case 'MOVED':
             // 移動元と移動先が同一ディレクトリなら1回のLISTで済む
             window.api.sendCommand(`LIST|${currentPath}`);
+            break;
+
+        case 'ERROR_ACCESS_DENIED':
+            showPermissionDialog(obj.content);
             break;
 
         case 'ERROR':
@@ -2853,4 +2858,37 @@ function handleDrop(e) {
             window.api.sendCommand(`MOVE|${srcPath}|${targetPath}`);
         }
     });
+}
+
+function showPermissionDialog(path) {
+    const overlay = document.createElement('div');
+    overlay.className = 'permission-overlay';
+    overlay.innerHTML = `
+        <div class="permission-dialog">
+            <div class="permission-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <h3>アクセス許可がありません</h3>
+            <p>このフォルダーへのアクセス権限がありません。<br>「続行」をクリックすると、管理者権限を使用してこのフォルダーへの永続的なアクセス権を取得します。</p>
+            <div class="permission-path">${path}</div>
+            <div class="permission-buttons">
+                <button class="btn-cancel">キャンセル</button>
+                <button class="btn-continue btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; margin-right:6px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    続行
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    overlay.querySelector('.btn-cancel').onclick = () => {
+        document.body.removeChild(overlay);
+    };
+    
+    overlay.querySelector('.btn-continue').onclick = () => {
+        window.api.sendCommand(`ELEVATE|${path}`);
+        document.body.removeChild(overlay);
+    };
 }

@@ -28,6 +28,8 @@ int filelist_fetch(FileList *list, const char *path_utf8)
     HANDLE hFind = FindFirstFileW(search_path, &findData);
     if (hFind == INVALID_HANDLE_VALUE)
     {
+        DWORD err = GetLastError();
+        if (err == ERROR_ACCESS_DENIED) return -5; // 5 = Access Denied
         return -1;
     }
 

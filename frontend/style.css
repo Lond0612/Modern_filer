@@ -2710,3 +2710,113 @@ body > .preview-action-btn {
     width: 14px;
     height: 14px;
 }
+
+/* ==========================================================================
+   10. Permission Dialog (アクセス許可ダイアログ)
+   ========================================================================== */
+.permission-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.permission-dialog {
+    background: var(--bg-toolbar);
+    border: 1px solid var(--border-main);
+    border-radius: 12px;
+    padding: 30px;
+    width: 450px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.permission-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 204, 0, 0.1);
+    color: #ffcc00;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+
+.permission-icon svg {
+    width: 32px;
+    height: 32px;
+}
+
+.permission-dialog h3 {
+    margin: 0 0 15px;
+    font-size: 18px;
+    color: var(--text-bright);
+}
+
+.permission-dialog p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-main);
+    margin: 0 0 20px;
+}
+
+.permission-path {
+    background: var(--bg-input);
+    border: 1px solid var(--border-light);
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    word-break: break-all;
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.permission-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.permission-buttons button {
+    padding: 8px 20px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border-main);
+    color: var(--text-main);
+}
+
+.btn-cancel:hover {
+    background: var(--bg-hover);
+}
+
+.btn-continue {
+    display: flex;
+    align-items: center;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}

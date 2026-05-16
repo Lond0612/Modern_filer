@@ -75,7 +75,13 @@ void send_json_utf8(const char* type, const char* content_utf8) {
 // ---------------------------------------------------------------------------
 void handle_list(const char* path_utf8) {
     FileList list = filelist_create();
-    if (filelist_fetch(&list, path_utf8) < 0) {
+    int count = filelist_fetch(&list, path_utf8);
+    if (count == -5) {
+        send_json_utf8("ERROR_ACCESS_DENIED", path_utf8);
+        filelist_free(&list);
+        return;
+    }
+    if (count < 0) {
         send_json_utf8("ERROR", "Failed to list directory");
         filelist_free(&list);
         return;
@@ -305,6 +311,57 @@ void get_unique_path_w(const wchar_t* path, wchar_t* out) {
         }
     }
     wcscpy(out, path); // 万が一失敗したら元のパス（エラーになるはず）
+}
+
+// ---------------------------------------------------------------------------
+// 権限昇格（UACプロンプトを表示してフォルダへのアクセス権を付与）
+// ---------------------------------------------------------------------------
+void handle_elevate(const char* path_utf8) {
+    wchar_t wpath[MAX_PATH];
+    MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
+
+    // 末尾のバックスラッシュを削除（icacls "path\" となると \" がエスケープと見なされるため）
+    size_t len = wcslen(wpath);
+    if (len > 3 && wpath[len - 1] == L'\\') {
+        wpath[len - 1] = L'\0';
+    }
+
+    // icacls を管理者権限で実行
+    wchar_t parameters[MAX_PATH + 128];
+    _snwprintf(parameters, (sizeof(parameters)/sizeof(wchar_t)) - 1, L"/c icacls \"%s\" /grant %%USERNAME%%:(OI)(CI)F", wpath);
+
+    SHELLEXECUTEINFOW sei = {0};
+    sei.cbSize = sizeof(sei);
+    sei.fMask = SEE_MASK_NOCLOSEPROCESS;
+    sei.lpVerb = L"runas"; // 管理者として実行（UACプロンプトが出る）
+    sei.lpFile = L"cmd.exe";
+    sei.lpParameters = parameters;
+    sei.nShow = SW_HIDE;
+
+    if (ShellExecuteExW(&sei)) {
+        WaitForSingleObject(sei.hProcess, INFINITE);
+        DWORD exitCode;
+        GetExitCodeProcess(sei.hProcess, &exitCode);
+        CloseHandle(sei.hProcess);
+
+        if (exitCode == 0) {
+            send_json_utf8("LOG", "Permissions granted. Retrying...");
+            handle_list(path_utf8); // 成功したので再読み取りを試行
+        } else {
+            char msg[256];
+            _snprintf(msg, sizeof(msg), "Elevation failed with code: %lu", exitCode);
+            send_json_utf8("ERROR", msg);
+        }
+    } else {
+        DWORD err = GetLastError();
+        if (err == ERROR_CANCELLED) {
+            send_json_utf8("LOG", "Elevation cancelled by user");
+        } else {
+            char msg[256];
+            _snprintf(msg, sizeof(msg), "Failed to trigger UAC: %lu", err);
+            send_json_utf8("ERROR", msg);
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -596,6 +653,9 @@ int main(void) {
             wchar_t wpath[MAX_PATH];
             MultiByteToWideChar(CP_UTF8, 0, line + 5, -1, wpath, MAX_PATH);
             ShellExecuteW(NULL, L"open", wpath, NULL, NULL, SW_SHOWNORMAL);
+        }
+        else if (strncmp(line, "ELEVATE|", 8) == 0) {
+            handle_elevate(line + 8);
         }
         else if (strncmp(line, "PROP_NATIVE|", 12) == 0) {
             handle_prop_native(line + 12);
