@@ -527,16 +527,16 @@ if (btnView) {
 }
 
 // 新規作成メニューの動的生成
-function updateNewFileMenus() {
+window.updateNewFileMenus = function() {
     const data = localStorage.getItem('settings-custom-new-files');
     const customExtensions = data ? JSON.parse(data) : [
         { id: 'default-text', label: 'テキストファイル', extension: '.txt' }
     ];
 
     // 1. ツールバーのメニュー更新
-    const newMenu = document.getElementById('new-menu');
-    if (newMenu) {
-        newMenu.innerHTML = `
+    const newMenuEl = document.getElementById('new-menu') || (typeof newMenu !== 'undefined' ? newMenu : null);
+    if (newMenuEl) {
+        newMenuEl.innerHTML = `
             <div class="menu-item" data-type="directory">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
                 <span>フォルダ</span>
@@ -556,18 +556,18 @@ function updateNewFileMenus() {
             menuEl.onclick = (e) => {
                 e.stopPropagation();
                 createNewItem(item.extension, item.label);
-                newMenu.classList.remove('visible');
+                newMenuEl.classList.remove('visible');
             };
-            newMenu.appendChild(menuEl);
+            newMenuEl.appendChild(menuEl);
         });
 
         // フォルダ作成のイベント付け直し
-        const dirItem = newMenu.querySelector('[data-type="directory"]');
+        const dirItem = newMenuEl.querySelector('[data-type="directory"]');
         if (dirItem) {
             dirItem.onclick = (e) => {
                 e.stopPropagation();
                 createNewItem('directory');
-                newMenu.classList.remove('visible');
+                newMenuEl.classList.remove('visible');
             };
         }
     }
@@ -632,9 +632,7 @@ function createNewItem(typeOrExt, label = '') {
 }
 
 // 初期化と同期
-document.addEventListener('DOMContentLoaded', () => {
-    updateNewFileMenus();
-});
+updateNewFileMenus(); // 即座に実行
 
 window.addEventListener('storage', (e) => {
     if (e.key === 'settings-custom-new-files' || e.key === 'settings-custom-new-files-updated') {

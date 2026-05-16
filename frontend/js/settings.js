@@ -253,8 +253,15 @@ const SettingsManager = {
     },
 
     notifyChange() {
-        // storageイベントを発火させるために値を更新
+        // storageイベントを発火させるために値を更新（別ウィンドウ用）
         localStorage.setItem('settings-custom-new-files-updated', Date.now());
+        
+        // 同一ウィンドウ内のメニューを即座に更新
+        if (typeof window.updateNewFileMenus === 'function') {
+            window.updateNewFileMenus();
+        } else if (typeof updateNewFileMenus === 'function') {
+            updateNewFileMenus();
+        }
     },
 
     switchTab(tabId) {
