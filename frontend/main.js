@@ -18,13 +18,19 @@ function createWindow(initialPath = null) {
     height: 800,
     minWidth: 770,
     backgroundColor: '#1e1e1e',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#1e1e1e',
+      symbolColor: '#ffffff',
+      height: 40
+    },
     icon: path.join(__dirname, 'build', 'icon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false
     },
-    show: false // 準備ができるまで表示しない
+    show: false
   };
 
   // 既存のウィンドウがあれば位置を少しずらす

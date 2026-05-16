@@ -589,14 +589,15 @@ body {
     display: flex;
     align-items: center;
     background: var(--bg-sidebar);
-    padding: 4px 10px 0;
+    padding: 0 100px 0 10px; /* 右側にウィンドウ操作ボタン用の余白を確保 */
     gap: 4px;
-    height: 38px;
+    height: 40px;
     border-bottom: 1px solid var(--border-main);
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;
     scrollbar-width: none;
+    -webkit-app-region: drag; /* ウィンドウをドラッグ可能にする */
 }
 
 #tab-bar::-webkit-scrollbar {
@@ -618,11 +619,11 @@ body {
     max-width: 200px;
     min-width: 120px;
     height: 32px;
-    margin-top: 5px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     user-select: none;
     flex-shrink: 0;
+    -webkit-app-region: no-drag; /* ドラッグ不可（クリックを有効にする） */
 }
 
 .tab-item.pinned {
@@ -688,9 +689,9 @@ body {
     align-items: center;
     justify-content: center;
     border-radius: 4px;
-    margin-top: 5px;
     transition: all 0.2s;
     flex-shrink: 0;
+    -webkit-app-region: no-drag;
 }
 
 .tab-add-btn:hover {
@@ -1590,6 +1591,7 @@ body.compact-mode .file-list td {
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2; /* 互換性のために標準プロパティ 'line-clamp' も定義します */
     -webkit-box-orient: vertical;
     min-height: 2.8em; /* 2 lines * 1.4 line-height */
     padding: 0 4px;
