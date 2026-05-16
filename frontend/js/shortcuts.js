@@ -102,6 +102,8 @@ const ShortcutManager = {
         this.register('Alt+ArrowUp', () => document.getElementById('btn-up')?.click());
         this.register('Alt+ArrowLeft', () => document.getElementById('btn-back')?.click());
         this.register('Alt+ArrowRight', () => document.getElementById('btn-forward')?.click());
+        this.register('F5', () => document.getElementById('btn-refresh')?.click());
+        this.register('Ctrl+r', () => document.getElementById('btn-refresh')?.click());
         this.register('Ctrl+Shift+e', () => this.helpers.expandAllTreeFolders());
         
         // 検索

@@ -956,6 +956,7 @@ function addToRecentFolders(path) {
 }
 
 btnRefresh.onclick = () => {
+    addressInput.value = currentPath; // アドレスバーの表示をリセット
     if (currentPath === 'HOME') {
         renderHomeContent();
     } else if (currentPath) {
@@ -1587,6 +1588,18 @@ function addSearchResult(data) {
         }
         searchResults.style.display = 'none';
         searchInput.value = '';
+    };
+
+    item.onmousedown = (e) => {
+        if (e.button === 1) { // Middle click
+            e.preventDefault(); // オートスクロールを防止
+            const targetPath = type === 'D' ? (dirPath + name + '\\') : dirPath;
+            if (typeof addTab === 'function') {
+                addTab(targetPath);
+                searchResults.style.display = 'none';
+                searchInput.value = '';
+            }
+        }
     };
 
     searchResults.appendChild(item);
