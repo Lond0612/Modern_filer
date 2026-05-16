@@ -740,10 +740,108 @@ document.querySelectorAll('.sort-order').forEach(item => {
     };
 });
 
-// 表示メニューのイベント（ツールバー + コンテキストメニュー内のすべての .view-mode を対象）
+
+// 表示モードの順序
+const viewModeOrder = ['compact', 'details', 'small', 'medium', 'large', 'extralarge'];
+let currentIconSize = 40; // デフォルトサイズ（中アイコン相当）
+
+// 表示モードを適用する共通関数
+function applyViewMode(mode, customSize = null) {
+    const prevMode = currentViewMode;
+    currentViewMode = mode;
+    
+    // アイコンサイズの設定
+    if (customSize) {
+        currentIconSize = Math.max(24, Math.min(256, customSize));
+    } else {
+        // 固定モード名からサイズを設定
+        if (mode === 'small') currentIconSize = 24;
+        else if (mode === 'medium') currentIconSize = 40;
+        else if (mode === 'large') currentIconSize = 56;
+        else if (mode === 'extralarge') currentIconSize = 80;
+    }
+
+    if (currentViewMode === 'compact') {
+        document.body.classList.add('compact-mode');
+    } else {
+        document.body.classList.remove('compact-mode');
+    }
+    
+    const isIconMode = !['details', 'compact'].includes(currentViewMode);
+    const wasIconMode = !['details', 'compact'].includes(prevMode);
+
+    if (!isIconMode) {
+        fileTable.style.display = '';
+        fileGrid.style.display = 'none';
+        fileGrid.classList.remove('grid-custom');
+    } else {
+        fileTable.style.display = 'none';
+        fileGrid.style.display = 'grid';
+        
+        // カスタムサイズが指定されているか、固定サイズか
+        if (customSize || !['small', 'medium', 'large', 'extralarge'].includes(mode)) {
+            fileGrid.className = 'grid-custom';
+            const itemWidth = Math.max(80, currentIconSize * 2.2); // 少し余裕を持たせる
+            fileGrid.style.setProperty('--grid-icon-size', `${currentIconSize}px`);
+            fileGrid.style.setProperty('--grid-item-width', `${itemWidth}px`);
+        } else {
+            fileGrid.classList.remove('grid-custom');
+            fileGrid.className = `grid-size-${currentViewMode}`;
+        }
+    }
+    
+    updateViewMenuUI();
+
+    // モード体系（テーブル vs グリッド）が変わった場合のみリロード
+    if (isIconMode !== wasIconMode || (currentViewMode !== prevMode && !isIconMode)) {
+        if (currentPath) window.api.sendCommand(`LIST|${currentPath}`);
+    }
+}
+
+// マウスホイールによるズーム（Ctrl + Wheel）
+window.addEventListener('wheel', (e) => {
+    if (e.ctrlKey) {
+        e.preventDefault();
+        
+        const isIconMode = !['details', 'compact'].includes(currentViewMode);
+
+        if (e.deltaY < 0) { // 上にスクロール（拡大）
+            if (currentViewMode === 'compact') {
+                applyViewMode('details');
+            } else if (currentViewMode === 'details') {
+                applyViewMode('small');
+            } else if (isIconMode) {
+                // 既にアイコンモードならサイズを増やす
+                if (currentIconSize < 256) {
+                    applyViewMode('icons-custom', currentIconSize + 8);
+                }
+            }
+        } else { // 下にスクロール（縮小）
+            if (isIconMode) {
+                if (currentIconSize > 24) {
+                    applyViewMode('icons-custom', currentIconSize - 8);
+                } else {
+                    applyViewMode('details');
+                }
+            } else if (currentViewMode === 'details') {
+                applyViewMode('compact');
+            }
+        }
+    }
+}, { passive: false });
+
+// updateViewMenuUI の修正（カスタムサイズ時も近いモードにチェックを入れる）
 function updateViewMenuUI() {
+    let activeMode = currentViewMode;
+    if (activeMode === 'icons-custom') {
+        if (currentIconSize <= 32) activeMode = 'small';
+        else if (currentIconSize <= 48) activeMode = 'medium';
+        else if (currentIconSize <= 68) activeMode = 'large';
+        else activeMode = 'extralarge';
+    }
+
     document.querySelectorAll('.view-mode .check-icon').forEach(icon => icon.style.opacity = '0');
-    document.querySelectorAll(`.view-mode[data-view-mode="${currentViewMode}"] .check-icon`).forEach(icon => {
+    document.querySelectorAll(`.view-mode[data-view-mode="${activeMode}"] .check-icon`).forEach(icon => {
         icon.style.opacity = '1';
     });
 
@@ -758,24 +856,7 @@ function updateViewMenuUI() {
 document.querySelectorAll('.view-mode').forEach(item => {
     item.onclick = (e) => {
         e.stopPropagation();
-        currentViewMode = item.dataset.viewMode;
-        if (currentViewMode === 'compact') {
-            document.body.classList.add('compact-mode');
-        } else {
-            document.body.classList.remove('compact-mode');
-        }
-        
-        if (currentViewMode === 'details' || currentViewMode === 'compact') {
-            fileTable.style.display = '';
-            fileGrid.style.display = 'none';
-        } else {
-            fileTable.style.display = 'none';
-            fileGrid.style.display = 'grid';
-            fileGrid.className = `grid-size-${currentViewMode}`;
-        }
-        
-        updateViewMenuUI();
-        window.api.sendCommand(`LIST|${currentPath}`); // Reload
+        applyViewMode(item.dataset.viewMode);
     };
 });
 

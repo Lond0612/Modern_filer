@@ -1468,6 +1468,18 @@ body.compact-mode .file-list td {
     overflow-y: auto;
     height: 100%;
     box-sizing: border-box;
+
+    /* ズーム用の動的変数 */
+    --grid-icon-size: 40px;
+    --grid-item-width: 100px;
+}
+
+#file-grid.grid-custom {
+    grid-template-columns: repeat(auto-fill, minmax(var(--grid-item-width), 1fr));
+}
+
+#file-grid.grid-custom .grid-icon-placeholder {
+    font-size: var(--grid-icon-size);
 }
 
 .grid-item {
