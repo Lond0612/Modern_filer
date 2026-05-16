@@ -220,6 +220,24 @@ const SettingsManager = {
         this.notifyChange();
     },
 
+    moveExtension(id, direction) {
+        const list = this.getCustomExtensions();
+        const index = list.findIndex(item => item.id === id);
+        if (index === -1) return;
+
+        if (direction === 'up' && index > 0) {
+            [list[index], list[index - 1]] = [list[index - 1], list[index]];
+        } else if (direction === 'down' && index < list.length - 1) {
+            [list[index], list[index + 1]] = [list[index + 1], list[index]];
+        } else {
+            return;
+        }
+
+        this.saveCustomExtensions(list);
+        this.renderCustomizationTab();
+        this.notifyChange();
+    },
+
     getCustomExtensions() {
         const data = localStorage.getItem('settings-custom-new-files');
         return data ? JSON.parse(data) : [
@@ -237,17 +255,33 @@ const SettingsManager = {
         const list = this.getCustomExtensions();
         this.extListContainer.innerHTML = '';
 
-        list.forEach(item => {
+        list.forEach((item, index) => {
             const div = document.createElement('div');
             div.className = 'extension-item';
             div.innerHTML = `
                 <span class="extension-label">${item.label}</span>
                 <span class="extension-value">${item.extension}</span>
+                <div class="reorder-btns">
+                    <button class="btn-reorder btn-up" title="上へ" ${index === 0 ? 'disabled style="opacity:0.3; cursor:default;"' : ''}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    </button>
+                    <button class="btn-reorder btn-down" title="下へ" ${index === list.length - 1 ? 'disabled style="opacity:0.3; cursor:default;"' : ''}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                </div>
                 <button class="btn-delete-ext" title="削除">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
             `;
-            div.querySelector('.btn-delete-ext').onclick = () => this.removeExtension(item.id);
+            
+            const btnUp = div.querySelector('.btn-up');
+            const btnDown = div.querySelector('.btn-down');
+            const btnDelete = div.querySelector('.btn-delete-ext');
+
+            if (index > 0) btnUp.onclick = () => this.moveExtension(item.id, 'up');
+            if (index < list.length - 1) btnDown.onclick = () => this.moveExtension(item.id, 'down');
+            btnDelete.onclick = () => this.removeExtension(item.id);
+            
             this.extListContainer.appendChild(div);
         });
     },

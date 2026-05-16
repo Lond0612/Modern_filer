@@ -2601,7 +2601,7 @@ body > .preview-action-btn {
 
 .list-header {
     display: grid;
-    grid-template-columns: 1fr 120px 40px;
+    grid-template-columns: 1fr 120px 80px 40px;
     padding: 10px 15px;
     background: var(--bg-hover);
     border-bottom: 1px solid var(--border-light);
@@ -2617,12 +2617,43 @@ body > .preview-action-btn {
 
 .extension-item {
     display: grid;
-    grid-template-columns: 1fr 120px 40px;
+    grid-template-columns: 1fr 120px 80px 40px;
     padding: 10px 15px;
     align-items: center;
     border-bottom: 1px solid var(--border-light);
     font-size: 13px;
     transition: background 0.2s;
+}
+
+.reorder-btns {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+.btn-reorder {
+    background: transparent;
+    border: 1px solid var(--border-main);
+    color: var(--text-muted);
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-reorder:hover {
+    background: var(--bg-hover);
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.btn-reorder svg {
+    width: 12px;
+    height: 12px;
 }
 
 .extension-item:last-child {
