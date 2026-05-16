@@ -526,31 +526,120 @@ if (btnView) {
     };
 }
 
-// メニュー項目のクリックイベント
-document.querySelectorAll('#new-menu .menu-item').forEach(item => {
-    item.onclick = (e) => {
-        const type = item.dataset.type;
-        let defaultName = '';
-        let command = '';
+// 新規作成メニューの動的生成
+function updateNewFileMenus() {
+    const data = localStorage.getItem('settings-custom-new-files');
+    const customExtensions = data ? JSON.parse(data) : [
+        { id: 'default-text', label: 'テキストファイル', extension: '.txt' }
+    ];
 
-        if (type === 'directory') {
-            defaultName = '新しいフォルダ';
-            command = 'MKDIR';
-        } else if (type === 'text') {
-            defaultName = '新規メモ.txt';
-            command = 'NEW_FILE';
-        } else if (type === 'other') {
-            defaultName = '新規メモ.txt';
-            command = 'NEW_FILE';
+    // 1. ツールバーのメニュー更新
+    const newMenu = document.getElementById('new-menu');
+    if (newMenu) {
+        newMenu.innerHTML = `
+            <div class="menu-item" data-type="directory">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                <span>フォルダ</span>
+            </div>
+            <div class="menu-divider"></div>
+        `;
+
+        customExtensions.forEach(item => {
+            const menuEl = document.createElement('div');
+            menuEl.className = 'menu-item';
+            menuEl.dataset.extension = item.extension;
+            menuEl.dataset.label = item.label;
+            menuEl.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span>${item.label}</span>
+            `;
+            menuEl.onclick = (e) => {
+                e.stopPropagation();
+                createNewItem(item.extension, item.label);
+                newMenu.classList.remove('visible');
+            };
+            newMenu.appendChild(menuEl);
+        });
+
+        // フォルダ作成のイベント付け直し
+        const dirItem = newMenu.querySelector('[data-type="directory"]');
+        if (dirItem) {
+            dirItem.onclick = (e) => {
+                e.stopPropagation();
+                createNewItem('directory');
+                newMenu.classList.remove('visible');
+            };
         }
+    }
 
-        // 名前被りを事前にチェックして回避
-        defaultName = resolveNameConflict(defaultName);
+    // 2. コンテキストメニューのサブメニュー更新
+    const ctxNewSubmenu = document.querySelector('#ctx-new-empty .submenu');
+    if (ctxNewSubmenu) {
+        ctxNewSubmenu.innerHTML = `
+            <div class="menu-item" id="ctx-new-dir">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                <span>フォルダ</span>
+            </div>
+            <div class="menu-divider"></div>
+        `;
 
-        pendingRename = defaultName;
-        window.api.sendCommand(`${command}|${currentPath}${defaultName}`);
-        newMenu.classList.remove('visible');
-    };
+        customExtensions.forEach(item => {
+            const menuEl = document.createElement('div');
+            menuEl.className = 'menu-item';
+            menuEl.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span>${item.label}</span>
+            `;
+            menuEl.onclick = (e) => {
+                e.stopPropagation();
+                createNewItem(item.extension, item.label);
+                contextMenu.style.display = 'none';
+            };
+            ctxNewSubmenu.appendChild(menuEl);
+        });
+
+        // フォルダ作成のイベント付け直し
+        const ctxDirItem = document.getElementById('ctx-new-dir');
+        if (ctxDirItem) {
+            ctxDirItem.onclick = (e) => {
+                e.stopPropagation();
+                createNewItem('directory');
+                contextMenu.style.display = 'none';
+            };
+        }
+    }
+}
+
+function createNewItem(typeOrExt, label = '') {
+    if (!currentPath) return;
+    
+    let defaultName = '';
+    let command = '';
+
+    if (typeOrExt === 'directory') {
+        defaultName = '新しいフォルダ';
+        command = 'MKDIR';
+    } else {
+        // 拡張子つきファイル
+        const ext = typeOrExt.startsWith('.') ? typeOrExt : '.' + typeOrExt;
+        defaultName = (label || '新規ファイル') + ext;
+        command = 'NEW_FILE';
+    }
+
+    defaultName = resolveNameConflict(defaultName);
+    pendingRename = defaultName;
+    window.api.sendCommand(`${command}|${currentPath}${defaultName}`);
+}
+
+// 初期化と同期
+document.addEventListener('DOMContentLoaded', () => {
+    updateNewFileMenus();
+});
+
+window.addEventListener('storage', (e) => {
+    if (e.key === 'settings-custom-new-files' || e.key === 'settings-custom-new-files-updated') {
+        updateNewFileMenus();
+    }
 });
 
 // メニュー以外をクリックしたら閉じる、ファイルリスト外をクリックしたら選択解除
@@ -2408,30 +2497,8 @@ document.getElementById('ctx-copy-path').onclick = () => {
     });
 };
 
-// 右クリックから新規作成（Feature 1）
-const btnCtxNewDir = document.getElementById('ctx-new-dir');
-if (btnCtxNewDir) {
-    btnCtxNewDir.onclick = (e) => {
-        e.stopPropagation();
-        if (!currentPath) return;
-        let defaultName = resolveNameConflict('新しいフォルダ');
-        pendingRename = defaultName;
-        window.api.sendCommand(`MKDIR|${currentPath}${defaultName}`);
-        contextMenu.style.display = 'none';
-    };
-}
-
-const btnCtxNewFile = document.getElementById('ctx-new-file');
-if (btnCtxNewFile) {
-    btnCtxNewFile.onclick = (e) => {
-        e.stopPropagation();
-        if (!currentPath) return;
-        let defaultName = resolveNameConflict('新規メモ.txt');
-        pendingRename = defaultName;
-        window.api.sendCommand(`NEW_FILE|${currentPath}${defaultName}`);
-        contextMenu.style.display = 'none';
-    };
-}
+// 右クリックから新規作成（Feature 1） - 動的に生成されるためここでは何もしない、または既存の静的要素のみ削除を検討
+// (updateNewFileMenus 内でイベントを付与するように変更済み)
 
 function showPropertiesModal(path) {
     // バックエンドに情報を要求

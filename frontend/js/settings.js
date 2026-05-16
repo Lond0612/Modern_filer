@@ -32,6 +32,12 @@ const SettingsManager = {
         this.userThemesContainer = document.getElementById('user-themes-container');
         this.openThemesFolderBtn = document.getElementById('btn-open-themes-folder');
         this.refreshThemesBtn = document.getElementById('btn-refresh-themes');
+
+        // Customization
+        this.newExtLabelInput = document.getElementById('new-ext-label');
+        this.newExtValueInput = document.getElementById('new-ext-value');
+        this.addExtBtn = document.getElementById('btn-add-extension');
+        this.extListContainer = document.getElementById('custom-extension-list');
     },
 
     bindEvents() {
@@ -152,6 +158,11 @@ const SettingsManager = {
             };
         }
 
+        // Add Extension
+        if (this.addExtBtn) {
+            this.addExtBtn.onclick = () => this.addExtension();
+        }
+
         // ウィンドウ間の設定リアルタイム同期
         let storageTimeout;
         window.addEventListener('storage', (e) => {
@@ -159,7 +170,8 @@ const SettingsManager = {
                 'app-theme', 'isDarkMode', 'custom-theme-data',
                 'settings-font-size', 'settings-custom-font',
                 'settings-zoom', 'settings-high-contrast',
-                'settings-window-preview', 'settings-native-properties'
+                'settings-window-preview', 'settings-native-properties',
+                'settings-custom-new-files'
             ];
             if (e.key && syncKeys.includes(e.key)) {
                 clearTimeout(storageTimeout);
@@ -175,6 +187,76 @@ const SettingsManager = {
         });
     },
 
+    addExtension() {
+        const label = this.newExtLabelInput.value.trim();
+        let ext = this.newExtValueInput.value.trim();
+
+        if (!label || !ext) return;
+
+        // 拡張子のドットを補完
+        if (!ext.startsWith('.')) ext = '.' + ext;
+
+        const newExt = {
+            id: Date.now().toString(),
+            label: label,
+            extension: ext
+        };
+
+        const list = this.getCustomExtensions();
+        list.push(newExt);
+        this.saveCustomExtensions(list);
+
+        this.newExtLabelInput.value = '';
+        this.newExtValueInput.value = '';
+        this.renderCustomizationTab();
+        this.notifyChange();
+    },
+
+    removeExtension(id) {
+        const list = this.getCustomExtensions();
+        const filtered = list.filter(item => item.id !== id);
+        this.saveCustomExtensions(filtered);
+        this.renderCustomizationTab();
+        this.notifyChange();
+    },
+
+    getCustomExtensions() {
+        const data = localStorage.getItem('settings-custom-new-files');
+        return data ? JSON.parse(data) : [
+            { id: 'default-text', label: 'テキストファイル', extension: '.txt' }
+        ];
+    },
+
+    saveCustomExtensions(list) {
+        localStorage.setItem('settings-custom-new-files', JSON.stringify(list));
+    },
+
+    renderCustomizationTab() {
+        if (!this.extListContainer) return;
+
+        const list = this.getCustomExtensions();
+        this.extListContainer.innerHTML = '';
+
+        list.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'extension-item';
+            div.innerHTML = `
+                <span class="extension-label">${item.label}</span>
+                <span class="extension-value">${item.extension}</span>
+                <button class="btn-delete-ext" title="削除">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+            `;
+            div.querySelector('.btn-delete-ext').onclick = () => this.removeExtension(item.id);
+            this.extListContainer.appendChild(div);
+        });
+    },
+
+    notifyChange() {
+        // storageイベントを発火させるために値を更新
+        localStorage.setItem('settings-custom-new-files-updated', Date.now());
+    },
+
     switchTab(tabId) {
         this.tabBtns.forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tab === tabId);
@@ -182,6 +264,10 @@ const SettingsManager = {
         this.tabContents.forEach(content => {
             content.classList.toggle('active', content.id === `tab-${tabId}`);
         });
+
+        if (tabId === 'customization') {
+            this.renderCustomizationTab();
+        }
     },
 
     applyThemePreset(theme) {
@@ -349,6 +435,9 @@ const SettingsManager = {
 
         // User Themes
         this.loadUserThemes();
+        
+        // Customization
+        this.renderCustomizationTab();
     },
 
     applyHighContrast(enabled) {
@@ -358,8 +447,6 @@ const SettingsManager = {
     applyZoom(zoomPercent) {
         const factor = zoomPercent / 100;
         if (this.appContainer) {
-            // zoomプロパティを使用すると座標系自体が拡大されるため、
-            // コンテナのサイズを(100/factor)%に調整することでビューポート内に収める
             this.appContainer.style.zoom = factor;
             this.appContainer.style.height = (100 / factor) + 'vh';
             this.appContainer.style.width = (100 / factor) + 'vw';

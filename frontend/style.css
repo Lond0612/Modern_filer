@@ -2580,3 +2580,89 @@ body > .preview-action-btn {
     box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
     white-space: nowrap;
 }
+
+/* ユーザカスタマイズタブ */
+.custom-extension-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: var(--bg-hover);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+}
+
+.custom-extension-list-container {
+    background: var(--bg-main);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.list-header {
+    display: grid;
+    grid-template-columns: 1fr 120px 40px;
+    padding: 10px 15px;
+    background: var(--bg-hover);
+    border-bottom: 1px solid var(--border-light);
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.custom-extension-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.extension-item {
+    display: grid;
+    grid-template-columns: 1fr 120px 40px;
+    padding: 10px 15px;
+    align-items: center;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+.extension-item:last-child {
+    border-bottom: none;
+}
+
+.extension-item:hover {
+    background: var(--bg-hover);
+}
+
+.extension-label {
+    color: var(--text-main);
+    font-weight: 500;
+}
+
+.extension-value {
+    color: var(--accent-color);
+    font-family: var(--main-font-family);
+    font-size: 12px;
+}
+
+.btn-delete-ext {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-delete-ext:hover {
+    background: rgba(255, 68, 68, 0.1);
+    color: #ff4444;
+}
+
+.btn-delete-ext svg {
+    width: 14px;
+    height: 14px;
+}
