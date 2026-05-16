@@ -220,18 +220,55 @@ const SettingsManager = {
         this.notifyChange();
     },
 
-    moveExtension(id, direction) {
-        const list = this.getCustomExtensions();
-        const index = list.findIndex(item => item.id === id);
-        if (index === -1) return;
+    handleExtDragStart(e, id) {
+        e.dataTransfer.setData('text/plain', id);
+        e.target.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    },
 
-        if (direction === 'up' && index > 0) {
-            [list[index], list[index - 1]] = [list[index - 1], list[index]];
-        } else if (direction === 'down' && index < list.length - 1) {
-            [list[index], list[index + 1]] = [list[index + 1], list[index]];
+    handleExtDragOver(e) {
+        e.preventDefault();
+        const item = e.target.closest('.extension-item');
+        if (!item || item.classList.contains('dragging')) return;
+
+        const rect = item.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+        
+        item.classList.remove('drag-over-top', 'drag-over-bottom');
+        if (e.clientY < midpoint) {
+            item.classList.add('drag-over-top');
         } else {
+            item.classList.add('drag-over-bottom');
+        }
+    },
+
+    handleExtDragLeave(e) {
+        const item = e.target.closest('.extension-item');
+        if (item) {
+            item.classList.remove('drag-over-top', 'drag-over-bottom');
+        }
+    },
+
+    handleExtDrop(e, targetId) {
+        e.preventDefault();
+        const draggedId = e.dataTransfer.getData('text/plain');
+        const item = e.target.closest('.extension-item');
+        if (!item || draggedId === targetId) {
+            document.querySelectorAll('.extension-item').forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging'));
             return;
         }
+
+        const isAfter = item.classList.contains('drag-over-bottom');
+        const list = this.getCustomExtensions();
+        
+        const draggedIndex = list.findIndex(i => i.id === draggedId);
+        const targetIndex = list.findIndex(i => i.id === targetId);
+        
+        if (draggedIndex === -1 || targetIndex === -1) return;
+
+        const [draggedItem] = list.splice(draggedIndex, 1);
+        const newIndex = list.findIndex(i => i.id === targetId);
+        list.splice(isAfter ? newIndex + 1 : newIndex, 0, draggedItem);
 
         this.saveCustomExtensions(list);
         this.renderCustomizationTab();
@@ -258,28 +295,30 @@ const SettingsManager = {
         list.forEach((item, index) => {
             const div = document.createElement('div');
             div.className = 'extension-item';
+            div.draggable = true;
+            div.dataset.id = item.id;
+
             div.innerHTML = `
+                <div class="drag-handle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+                </div>
                 <span class="extension-label">${item.label}</span>
                 <span class="extension-value">${item.extension}</span>
-                <div class="reorder-btns">
-                    <button class="btn-reorder btn-up" title="上へ" ${index === 0 ? 'disabled style="opacity:0.3; cursor:default;"' : ''}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"></polyline></svg>
-                    </button>
-                    <button class="btn-reorder btn-down" title="下へ" ${index === list.length - 1 ? 'disabled style="opacity:0.3; cursor:default;"' : ''}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </button>
-                </div>
                 <button class="btn-delete-ext" title="削除">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
             `;
             
-            const btnUp = div.querySelector('.btn-up');
-            const btnDown = div.querySelector('.btn-down');
-            const btnDelete = div.querySelector('.btn-delete-ext');
+            // D&D Events
+            div.ondragstart = (e) => this.handleExtDragStart(e, item.id);
+            div.ondragover = (e) => this.handleExtDragOver(e);
+            div.ondragleave = (e) => this.handleExtDragLeave(e);
+            div.ondrop = (e) => this.handleExtDrop(e, item.id);
+            div.ondragend = () => {
+                document.querySelectorAll('.extension-item').forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging'));
+            };
 
-            if (index > 0) btnUp.onclick = () => this.moveExtension(item.id, 'up');
-            if (index < list.length - 1) btnDown.onclick = () => this.moveExtension(item.id, 'down');
+            const btnDelete = div.querySelector('.btn-delete-ext');
             btnDelete.onclick = () => this.removeExtension(item.id);
             
             this.extListContainer.appendChild(div);

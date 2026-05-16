@@ -2601,7 +2601,7 @@ body > .preview-action-btn {
 
 .list-header {
     display: grid;
-    grid-template-columns: 1fr 120px 80px 40px;
+    grid-template-columns: 24px 1fr 120px 40px;
     padding: 10px 15px;
     background: var(--bg-hover);
     border-bottom: 1px solid var(--border-light);
@@ -2617,44 +2617,45 @@ body > .preview-action-btn {
 
 .extension-item {
     display: grid;
-    grid-template-columns: 1fr 120px 80px 40px;
+    grid-template-columns: 24px 1fr 120px 40px;
     padding: 10px 15px;
     align-items: center;
     border-bottom: 1px solid var(--border-light);
     font-size: 13px;
-    transition: background 0.2s;
+    transition: background 0.2s, border 0.2s;
+    background: var(--bg-main);
+    cursor: grab;
+    position: relative;
 }
 
-.reorder-btns {
-    display: flex;
-    gap: 4px;
-    justify-content: center;
+.extension-item.dragging {
+    opacity: 0.5;
+    background: var(--bg-hover);
 }
 
-.btn-reorder {
-    background: transparent;
-    border: 1px solid var(--border-main);
+.extension-item.drag-over-top {
+    border-top: 2px solid var(--accent-color);
+}
+
+.extension-item.drag-over-bottom {
+    border-bottom: 2px solid var(--accent-color);
+}
+
+.drag-handle {
     color: var(--text-muted);
-    cursor: pointer;
-    width: 24px;
-    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
-    transition: all 0.2s;
+    opacity: 0.5;
+    cursor: grab;
 }
 
-.btn-reorder:hover {
-    background: var(--bg-hover);
+.extension-item:hover .drag-handle {
+    opacity: 1;
     color: var(--accent-color);
-    border-color: var(--accent-color);
 }
 
-.btn-reorder svg {
-    width: 12px;
-    height: 12px;
-}
+/* Reorder buttons removed */
 
 .extension-item:last-child {
     border-bottom: none;
