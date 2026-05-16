@@ -70,8 +70,12 @@ static DWORD WINAPI read_thread(LPVOID _unused)
             s_callback(norm);
     }
     
-    // Pipe closed, cmd.exe is gone. Kill the server too.
-    ExitProcess(0);
+    // Pipe closed or cmd.exe is gone.
+    s_running = FALSE;
+    if (s_callback)
+    {
+        s_callback("\r\n[Terminal process terminated]\r\n");
+    }
     return 0;
 }
 
@@ -119,7 +123,14 @@ int cmd_proc_start(CmdOutputCallback cb)
     PROCESS_INFORMATION pi;
     ZeroMemory(&pi, sizeof(pi));
 
-    char cmdline[] = "cmd.exe /Q"; // /Q: echo off（プロンプト重複を抑制）
+    char cmdline[MAX_PATH + 16];
+    char comspec[MAX_PATH];
+    if (GetEnvironmentVariableA("COMSPEC", comspec, MAX_PATH) == 0)
+    {
+        strcpy(comspec, "cmd.exe");
+    }
+    _snprintf(cmdline, sizeof(cmdline) - 1, "%s /Q", comspec);
+
     if (!CreateProcessA(NULL, cmdline, NULL, NULL,
                         TRUE, // bInheritHandles
                         CREATE_NO_WINDOW,

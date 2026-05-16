@@ -729,7 +729,7 @@ btnForward.onclick = () => {
     const tab = getActiveTab();
     if (!tab || tab.historyForward.length === 0) return;
     tab.historyBack.push(tab.path);
-    const next = tab.historyForward.shift();
+    const next = tab.historyForward.pop();
     navigateTo(next, false);
 };
 
@@ -754,7 +754,7 @@ window.addEventListener('mousedown', (e) => {
         e.preventDefault();
         if (isNavigationLocked() || tab.historyForward.length === 0) return;
         tab.historyBack.push(tab.path);
-        const next = tab.historyForward.shift();
+        const next = tab.historyForward.pop();
         navigateTo(next, false);
     }
 });
@@ -1615,6 +1615,10 @@ terminalInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         const cmd = terminalInput.value.trim();
         if (cmd) {
+            if (cmd.toLowerCase() === 'exit') {
+                window.close();
+                return;
+            }
             appendTerminal(`> ${cmd}`, 'command-echo');
             window.api.sendCommand(`EXEC|${cmd}`);
             terminalInput.value = '';
