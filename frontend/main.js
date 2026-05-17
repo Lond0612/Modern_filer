@@ -415,8 +415,9 @@ ipcMain.on('ondragstart', (event, files) => {
       icon: path.join(__dirname, 'drag-icon.png')
     };
 
-    console.log('Native drag start:', files);
-    event.sender.startDrag(dragConfig);
+    console.log('Native drag start disabled to prevent crash. Files:', files);
+    // 致命的なクラッシュを防ぐため、一時的にネイティブのstartDragを無効化
+    // event.sender.startDrag(dragConfig);
   } catch (err) {
     console.error('Failed to start native drag:', err);
   }
