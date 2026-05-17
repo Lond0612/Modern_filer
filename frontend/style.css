@@ -888,7 +888,7 @@ body {
 }
 
 .resizer-v {
-    height: 12px;
+    height: 8px;
     margin: -4px 0;
     background: transparent;
     cursor: row-resize;
