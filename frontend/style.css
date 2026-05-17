@@ -1874,11 +1874,11 @@ body.compact-mode .file-list td {
 
 .settings-tab-content {
     display: none;
-    animation: slideInRight 0.3s ease-out;
 }
 
 .settings-tab-content.active {
     display: block;
+    animation: settingsTabFade 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .tab-header {
@@ -1903,6 +1903,39 @@ body.compact-mode .file-list td {
     flex-direction: column;
     gap: 15px;
     margin-bottom: 30px;
+}
+
+.setting-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.reset-link {
+    font-size: 11px;
+    color: var(--accent-color);
+    cursor: pointer;
+    text-decoration: none;
+    opacity: 0.7;
+    transition: opacity 0.1s ease, transform 0.1s ease, background-color 0.1s ease;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: transparent;
+    border: 1px solid transparent;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.reset-link:hover {
+    opacity: 1;
+    text-decoration: none;
+    background: color-mix(in srgb, var(--accent-color) 8%, transparent);
+    border-color: color-mix(in srgb, var(--accent-color) 20%, transparent);
+}
+
+.reset-link:active {
+    transform: scale(0.95);
 }
 
 .setting-label {
@@ -1930,8 +1963,36 @@ body.compact-mode .file-list td {
 }
 
 input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
     flex: 1;
-    accent-color: var(--accent-color);
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) var(--slider-progress, 0%), var(--bg-input, #2a2a2a) var(--slider-progress, 0%), var(--bg-input, #2a2a2a) 100%);
+    outline: none;
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.1s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.25);
+    background: var(--theme-preset-border, var(--accent-color));
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+    transform: scale(1.1);
 }
 
 .modern-input {
@@ -1943,6 +2004,7 @@ input[type="range"] {
     outline: none;
     transition: border-color 0.2s;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .modern-input:focus {
@@ -2310,6 +2372,17 @@ body > .preview-action-btn {
     to { transform: translateX(0); opacity: 1; }
 }
 
+@keyframes settingsTabFade {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 
 @keyframes fadeIn {
     from { opacity: 0; }
@@ -2663,15 +2736,49 @@ body > .preview-action-btn {
 }
 
 .shortcut-key {
-    background: var(--bg-input);
-    border: 1px solid var(--border-main);
-    padding: 3px 8px;
-    border-radius: 5px;
+    white-space: nowrap;
+}
+
+kbd.kbd-key {
+    display: inline-block;
+    padding: 3px 6px;
     font-family: 'Consolas', monospace;
     font-size: 11px;
-    color: var(--accent-color);
-    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
-    white-space: nowrap;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--text-main);
+    background: linear-gradient(180deg, var(--bg-input) 0%, color-mix(in srgb, var(--bg-input) 90%, #fff) 100%);
+    border: 1px solid var(--border-main);
+    border-radius: 4px;
+    box-shadow: 0 2px 0 0 color-mix(in srgb, var(--border-main) 70%, #000), 0 3px 3px rgba(0, 0, 0, 0.2);
+    margin: 0 2px;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+    min-width: 18px;
+    text-align: center;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    cursor: default;
+    user-select: none;
+}
+
+body.light-mode kbd.kbd-key {
+    background: linear-gradient(180deg, #fff 0%, #f1f3f5 100%);
+    border-color: #ced4da;
+    box-shadow: 0 2px 0 0 #adb5bd, 0 3px 3px rgba(0, 0, 0, 0.1);
+    text-shadow: none;
+    color: #495057;
+}
+
+kbd.kbd-key:hover {
+    transform: translateY(1px);
+    box-shadow: 0 1px 0 0 color-mix(in srgb, var(--border-main) 70%, #000), 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.kbd-join {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin: 0 3px;
+    user-select: none;
 }
 
 /* ユーザカスタマイズタブ */

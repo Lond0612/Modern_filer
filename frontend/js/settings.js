@@ -2,6 +2,7 @@ const SettingsManager = {
     async init() {
         this.cacheDOM();
         this.bindEvents();
+        this.formatShortcutKeys();
         await this.loadSettings();
     },
 
@@ -23,7 +24,7 @@ const SettingsManager = {
         // Contents
         this.fontSizeSlider = document.getElementById('font-size-slider');
         this.fontSizeValue = document.getElementById('font-size-value');
-        this.customFontInput = document.getElementById('custom-font-input');
+
         this.zoomSlider = document.getElementById('zoom-slider');
         this.zoomValue = document.getElementById('zoom-value');
         this.appContainer = document.querySelector('.app-container');
@@ -47,6 +48,43 @@ const SettingsManager = {
         this.wallpaperHistoryList = document.getElementById('wallpaper-history-list');
         this.wallpaperOpacitySlider = document.getElementById('wallpaper-opacity-slider');
         this.wallpaperOpacityValue = document.getElementById('wallpaper-opacity-value');
+
+        // Resets
+        this.resetFontSizeBtn = document.getElementById('reset-font-size');
+        this.resetZoomBtn = document.getElementById('reset-zoom');
+        this.resetWallpaperOpacityBtn = document.getElementById('reset-wallpaper-opacity');
+
+        // Shortcuts Search
+        this.shortcutSearchInput = document.getElementById('shortcut-search-input');
+        this.shortcutTable = document.querySelector('.shortcut-list');
+    },
+
+    updateSliderProgress(slider) {
+        if (!slider) return;
+        const min = parseFloat(slider.min) || 0;
+        const max = parseFloat(slider.max) || 100;
+        const val = parseFloat(slider.value) || 0;
+        const percent = ((val - min) / (max - min)) * 100;
+        slider.style.setProperty('--slider-progress', percent + '%');
+    },
+
+    formatShortcutKeys() {
+        document.querySelectorAll('.shortcut-key').forEach(el => {
+            const rawText = el.textContent;
+            if (!rawText || el.querySelector('kbd')) return;
+            
+            const groupParts = rawText.split(',').map(g => g.trim());
+            const groupFormatted = groupParts.map(group => {
+                const parts = group.split('+').map(part => part.trim());
+                return parts.map(part => `<kbd class="kbd-key">${part}</kbd>`).join('<span class="kbd-join">+</span>');
+            }).join('<span class="kbd-join"> , </span>');
+            
+            el.innerHTML = groupFormatted;
+            el.style.background = 'transparent';
+            el.style.border = 'none';
+            el.style.boxShadow = 'none';
+            el.style.padding = '0';
+        });
     },
 
     bindEvents() {
@@ -91,31 +129,40 @@ const SettingsManager = {
 
         // Font Size
         if (this.fontSizeSlider) {
-            this.fontSizeSlider.oninput = () => {
-                const size = this.fontSizeSlider.value;
+            const setFontSize = (size) => {
+                this.fontSizeSlider.value = size;
                 this.fontSizeValue.textContent = size + 'px';
                 document.documentElement.style.setProperty('--main-font-size', size + 'px');
                 localStorage.setItem('settings-font-size', size);
+                this.updateSliderProgress(this.fontSizeSlider);
             };
+            this.fontSizeSlider.oninput = () => {
+                setFontSize(this.fontSizeSlider.value);
+            };
+            this.fontSizeSlider.ondblclick = () => setFontSize(13);
+            if (this.resetFontSizeBtn) {
+                this.resetFontSizeBtn.onclick = () => setFontSize(13);
+            }
         }
 
-        // Custom Font
-        if (this.customFontInput) {
-            this.customFontInput.onchange = () => {
-                const font = this.customFontInput.value.trim();
-                document.documentElement.style.setProperty('--main-font-family', font || 'inherit');
-                localStorage.setItem('settings-custom-font', font);
-            };
-        }
+
 
         // Zoom
         if (this.zoomSlider) {
-            this.zoomSlider.oninput = () => {
-                const zoom = this.zoomSlider.value;
+            const setZoom = (zoom) => {
+                this.zoomSlider.value = zoom;
                 this.zoomValue.textContent = zoom + '%';
                 this.applyZoom(zoom);
                 localStorage.setItem('settings-zoom', zoom);
+                this.updateSliderProgress(this.zoomSlider);
             };
+            this.zoomSlider.oninput = () => {
+                setZoom(this.zoomSlider.value);
+            };
+            this.zoomSlider.ondblclick = () => setZoom(100);
+            if (this.resetZoomBtn) {
+                this.resetZoomBtn.onclick = () => setZoom(100);
+            }
         }
 
         // High Contrast
@@ -177,7 +224,7 @@ const SettingsManager = {
         window.addEventListener('storage', (e) => {
             const syncKeys = [
                 'app-theme', 'isDarkMode', 'custom-theme-data',
-                'settings-font-size', 'settings-custom-font',
+                'settings-font-size',
                 'settings-zoom', 'settings-high-contrast',
                 'settings-window-preview', 'settings-native-properties',
                 'settings-custom-new-files', 'settings-global-wallpaper-active',
@@ -196,6 +243,45 @@ const SettingsManager = {
                 }, 100);
             }
         });
+
+        // Shortcuts Search Filter
+        if (this.shortcutSearchInput && this.shortcutTable) {
+            const tableBody = this.shortcutTable.querySelector('tbody');
+            this.shortcutSearchInput.oninput = () => {
+                const query = this.shortcutSearchInput.value.toLowerCase().trim();
+                const rows = tableBody.querySelectorAll('tr:not(.no-results-row)');
+                let visibleCount = 0;
+                
+                rows.forEach(row => {
+                    const actionCell = row.cells[0]?.textContent.toLowerCase() || '';
+                    const keyCell = row.cells[1]?.textContent.toLowerCase() || '';
+                    if (actionCell.includes(query) || keyCell.includes(query)) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Remove existing "No results" row if present
+                const existingNoResults = tableBody.querySelector('.no-results-row');
+                if (existingNoResults) {
+                    existingNoResults.remove();
+                }
+
+                // If no visible rows, add a beautiful premium placeholder row
+                if (visibleCount === 0) {
+                    const noResultsRow = document.createElement('tr');
+                    noResultsRow.className = 'no-results-row';
+                    noResultsRow.innerHTML = `
+                        <td colspan="2" style="text-align: center; padding: 30px; color: var(--text-muted); font-style: italic;">
+                            一致するショートカットが見つかりません
+                        </td>
+                    `;
+                    tableBody.appendChild(noResultsRow);
+                }
+            };
+        }
 
         // Wallpaper events
         this.bindWallpaperEvents();
@@ -491,14 +577,10 @@ const SettingsManager = {
             this.fontSizeSlider.value = fontSize;
             this.fontSizeValue.textContent = fontSize + 'px';
             document.documentElement.style.setProperty('--main-font-size', fontSize + 'px');
+            this.updateSliderProgress(this.fontSizeSlider);
         }
 
-        // Custom Font
-        const customFont = localStorage.getItem('settings-custom-font') || '';
-        if (this.customFontInput) {
-            this.customFontInput.value = customFont;
-            if (customFont) document.documentElement.style.setProperty('--main-font-family', customFont);
-        }
+
 
         // Zoom
         const zoom = localStorage.getItem('settings-zoom') || '100';
@@ -506,6 +588,7 @@ const SettingsManager = {
             this.zoomSlider.value = zoom;
             this.zoomValue.textContent = zoom + '%';
             this.applyZoom(zoom);
+            this.updateSliderProgress(this.zoomSlider);
         }
 
         // High Contrast
@@ -580,6 +663,7 @@ const SettingsManager = {
             if (this.wallpaperOpacityValue) {
                 this.wallpaperOpacityValue.textContent = globalOpacity + '%';
             }
+            this.updateSliderProgress(this.wallpaperOpacitySlider);
         }
 
         // Fetch the 5 wallpapers history list via IPC
@@ -706,14 +790,22 @@ const SettingsManager = {
         }
 
         if (this.wallpaperOpacitySlider) {
-            this.wallpaperOpacitySlider.oninput = () => {
-                const opacity = this.wallpaperOpacitySlider.value;
+            const setOpacity = (opacity) => {
+                this.wallpaperOpacitySlider.value = opacity;
                 if (this.wallpaperOpacityValue) {
                     this.wallpaperOpacityValue.textContent = opacity + '%';
                 }
                 localStorage.setItem('settings-global-wallpaper-opacity', opacity);
+                this.updateSliderProgress(this.wallpaperOpacitySlider);
                 SettingsManager.loadWallpapers();
             };
+            this.wallpaperOpacitySlider.oninput = () => {
+                setOpacity(this.wallpaperOpacitySlider.value);
+            };
+            this.wallpaperOpacitySlider.ondblclick = () => setOpacity(65);
+            if (this.resetWallpaperOpacityBtn) {
+                this.resetWallpaperOpacityBtn.onclick = () => setOpacity(65);
+            }
         }
     }
 };

@@ -455,7 +455,6 @@
                     <div class="setting-group-vertical">
                         <div class="setting-label">
                             <span class="main-label">テーマプリセット</span>
-                            <span class="sub-label">あらかじめ用意された配色を選択します</span>
                         </div>
                         <div class="theme-presets-container">
                             <div class="preset-section-label">ライトベース</div>
@@ -500,7 +499,7 @@
 
                             <div class="preset-section-label"
                                 style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
-                                <span>ユーザーテーマ (user_themes.json)</span>
+                                <span>ユーザーテーマ</span>
                                 <button id="btn-refresh-themes" class="action-btn-icon" title="テーマを再読み込み"
                                     style="background:transparent; border:none; padding:2px; cursor:pointer; color:var(--text-muted); display:flex;">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -533,26 +532,26 @@
                 <div id="tab-contents" class="settings-tab-content">
                     <div class="tab-header">表示コンテンツ設定</div>
                     <div class="setting-group-vertical">
-                        <div class="setting-label">
-                            <span class="main-label">基本フォントサイズ</span>
-                            <span class="sub-label">アプリケーション全体の文字サイズを調整します</span>
+                        <div class="setting-group-header">
+                            <div class="setting-label">
+                                <span class="main-label">基本フォントサイズ</span>
+                                <span class="sub-label">アプリケーション全体の文字サイズを調整します</span>
+                            </div>
+                            <span class="reset-link" id="reset-font-size" title="初期値に戻す">デフォルト</span>
                         </div>
                         <div class="slider-control">
                             <input type="range" id="font-size-slider" min="11" max="20" value="13">
                             <span id="font-size-value">13px</span>
                         </div>
                     </div>
+
                     <div class="setting-group-vertical">
-                        <div class="setting-label">
-                            <span class="main-label">カスタムフォント</span>
-                            <span class="sub-label">使用するフォント名を入力（Meiryo, 'Segoe UI'など）</span>
-                        </div>
-                        <input type="text" id="custom-font-input" class="modern-input" placeholder="デフォルト">
-                    </div>
-                    <div class="setting-group-vertical">
-                        <div class="setting-label">
-                            <span class="main-label">表示倍率 (Zoom)</span>
-                            <span class="sub-label">UI全体の大きさを一括で変更します</span>
+                        <div class="setting-group-header">
+                            <div class="setting-label">
+                                <span class="main-label">表示倍率 (Zoom)</span>
+                                <span class="sub-label">UI全体の大きさを一括で変更します</span>
+                            </div>
+                            <span class="reset-link" id="reset-zoom" title="初期値に戻す">デフォルト</span>
                         </div>
                         <div class="slider-control">
                             <input type="range" id="zoom-slider" min="80" max="150" value="100" step="5">
@@ -595,6 +594,21 @@
                 <!-- ショートカットタブ -->
                 <div id="tab-shortcuts" class="settings-tab-content">
                     <div class="tab-header">ショートカット一覧</div>
+
+                    <div class="shortcut-search-container"
+                        style="margin-bottom: 20px; position: relative; width: 100%;">
+                        <input type="text" id="shortcut-search-input" class="modern-input"
+                            placeholder="ショートカットを検索 (例: コピー, Ctrl)..." style="padding-left: 36px;">
+                        <div class="search-icon"
+                            style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; display: flex; align-items: center;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </div>
+                    </div>
+
                     <div class="shortcut-list-container">
                         <table class="shortcut-list">
                             <thead>
@@ -772,8 +786,11 @@
 
                     <div class="setting-group-vertical" id="wallpaper-opacity-section"
                         style="margin-top: 15px; margin-bottom: 25px;">
-                        <div class="setting-label">
-                            <span class="main-label">すりガラスの不透明度</span>
+                        <div class="setting-group-header">
+                            <div class="setting-label">
+                                <span class="main-label">すりガラスの不透明度</span>
+                            </div>
+                            <span class="reset-link" id="reset-wallpaper-opacity" title="初期値に戻す">デフォルト</span>
                         </div>
                         <div class="slider-control"
                             style="display: flex; align-items: center; gap: 15px; margin-top: 8px;">
