@@ -569,8 +569,6 @@ const SettingsManager = {
         const globalOpacity = localStorage.getItem('settings-global-wallpaper-opacity') || '65';
         let activeId = localStorage.getItem('settings-active-wallpaper-id') || '';
 
-        window.api.send('RENDERER_LOG', '[DEBUG Wallpaper] loadWallpapers: activeId =', activeId, 'globalActive =', globalActive, 'opacity =', globalOpacity);
-
         if (this.globalWallpaperMode) {
             this.globalWallpaperMode.value = globalActive ? 'image' : 'none';
         }
@@ -588,16 +586,14 @@ const SettingsManager = {
         let history = [];
         try {
             history = await window.api.invoke('GET_WALLPAPERS');
-            window.api.send('RENDERER_LOG', '[DEBUG Wallpaper] History length =', history.length, 'IDs =', history.map(h => h.id));
         } catch (e) {
-            window.api.send('RENDERER_LOG', 'Failed to get wallpapers history:', e.message);
+            console.error('Failed to get wallpapers history:', e.message);
         }
 
         // If no activeId is selected but we have history, default to the first (newest) item
         if (!activeId && history.length > 0) {
             activeId = history[0].id;
             localStorage.setItem('settings-active-wallpaper-id', activeId);
-            window.api.send('RENDERER_LOG', '[DEBUG Wallpaper] Defaulted activeId to', activeId);
         }
 
         // Dynamically draw the 5 thumbnail cards in wallpaperHistoryList
@@ -646,7 +642,6 @@ const SettingsManager = {
 
         // Apply background styling to document.body
         const activeItem = history.find(item => item.id === activeId);
-        window.api.send('RENDERER_LOG', '[DEBUG Wallpaper] resolved activeItem =', activeItem ? activeItem.id : 'NOT FOUND');
         if (globalActive && activeItem) {
             document.body.setAttribute('data-wallpaper-active', 'true');
             document.documentElement.style.setProperty('--global-wallpaper-url', `url("${activeItem.dataUrl}")`);
