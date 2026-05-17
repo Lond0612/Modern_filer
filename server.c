@@ -507,7 +507,7 @@ void handle_prop_native(const char* path_utf8) {
     }
 }
 
-void handle_delete(const char* path_utf8) {
+void handle_delete(const char* path_utf8, int permanent) {
     wchar_t wpath[MAX_PATH + 2];
     MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
     wpath[wcslen(wpath) + 1] = L'\0';
@@ -520,7 +520,11 @@ void handle_delete(const char* path_utf8) {
 #ifndef FOF_WANTNUKEWARNING
 #define FOF_WANTNUKEWARNING 0x4000
 #endif
-    op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_WANTNUKEWARNING | FOF_NOERRORUI | FOF_SILENT;
+    if (permanent) {
+        op.fFlags = FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
+    } else {
+        op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_WANTNUKEWARNING | FOF_NOERRORUI | FOF_SILENT;
+    }
 
     int result = SHFileOperationW(&op);
     if (result == 0 && !op.fAnyOperationsAborted) {
@@ -626,7 +630,8 @@ int main(void) {
             char *new_p = strchr(old_p, '|');
             if (new_p) { *new_p = '\0'; handle_rename(old_p, new_p + 1); }
         }
-        else if (strncmp(line, "DELETE|", 7) == 0) handle_delete(line + 7);
+        else if (strncmp(line, "DELETE_FORCE|", 13) == 0) handle_delete(line + 13, 1);
+        else if (strncmp(line, "DELETE|", 7) == 0) handle_delete(line + 7, 0);
         else if (strncmp(line, "COPY|", 5) == 0) {
             char *src = line + 5;
             char *dst = strchr(src, '|');

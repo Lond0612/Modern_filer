@@ -202,7 +202,8 @@ const ShortcutManager = {
             }
             
             selected.forEach(item => {
-                window.api.sendCommand(`DELETE|${item.srcPath}`);
+                const cmdType = permanent ? 'DELETE_FORCE' : 'DELETE';
+                window.api.sendCommand(`${cmdType}|${item.srcPath}`);
             });
         },
 
