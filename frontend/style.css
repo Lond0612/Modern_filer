@@ -2625,8 +2625,6 @@ body > .preview-action-btn {
    Shortcuts List (ショートカット一覧)
    ========================================================================== */
 .shortcut-list-container {
-    max-height: calc(100vh - 250px);
-    overflow-y: auto;
     border: 1px solid var(--border-main);
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.1);
@@ -2925,41 +2923,41 @@ body[data-wallpaper-active="true"] .home-view {
 
 /* 設定画面のプレミアムなすりガラス（Glassmorphism）効果 */
 body[data-wallpaper-active="true"] .settings-screen {
-    background: color-mix(in srgb, var(--settings-main-bg) 75%, transparent) !important;
+    background: color-mix(in srgb, var(--settings-main-bg) var(--global-glass-opacity-settings, 75%), transparent) !important;
     backdrop-filter: blur(20px);
 }
 body[data-wallpaper-active="true"] .settings-sidebar {
-    background: color-mix(in srgb, var(--settings-sidebar-bg) 75%, transparent) !important;
+    background: color-mix(in srgb, var(--settings-sidebar-bg) var(--global-glass-opacity-settings, 75%), transparent) !important;
 }
 
 /* color-mix を用いた美しい半透明・すりガラス効果 */
 body[data-wallpaper-active="true"] .sidebar {
-    background: color-mix(in srgb, var(--bg-sidebar) 65%, transparent) !important;
+    background: color-mix(in srgb, var(--bg-sidebar) var(--global-glass-opacity, 65%), transparent) !important;
     backdrop-filter: blur(12px);
 }
 
 body[data-wallpaper-active="true"] .file-pane {
-    background: color-mix(in srgb, var(--bg-main) 65%, transparent) !important;
+    background: color-mix(in srgb, var(--bg-main) var(--global-glass-opacity, 65%), transparent) !important;
     backdrop-filter: blur(12px);
 }
 
 body[data-wallpaper-active="true"] .terminal-pane {
-    background: color-mix(in srgb, var(--bg-terminal) 65%, transparent) !important;
+    background: color-mix(in srgb, var(--bg-terminal) var(--global-glass-opacity, 65%), transparent) !important;
     backdrop-filter: blur(12px);
 }
 
 body[data-wallpaper-active="true"] .toolbar {
-    background: color-mix(in srgb, var(--bg-toolbar) 65%, transparent) !important;
+    background: color-mix(in srgb, var(--bg-toolbar) var(--global-glass-opacity, 65%), transparent) !important;
     backdrop-filter: blur(12px);
 }
 
 body[data-wallpaper-active="true"] .actions-bar {
-    background: color-mix(in srgb, var(--bg-actions) 65%, transparent) !important;
+    background: color-mix(in srgb, var(--bg-actions) var(--global-glass-opacity, 65%), transparent) !important;
     backdrop-filter: blur(12px);
 }
 
 body[data-wallpaper-active="true"] .tab-bar {
-    background: color-mix(in srgb, var(--bg-tabbar) 65%, transparent) !important;
+    background: color-mix(in srgb, var(--bg-tabbar) var(--global-glass-opacity, 65%), transparent) !important;
     backdrop-filter: blur(12px);
 }
 

@@ -87,7 +87,8 @@
                     </div>
                     <div class="menu-item" data-type="other">
                         <svg viewBox="0 0 384 512" fill="currentColor">
-                            <path d="M176 48L64 48c-8.8 0-16 7.2-16 16l0 384c0 8.8 7.2 16 16 16l256 0c8.8 0 16-7.2 16-16l0-240-88 0c-39.8 0-72-32.2-72-72l0-88zM316.1 160L224 67.9 224 136c0 13.3 10.7 24 24 24l68.1 0zM0 64C0 28.7 28.7 0 64 0L197.5 0c17 0 33.3 6.7 45.3 18.7L365.3 141.3c12 12 18.7 28.3 18.7 45.3L384 448c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 64z"/>
+                            <path
+                                d="M176 48L64 48c-8.8 0-16 7.2-16 16l0 384c0 8.8 7.2 16 16 16l256 0c8.8 0 16-7.2 16-16l0-240-88 0c-39.8 0-72-32.2-72-72l0-88zM316.1 160L224 67.9 224 136c0 13.3 10.7 24 24 24l68.1 0zM0 64C0 28.7 28.7 0 64 0L197.5 0c17 0 33.3 6.7 45.3 18.7L365.3 141.3c12 12 18.7 28.3 18.7 45.3L384 448c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 64z" />
                         </svg>
                         <span>その他ファイル</span>
                     </div>
@@ -95,65 +96,114 @@
             </div>
             <div class="separator"></div>
             <button id="btn-cut" class="action-btn" title="切り取り">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M192 256l-39.5 39.5c-12.6-4.9-26.2-7.5-40.5-7.5-61.9 0-112 50.1-112 112s50.1 112 112 112 112-50.1 112-112c0-14.3-2.7-27.9-7.5-40.5L499.2 76.8c7.1-7.1 7.1-18.5 0-25.6-28.3-28.3-74.1-28.3-102.4 0L256 192 216.5 152.5c4.9-12.6 7.5-26.2 7.5-40.5 0-61.9-50.1-112-112-112S0 50.1 0 112 50.1 224 112 224c14.3 0 27.9-2.7 40.5-7.5L192 256zm97.9 97.9L396.8 460.8c28.3 28.3 74.1 28.3 102.4 0 7.1-7.1 7.1-18.5 0-25.6l-145.3-145.3-64 64zM64 112a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm48 240a48 48 0 1 1 0 96 48 48 0 1 1 0-96z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 512 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+                    <path fill="currentColor"
+                        d="M192 256l-39.5 39.5c-12.6-4.9-26.2-7.5-40.5-7.5-61.9 0-112 50.1-112 112s50.1 112 112 112 112-50.1 112-112c0-14.3-2.7-27.9-7.5-40.5L499.2 76.8c7.1-7.1 7.1-18.5 0-25.6-28.3-28.3-74.1-28.3-102.4 0L256 192 216.5 152.5c4.9-12.6 7.5-26.2 7.5-40.5 0-61.9-50.1-112-112-112S0 50.1 0 112 50.1 224 112 224c14.3 0 27.9-2.7 40.5-7.5L192 256zm97.9 97.9L396.8 460.8c28.3 28.3 74.1 28.3 102.4 0 7.1-7.1 7.1-18.5 0-25.6l-145.3-145.3-64 64zM64 112a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm48 240a48 48 0 1 1 0 96 48 48 0 1 1 0-96z" />
+                </svg>
             </button>
             <button id="btn-copy" class="action-btn" title="コピー">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M192 0c-35.3 0-64 28.7-64 64l0 256c0 35.3 28.7 64 64 64l192 0c35.3 0 64-28.7 64-64l0-200.6c0-17.4-7.1-34.1-19.7-46.2L370.6 17.8C358.7 6.4 342.8 0 326.3 0L192 0zM64 128c-35.3 0-64 28.7-64 64L0 448c0 35.3 28.7 64 64 64l192 0c35.3 0 64-28.7 64-64l0-16-64 0 0 16-192 0 0-256 16 0 0-64-16 0z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 448 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+                    <path fill="currentColor"
+                        d="M192 0c-35.3 0-64 28.7-64 64l0 256c0 35.3 28.7 64 64 64l192 0c35.3 0 64-28.7 64-64l0-200.6c0-17.4-7.1-34.1-19.7-46.2L370.6 17.8C358.7 6.4 342.8 0 326.3 0L192 0zM64 128c-35.3 0-64 28.7-64 64L0 448c0 35.3 28.7 64 64 64l192 0c35.3 0 64-28.7 64-64l0-16-64 0 0 16-192 0 0-256 16 0 0-64-16 0z" />
+                </svg>
             </button>
             <button id="btn-paste" class="action-btn" title="ペースト">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M64 0C28.7 0 0 28.7 0 64L0 384c0 35.3 28.7 64 64 64l112 0 0-224c0-61.9 50.1-112 112-112l64 0 0-48c0-35.3-28.7-64-64-64L64 0zM248 112l-144 0c-13.3 0-24-10.7-24-24s10.7-24 24-24l144 0c13.3 0 24 10.7 24 24s-10.7 24-24 24zm40 48c-35.3 0-64 28.7-64 64l0 224c0 35.3 28.7 64 64 64l160 0c35.3 0 64-28.7 64-64l0-165.5c0-17-6.7-33.3-18.7-45.3l-58.5-58.5c-12-12-28.3-18.7-45.3-18.7L288 160z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 512 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+                    <path fill="currentColor"
+                        d="M64 0C28.7 0 0 28.7 0 64L0 384c0 35.3 28.7 64 64 64l112 0 0-224c0-61.9 50.1-112 112-112l64 0 0-48c0-35.3-28.7-64-64-64L64 0zM248 112l-144 0c-13.3 0-24-10.7-24-24s10.7-24 24-24l144 0c13.3 0 24 10.7 24 24s-10.7 24-24 24zm40 48c-35.3 0-64 28.7-64 64l0 224c0 35.3 28.7 64 64 64l160 0c35.3 0 64-28.7 64-64l0-165.5c0-17-6.7-33.3-18.7-45.3l-58.5-58.5c-12-12-28.3-18.7-45.3-18.7L288 160z" />
+                </svg>
             </button>
             <button id="btn-rename" class="action-btn" title="名前変更">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M471.6 21.7c-21.9-21.9-57.3-21.9-79.2 0L368 46.1 465.9 144 490.3 119.6c21.9-21.9 21.9-57.3 0-79.2L471.6 21.7zm-299.2 220c-6.1 6.1-10.8 13.6-13.5 21.9l-29.6 88.8c-2.9 8.6-.6 18.1 5.8 24.6s15.9 8.7 24.6 5.8l88.8-29.6c8.2-2.7 15.7-7.4 21.9-13.5L432 177.9 334.1 80 172.4 241.7zM96 64C43 64 0 107 0 160L0 416c0 53 43 96 96 96l256 0c53 0 96-43 96-96l0-96c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7-14.3 32-32 32L96 448c-17.7 0-32-14.3-32-32l0-256c0-17.7 14.3-32 32-32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L96 64z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 512 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+                    <path fill="currentColor"
+                        d="M471.6 21.7c-21.9-21.9-57.3-21.9-79.2 0L368 46.1 465.9 144 490.3 119.6c21.9-21.9 21.9-57.3 0-79.2L471.6 21.7zm-299.2 220c-6.1 6.1-10.8 13.6-13.5 21.9l-29.6 88.8c-2.9 8.6-.6 18.1 5.8 24.6s15.9 8.7 24.6 5.8l88.8-29.6c8.2-2.7 15.7-7.4 21.9-13.5L432 177.9 334.1 80 172.4 241.7zM96 64C43 64 0 107 0 160L0 416c0 53 43 96 96 96l256 0c53 0 96-43 96-96l0-96c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7-14.3 32-32 32L96 448c-17.7 0-32-14.3-32-32l0-256c0-17.7 14.3-32 32-32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L96 64z" />
+                </svg>
             </button>
             <button id="btn-delete" class="action-btn" title="削除">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M136.7 5.9C141.1-7.2 153.3-16 167.1-16l113.9 0c13.8 0 26 8.8 30.4 21.9L320 32 416 32c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 96C14.3 96 0 81.7 0 64S14.3 32 32 32l96 0 8.7-26.1zM32 144l384 0 0 304c0 35.3-28.7 64-64 64L96 512c-35.3 0-64-28.7-64-64l0-304zm88 64c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24zm104 0c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24zm104 0c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 448 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+                    <path fill="currentColor"
+                        d="M136.7 5.9C141.1-7.2 153.3-16 167.1-16l113.9 0c13.8 0 26 8.8 30.4 21.9L320 32 416 32c17.7 0 32 14.3 32 32s-14.3 32-32 32L32 96C14.3 96 0 81.7 0 64S14.3 32 32 32l96 0 8.7-26.1zM32 144l384 0 0 304c0 35.3-28.7 64-64 64L96 512c-35.3 0-64-28.7-64-64l0-304zm88 64c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24zm104 0c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24zm104 0c-13.3 0-24 10.7-24 24l0 192c0 13.3 10.7 24 24 24s24-10.7 24-24l0-192c0-13.3-10.7-24-24-24z" />
+                </svg>
             </button>
             <div class="separator"></div>
             <div class="sort-btn-wrapper" style="position: relative;">
                 <button id="btn-sort" class="action-btn" title="並べ替え">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M2.4 204.2c5 12 16.6 19.8 29.6 19.8l320 0c12.9 0 24.6-7.8 29.6-19.8s2.2-25.7-6.9-34.9l-160-160c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-9.2 9.2-11.9 22.9-6.9 34.9zm0 103.5c-5 12-2.2 25.7 6.9 34.9l160 160c12.5 12.5 32.8 12.5 45.3 0l160-160c9.2-9.2 11.9-22.9 6.9-34.9S364.9 288 352 288L32 288c-12.9 0-24.6 7.8-29.6 19.8z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 384 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+                        <path fill="currentColor"
+                            d="M2.4 204.2c5 12 16.6 19.8 29.6 19.8l320 0c12.9 0 24.6-7.8 29.6-19.8s2.2-25.7-6.9-34.9l-160-160c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-9.2 9.2-11.9 22.9-6.9 34.9zm0 103.5c-5 12-2.2 25.7 6.9 34.9l160 160c12.5 12.5 32.8 12.5 45.3 0l160-160c9.2-9.2 11.9-22.9 6.9-34.9S364.9 288 352 288L32 288c-12.9 0-24.6 7.8-29.6 19.8z" />
+                    </svg>
                     <span>並べ替え</span>
                 </button>
                 <div id="sort-menu" class="dropdown-menu">
-                    <div class="menu-item sort-item" data-sort-key="0"><span class="check-icon" style="opacity: 1;">✓</span>名前</div>
-                    <div class="menu-item sort-item" data-sort-key="2"><span class="check-icon" style="opacity: 0;">✓</span>更新日時</div>
-                    <div class="menu-item sort-item" data-sort-key="1"><span class="check-icon" style="opacity: 0;">✓</span>作成日時</div>
-                    <div class="menu-item sort-item" data-sort-key="3"><span class="check-icon" style="opacity: 0;">✓</span>種類</div>
-                    <div class="menu-item sort-item" data-sort-key="4"><span class="check-icon" style="opacity: 0;">✓</span>サイズ</div>
+                    <div class="menu-item sort-item" data-sort-key="0"><span class="check-icon"
+                            style="opacity: 1;">✓</span>名前</div>
+                    <div class="menu-item sort-item" data-sort-key="2"><span class="check-icon"
+                            style="opacity: 0;">✓</span>更新日時</div>
+                    <div class="menu-item sort-item" data-sort-key="1"><span class="check-icon"
+                            style="opacity: 0;">✓</span>作成日時</div>
+                    <div class="menu-item sort-item" data-sort-key="3"><span class="check-icon"
+                            style="opacity: 0;">✓</span>種類</div>
+                    <div class="menu-item sort-item" data-sort-key="4"><span class="check-icon"
+                            style="opacity: 0;">✓</span>サイズ</div>
                     <div class="separator" style="width: 100%; height: 1px; margin: 4px 0; background: #444;"></div>
-                    <div class="menu-item sort-order" data-sort-order="0"><span class="check-icon" style="opacity: 1;">✓</span>昇順</div>
-                    <div class="menu-item sort-order" data-sort-order="1"><span class="check-icon" style="opacity: 0;">✓</span>降順</div>
+                    <div class="menu-item sort-order" data-sort-order="0"><span class="check-icon"
+                            style="opacity: 1;">✓</span>昇順</div>
+                    <div class="menu-item sort-order" data-sort-order="1"><span class="check-icon"
+                            style="opacity: 0;">✓</span>降順</div>
                 </div>
             </div>
             <div class="separator"></div>
             <div class="view-btn-wrapper" style="position: relative;">
                 <button id="btn-view" class="action-btn" title="表示">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M48 144a48 48 0 1 0 0-96 48 48 0 1 0 0 96zM192 64c-17.7 0-32 14.3-32 32s14.3 32 32 32l288 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L192 64zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32l288 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-288 0zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32l288 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-288 0zM48 464a48 48 0 1 0 0-96 48 48 0 1 0 0 96zM96 256a48 48 0 1 0 -96 0 48 48 0 1 0 96 0z"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 512 512"><!--!Font Awesome Free v7.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2026 Fonticons, Inc.-->
+                        <path fill="currentColor"
+                            d="M48 144a48 48 0 1 0 0-96 48 48 0 1 0 0 96zM192 64c-17.7 0-32 14.3-32 32s14.3 32 32 32l288 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L192 64zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32l288 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-288 0zm0 160c-17.7 0-32 14.3-32 32s14.3 32 32 32l288 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-288 0zM48 464a48 48 0 1 0 0-96 48 48 0 1 0 0 96zM96 256a48 48 0 1 0 -96 0 48 48 0 1 0 96 0z" />
+                    </svg>
                     <span>表示</span>
                 </button>
                 <div id="view-menu" class="dropdown-menu">
-                    <div class="menu-item view-mode" data-view-mode="extralarge"><span class="check-icon" style="opacity: 0;">✓</span>特大アイコン</div>
-                    <div class="menu-item view-mode" data-view-mode="large"><span class="check-icon" style="opacity: 0;">✓</span>大アイコン</div>
-                    <div class="menu-item view-mode" data-view-mode="medium"><span class="check-icon" style="opacity: 0;">✓</span>中アイコン</div>
-                    <div class="menu-item view-mode" data-view-mode="small"><span class="check-icon" style="opacity: 0;">✓</span>小アイコン</div>
+                    <div class="menu-item view-mode" data-view-mode="extralarge"><span class="check-icon"
+                            style="opacity: 0;">✓</span>特大アイコン</div>
+                    <div class="menu-item view-mode" data-view-mode="large"><span class="check-icon"
+                            style="opacity: 0;">✓</span>大アイコン</div>
+                    <div class="menu-item view-mode" data-view-mode="medium"><span class="check-icon"
+                            style="opacity: 0;">✓</span>中アイコン</div>
+                    <div class="menu-item view-mode" data-view-mode="small"><span class="check-icon"
+                            style="opacity: 0;">✓</span>小アイコン</div>
                     <div class="separator" style="width: 100%; height: 1px; margin: 4px 0; background: #444;"></div>
-                    <div class="menu-item view-mode" data-view-mode="details"><span class="check-icon" style="opacity: 1;">✓</span>詳細</div>
-                    <div class="menu-item view-mode" data-view-mode="compact"><span class="check-icon" style="opacity: 0;">✓</span>コンパクト</div>
-                    <div class="separator" style="width: 100%; height: 1px; margin: 4px 0; background: var(--border-main);"></div>
+                    <div class="menu-item view-mode" data-view-mode="details"><span class="check-icon"
+                            style="opacity: 1;">✓</span>詳細</div>
+                    <div class="menu-item view-mode" data-view-mode="compact"><span class="check-icon"
+                            style="opacity: 0;">✓</span>コンパクト</div>
+                    <div class="separator"
+                        style="width: 100%; height: 1px; margin: 4px 0; background: var(--border-main);"></div>
                     <div class="menu-item has-submenu">
                         <span class="check-icon" style="opacity: 0;"></span>その他
-                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto; width:14px; height:14px;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            style="margin-left:auto; width:14px; height:14px;">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
                         <div class="submenu dropdown-menu">
 
-                            <div class="menu-item view-toggle" data-toggle="hidden"><span class="check-icon" style="opacity: 0;">✓</span>隠しファイル</div>
-                            <div class="menu-item view-toggle" data-toggle="extension"><span class="check-icon" style="opacity: 1;">✓</span>ファイル名拡張子</div>
+                            <div class="menu-item view-toggle" data-toggle="hidden"><span class="check-icon"
+                                    style="opacity: 0;">✓</span>隠しファイル</div>
+                            <div class="menu-item view-toggle" data-toggle="extension"><span class="check-icon"
+                                    style="opacity: 1;">✓</span>ファイル名拡張子</div>
                         </div>
                     </div>
                 </div>
             </div>
             <button id="btn-preview-toggle" class="action-btn" title="プレビュー (Space)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                     <circle cx="12" cy="12" r="3"></circle>
                 </svg>
@@ -162,9 +212,12 @@
             <div class="separator"></div>
             <div style="flex-grow: 1;"></div>
             <button id="btn-settings" class="action-btn" title="設定" style="margin-left: auto;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
                     <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
                 </svg>
             </button>
         </div>
@@ -174,7 +227,8 @@
                 <div class="sidebar">
                     <div class="sidebar-nav">
                         <button id="btn-sidebar-home" class="sidebar-nav-item active" title="ホーム">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
                             </svg>
@@ -196,7 +250,7 @@
                             <h1 id="home-greeting">こんにちは</h1>
                             <p>今日は何をしましょうか？</p>
                         </div>
-                        
+
                         <div class="home-main-layout">
                             <div class="home-section">
                                 <h2 class="section-title">クイックアクセス</h2>
@@ -204,7 +258,7 @@
                                     <!-- Quick access tiles will be generated here -->
                                 </div>
                             </div>
-                            
+
                             <div class="home-section">
                                 <div class="section-header">
                                     <h2 class="section-title">コンテンツ</h2>
@@ -228,9 +282,13 @@
                         <table id="file-table" class="file-list">
                             <thead>
                                 <tr>
-                                    <th style="width: 300px;">Name<div class="col-resizer"></div></th>
-                                    <th style="width: 150px; min-width: 120px;">Date Modified<div class="col-resizer"></div></th>
-                                    <th style="width: 150px;">Size<div class="col-resizer"></div></th>
+                                    <th style="width: 300px;">Name<div class="col-resizer"></div>
+                                    </th>
+                                    <th style="width: 150px; min-width: 120px;">Date Modified<div class="col-resizer">
+                                        </div>
+                                    </th>
+                                    <th style="width: 150px;">Size<div class="col-resizer"></div>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody id="file-list-body">
@@ -246,11 +304,16 @@
                     <div class="preview-header">
                         <span id="preview-filename">File Preview</span>
                         <button id="btn-close-preview" class="preview-close-btn" title="閉じる">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
                         </button>
                     </div>
                     <button id="btn-open-file" class="preview-action-btn" title="ファイルを既定のアプリで開く">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
                             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                             <polyline points="15 3 21 3 21 9"></polyline>
                             <line x1="10" y1="14" x2="21" y2="3"></line>
@@ -258,7 +321,8 @@
                     </button>
                     <div id="preview-content" class="preview-body">
                         <div class="preview-placeholder">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"
+                                stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                                 <circle cx="8.5" cy="8.5" r="1.5"></circle>
                                 <polyline points="21 15 16 10 5 21"></polyline>
@@ -285,32 +349,65 @@
     <div id="settings-screen" class="settings-screen" style="display: none;">
         <div class="settings-container-modern">
             <button id="btn-close-settings" class="settings-close-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
             </button>
             <div class="settings-sidebar">
                 <div class="settings-sidebar-header">設定</div>
                 <div class="settings-tab-btn active" data-tab="general">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                        </path>
+                    </svg>
                     全般
                 </div>
                 <div class="settings-tab-btn" data-tab="theme">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                    </svg>
                     デザイン
                 </div>
                 <div class="settings-tab-btn" data-tab="contents">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
                     コンテンツ
                 </div>
                 <div class="settings-tab-btn" data-tab="customization">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
                     ユーザカスタマイズ
                 </div>
                 <div class="settings-tab-btn" data-tab="shortcuts">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3z"></path><path d="M9 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3z"></path></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3z"></path>
+                        <path d="M9 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3z"></path>
+                    </svg>
                     ショートカット
                 </div>
                 <div class="settings-tab-btn" data-tab="wallpaper">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
                     壁紙
                 </div>
             </div>
@@ -343,7 +440,7 @@
                 <!-- デザインタブ -->
                 <div id="tab-theme" class="settings-tab-content">
                     <div class="tab-header">デザイン設定</div>
-                    
+
                     <div class="setting-group">
                         <div class="setting-label">
                             <span class="main-label">ハイコントラスト</span>
@@ -367,18 +464,21 @@
                                     <div class="theme-preview" style="background:#f8f9fa; border:1px solid #ddd;"></div>
                                 </div>
                                 <div class="theme-option" data-theme="sakura" title="桜 (Sakura Pink)">
-                                    <div class="theme-preview" style="background:#fffcfd; border:1px solid #ffe4e1;"></div>
+                                    <div class="theme-preview" style="background:#fffcfd; border:1px solid #ffe4e1;">
+                                    </div>
                                 </div>
                                 <div class="theme-option" data-theme="amber" title="琥珀 (Amber Yellow)">
-                                    <div class="theme-preview" style="background:#fffbeb; border:1px solid #fbbf24;"></div>
+                                    <div class="theme-preview" style="background:#fffbeb; border:1px solid #fbbf24;">
+                                    </div>
                                 </div>
                                 <div class="theme-option" data-theme="sky" title="空 (Sky Blue)">
-                                    <div class="theme-preview" style="background:#f0f9ff; border:1px solid #bae6fd;"></div>
+                                    <div class="theme-preview" style="background:#f0f9ff; border:1px solid #bae6fd;">
+                                    </div>
                                 </div>
                             </div>
-                            
+
                             <div class="preset-divider"></div>
-                            
+
                             <div class="preset-section-label">ダークベース</div>
                             <div class="theme-presets">
                                 <div class="theme-option active" data-theme="default" title="Default Dark">
@@ -391,23 +491,38 @@
                                     <div class="theme-preview" style="background:#2b2b1b;"></div>
                                 </div>
                                 <div class="theme-option" data-theme="midnight" title="真夜中 (Midnight Purple)">
-                                    <div class="theme-preview" style="background:#0f051a; border:1px solid #4a148c;"></div>
+                                    <div class="theme-preview" style="background:#0f051a; border:1px solid #4a148c;">
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="preset-divider"></div>
-                            
-                            <div class="preset-section-label" style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+
+                            <div class="preset-section-label"
+                                style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                                 <span>ユーザーテーマ (user_themes.json)</span>
-                                <button id="btn-refresh-themes" class="action-btn-icon" title="テーマを再読み込み" style="background:transparent; border:none; padding:2px; cursor:pointer; color:var(--text-muted); display:flex;">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                                <button id="btn-refresh-themes" class="action-btn-icon" title="テーマを再読み込み"
+                                    style="background:transparent; border:none; padding:2px; cursor:pointer; color:var(--text-muted); display:flex;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;">
+                                        <polyline points="23 4 23 10 17 10"></polyline>
+                                        <polyline points="1 20 1 14 7 14"></polyline>
+                                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15">
+                                        </path>
+                                    </svg>
                                 </button>
                             </div>
                             <div id="user-themes-container" class="theme-presets">
                                 <!-- ユーザーテーマがここに注入される -->
                             </div>
                             <button id="btn-open-themes-folder" class="action-btn" style="margin-top: 10px;">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px; margin-right:6px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round"
+                                    style="width:14px; height:14px; margin-right:6px;">
+                                    <path
+                                        d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                                    </path>
+                                </svg>
                                 <span>テーマフォルダを開く</span>
                             </button>
                         </div>
@@ -445,7 +560,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- ユーザカスタマイズタブ -->
                 <div id="tab-customization" class="settings-tab-content">
                     <div class="tab-header">ユーザカスタマイズ</div>
@@ -454,10 +569,12 @@
                             <span class="main-label">新規作成メニューの編集</span>
                             <span class="sub-label">右クリックメニューやツールバーに表示するファイルの種類を追加・削除できます</span>
                         </div>
-                        
+
                         <div class="custom-extension-form">
-                            <input type="text" id="new-ext-label" class="modern-input" placeholder="ラベル (例: テキストファイル)" style="flex: 1;">
-                            <input type="text" id="new-ext-value" class="modern-input" placeholder="拡張子 (例: .txt)" style="width: 120px;">
+                            <input type="text" id="new-ext-label" class="modern-input" placeholder="ラベル (例: テキストファイル)"
+                                style="flex: 1;">
+                            <input type="text" id="new-ext-value" class="modern-input" placeholder="拡張子 (例: .txt)"
+                                style="width: 120px;">
                             <button id="btn-add-extension" class="btn-primary">追加</button>
                         </div>
 
@@ -487,32 +604,112 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td>コピー</td><td><span class="shortcut-key">Ctrl + C</span></td></tr>
-                                <tr><td>切り取り</td><td><span class="shortcut-key">Ctrl + X</span></td></tr>
-                                <tr><td>貼り付け</td><td><span class="shortcut-key">Ctrl + V</span></td></tr>
-                                <tr><td>新規タブを開く</td><td><span class="shortcut-key">Ctrl + T</span></td></tr>
-                                <tr><td>タブを閉じる</td><td><span class="shortcut-key">Ctrl + W</span></td></tr>
-                                <tr><td>次のタブへ切り替え</td><td><span class="shortcut-key">Ctrl + Tab</span></td></tr>
-                                <tr><td>前のタブへ切り替え</td><td><span class="shortcut-key">Ctrl + Shift + Tab</span></td></tr>
-                                <tr><td>閉じたタブを復元</td><td><span class="shortcut-key">Ctrl + Shift + T</span></td></tr>
-                                <tr><td>名前の変更</td><td><span class="shortcut-key">F2</span></td></tr>
-                                <tr><td>すべて選択</td><td><span class="shortcut-key">Ctrl + A</span></td></tr>
-                                <tr><td>プレビュー表示の切替</td><td><span class="shortcut-key">Space</span></td></tr>
-                                <tr><td>上の階層へ移動</td><td><span class="shortcut-key">Alt + ↑</span></td></tr>
-                                <tr><td>戻る</td><td><span class="shortcut-key">Alt + ←</span></td></tr>
-                                <tr><td>進む</td><td><span class="shortcut-key">Alt + →</span></td></tr>
-                                <tr><td>新規フォルダー作成</td><td><span class="shortcut-key">Ctrl + Shift + N</span></td></tr>
-                                <tr><td>検索ボックスを選択</td><td><span class="shortcut-key">Ctrl + F / E</span> , <span class="shortcut-key">F3</span></td></tr>
-                                <tr><td>最新の情報に更新</td><td><span class="shortcut-key">F5</span> , <span class="shortcut-key">Ctrl + R</span></td></tr>
-                                <tr><td>削除</td><td><span class="shortcut-key">Ctrl + D</span></td></tr>
-                                <tr><td>完全に削除</td><td><span class="shortcut-key">Shift + D</span></td></tr>
-                                <tr><td>プロパティを表示</td><td><span class="shortcut-key">Alt + Enter</span></td></tr>
-                                <tr><td>新規ウィンドウを開く</td><td><span class="shortcut-key">Ctrl + N</span></td></tr>
-                                <tr><td>ツリーをすべて展開</td><td><span class="shortcut-key">Ctrl + Shift + E</span></td></tr>
-                                <tr><td>ウィンドウを最大化トグル</td><td><span class="shortcut-key">F11</span></td></tr>
-                                <tr><td>表示モード切替(1〜6)</td><td><span class="shortcut-key">Ctrl + Shift + 1〜6</span></td></tr>
-                                <tr><td>タブ指定切替(1〜9)</td><td><span class="shortcut-key">Ctrl + 1〜9</span></td></tr>
-                                <tr><td>表示サイズをズーム</td><td><span class="shortcut-key">Ctrl + マウスホイール</span></td></tr>
+                                <tr>
+                                    <td>コピー</td>
+                                    <td><span class="shortcut-key">Ctrl + C</span></td>
+                                </tr>
+                                <tr>
+                                    <td>切り取り</td>
+                                    <td><span class="shortcut-key">Ctrl + X</span></td>
+                                </tr>
+                                <tr>
+                                    <td>貼り付け</td>
+                                    <td><span class="shortcut-key">Ctrl + V</span></td>
+                                </tr>
+                                <tr>
+                                    <td>新規タブを開く</td>
+                                    <td><span class="shortcut-key">Ctrl + T</span></td>
+                                </tr>
+                                <tr>
+                                    <td>タブを閉じる</td>
+                                    <td><span class="shortcut-key">Ctrl + W</span></td>
+                                </tr>
+                                <tr>
+                                    <td>次のタブへ切り替え</td>
+                                    <td><span class="shortcut-key">Ctrl + Tab</span></td>
+                                </tr>
+                                <tr>
+                                    <td>前のタブへ切り替え</td>
+                                    <td><span class="shortcut-key">Ctrl + Shift + Tab</span></td>
+                                </tr>
+                                <tr>
+                                    <td>閉じたタブを復元</td>
+                                    <td><span class="shortcut-key">Ctrl + Shift + T</span></td>
+                                </tr>
+                                <tr>
+                                    <td>名前の変更</td>
+                                    <td><span class="shortcut-key">F2</span></td>
+                                </tr>
+                                <tr>
+                                    <td>すべて選択</td>
+                                    <td><span class="shortcut-key">Ctrl + A</span></td>
+                                </tr>
+                                <tr>
+                                    <td>プレビュー表示の切替</td>
+                                    <td><span class="shortcut-key">Space</span></td>
+                                </tr>
+                                <tr>
+                                    <td>上の階層へ移動</td>
+                                    <td><span class="shortcut-key">Alt + ↑</span></td>
+                                </tr>
+                                <tr>
+                                    <td>戻る</td>
+                                    <td><span class="shortcut-key">Alt + ←</span></td>
+                                </tr>
+                                <tr>
+                                    <td>進む</td>
+                                    <td><span class="shortcut-key">Alt + →</span></td>
+                                </tr>
+                                <tr>
+                                    <td>新規フォルダー作成</td>
+                                    <td><span class="shortcut-key">Ctrl + Shift + N</span></td>
+                                </tr>
+                                <tr>
+                                    <td>検索ボックスを選択</td>
+                                    <td><span class="shortcut-key">Ctrl + F / E</span> , <span
+                                            class="shortcut-key">F3</span></td>
+                                </tr>
+                                <tr>
+                                    <td>最新の情報に更新</td>
+                                    <td><span class="shortcut-key">F5</span> , <span class="shortcut-key">Ctrl +
+                                            R</span></td>
+                                </tr>
+                                <tr>
+                                    <td>削除</td>
+                                    <td><span class="shortcut-key">Ctrl + D</span></td>
+                                </tr>
+                                <tr>
+                                    <td>完全に削除</td>
+                                    <td><span class="shortcut-key">Shift + D</span></td>
+                                </tr>
+                                <tr>
+                                    <td>プロパティを表示</td>
+                                    <td><span class="shortcut-key">Alt + Enter</span></td>
+                                </tr>
+                                <tr>
+                                    <td>新規ウィンドウを開く</td>
+                                    <td><span class="shortcut-key">Ctrl + N</span></td>
+                                </tr>
+                                <tr>
+                                    <td>ツリーをすべて展開</td>
+                                    <td><span class="shortcut-key">Ctrl + Shift + E</span></td>
+                                </tr>
+                                <tr>
+                                    <td>ウィンドウを最大化トグル</td>
+                                    <td><span class="shortcut-key">F11</span></td>
+                                </tr>
+                                <tr>
+                                    <td>表示モード切替(1〜6)</td>
+                                    <td><span class="shortcut-key">Ctrl + Shift + 1〜6</span></td>
+                                </tr>
+                                <tr>
+                                    <td>タブ指定切替(1〜9)</td>
+                                    <td><span class="shortcut-key">Ctrl + 1〜9</span></td>
+                                </tr>
+                                <tr>
+                                    <td>表示サイズをズーム</td>
+                                    <td><span class="shortcut-key">Ctrl + マウスホイール</span></td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -521,13 +718,14 @@
                 <!-- 壁紙タブ -->
                 <div id="tab-wallpaper" class="settings-tab-content">
                     <div class="tab-header">壁紙設定</div>
-                    
+
                     <div class="setting-group">
                         <div class="setting-label">
                             <span class="main-label">背景をカスタマイズ</span>
                             <span class="sub-label">壁紙を画像でカスタマイズするか、単色またはなしに設定します</span>
                         </div>
-                        <select id="global-wallpaper-mode" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-main); font-size: 12px; cursor: pointer;">
+                        <select id="global-wallpaper-mode"
+                            style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-main); font-size: 12px; cursor: pointer;">
                             <option value="image">画像</option>
                             <option value="none">単色またはなし</option>
                         </select>
@@ -544,26 +742,46 @@
                     <div class="setting-group" id="wallpaper-select-section">
                         <div class="setting-label">
                             <span class="main-label">写真の選択</span>
-                            <span class="sub-label">使用する画像をアップロードして適用します</span>
                         </div>
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            <button id="btn-select-global-wallpaper" class="btn-primary" style="padding: 6px 16px; font-size: 12px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 6px;">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                                画像をアップロード
+                            <button id="btn-select-global-wallpaper" class="btn-primary"
+                                style="padding: 6px 16px; font-size: 12px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 6px;">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                画像を参照
                             </button>
-                            <button id="btn-clear-global-wallpaper" class="btn-primary" style="padding: 6px 16px; font-size: 12px; cursor: pointer; border-radius: 4px; background: rgba(255,68,68,0.1); color:#ff4444; border:1px solid rgba(255,68,68,0.2);">履歴を全クリア</button>
+                            <button id="btn-clear-global-wallpaper" class="btn-primary"
+                                style="padding: 6px 16px; font-size: 12px; cursor: pointer; border-radius: 4px; background: rgba(255,68,68,0.1); color:#ff4444; border:1px solid rgba(255,68,68,0.2);">履歴を全クリア</button>
                         </div>
                     </div>
 
                     <div class="setting-group" id="wallpaper-fit-section">
                         <div class="setting-label">
                             <span class="main-label">表示スタイル</span>
-                            <span class="sub-label">壁紙画像の表示スタイルを選択します</span>
                         </div>
-                        <select id="global-wallpaper-fit" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-main); font-size: 12px; cursor: pointer;">
+                        <select id="global-wallpaper-fit"
+                            style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-main); font-size: 12px; cursor: pointer;">
                             <option value="cover">画面幅に合わせる</option>
                             <option value="contain">画像に合わせる</option>
                         </select>
+                    </div>
+
+                    <div class="setting-group-vertical" id="wallpaper-opacity-section"
+                        style="margin-top: 15px; margin-bottom: 25px;">
+                        <div class="setting-label">
+                            <span class="main-label">すりガラスの不透明度</span>
+                        </div>
+                        <div class="slider-control"
+                            style="display: flex; align-items: center; gap: 15px; margin-top: 8px;">
+                            <input type="range" id="wallpaper-opacity-slider" min="10" max="95" value="65" step="5"
+                                style="flex: 1; cursor: pointer;">
+                            <span id="wallpaper-opacity-value"
+                                style="font-size: 13px; font-weight: bold; width: 45px; text-align: right; color: var(--text-main);">65%</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -573,20 +791,33 @@
     <!-- タブコンテキストメニュー -->
     <div id="tab-context-menu" class="context-menu">
         <div class="context-item" id="ctx-tab-close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
             <span>タブを閉じる</span>
         </div>
         <div class="context-item" id="ctx-tab-close-others">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="9" y1="3" x2="9" y2="21"></line>
+            </svg>
             <span>他のタブをすべて閉じる</span>
         </div>
         <div class="context-item" id="ctx-tab-close-right">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M15 3v18"></path><path d="m18 9 3 3-3 3"></path></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <path d="M15 3v18"></path>
+                <path d="m18 9 3 3-3 3"></path>
+            </svg>
             <span>右側のタブを閉じる</span>
         </div>
         <div class="context-divider"></div>
         <div class="context-item" id="ctx-tab-duplicate">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
             <span>タブを複製</span>
         </div>
     </div>
@@ -596,81 +827,143 @@
         <div id="ctx-group-item">
             <div class="context-horizontal-actions">
                 <div class="context-item icon-only" id="ctx-cut" title="切り取り">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="6" cy="6" r="3"></circle>
+                        <circle cx="6" cy="18" r="3"></circle>
+                        <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                        <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                        <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                    </svg>
                     <span class="icon-label">切り取り</span>
                 </div>
                 <div class="context-item icon-only" id="ctx-copy" title="コピー">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
                     <span class="icon-label">コピー</span>
                 </div>
                 <div class="context-item icon-only" id="ctx-paste" title="貼り付け">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                    </svg>
                     <span class="icon-label">貼付</span>
                 </div>
                 <div class="context-item icon-only" id="ctx-rename" title="名前の変更">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
                     <span class="icon-label">名前変更</span>
                 </div>
                 <div class="context-item icon-only delete" id="ctx-delete" title="削除">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
                     <span class="icon-label">削除</span>
                 </div>
             </div>
-            
+
             <div class="context-divider"></div>
-            
+
             <div class="context-item" id="ctx-open">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
                 <span>開く</span>
             </div>
-            
+
             <div class="context-item" id="ctx-open-new-tab">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
                 <span>新しいタブで開く</span>
             </div>
-            
+
             <div class="context-item" id="ctx-open-new-window">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                </svg>
                 <span>新しいウィンドウで開く</span>
             </div>
-            
+
             <div class="context-item disabled" id="ctx-quick-access">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                </svg>
                 <span>クイックアクセスに登録</span>
             </div>
-            
+
             <div class="context-item disabled" id="ctx-favorite">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon
+                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                    </polygon>
+                </svg>
                 <span>お気に入りに追加</span>
             </div>
 
             <div class="context-divider"></div>
 
             <div class="context-item" id="ctx-copy-path">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
                 <span>パスをコピー</span>
             </div>
 
             <div class="context-divider"></div>
 
             <div class="context-item" id="ctx-properties">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
                 <span>プロパティ</span>
             </div>
         </div>
 
         <div id="ctx-group-empty" style="display: none;">
             <div class="context-item has-submenu" id="ctx-new-empty">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
                 <span>新規作成</span>
-                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto; width:14px; height:14px;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto; width:14px; height:14px;">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
                 <div class="submenu dropdown-menu">
                     <div class="menu-item" id="ctx-new-dir">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                            </path>
+                        </svg>
                         <span>新しいフォルダ</span>
                     </div>
                     <div class="menu-item" id="ctx-new-file">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
                         <span>テキストファイル</span>
                     </div>
                 </div>
@@ -679,33 +972,62 @@
             <div class="context-divider"></div>
 
             <div class="context-item has-submenu">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
                 <span>表示</span>
-                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto; width:14px; height:14px;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto; width:14px; height:14px;">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
                 <div class="submenu dropdown-menu">
-                    <div class="menu-item view-mode" data-view-mode="extralarge"><span class="check-icon" style="opacity: 0;">✓</span>特大アイコン</div>
-                    <div class="menu-item view-mode" data-view-mode="large"><span class="check-icon" style="opacity: 0;">✓</span>大アイコン</div>
-                    <div class="menu-item view-mode" data-view-mode="medium"><span class="check-icon" style="opacity: 0;">✓</span>中アイコン</div>
-                    <div class="menu-item view-mode" data-view-mode="small"><span class="check-icon" style="opacity: 0;">✓</span>小アイコン</div>
-                    <div class="separator" style="width: 100%; height: 1px; margin: 4px 0; background: var(--border-light);"></div>
-                    <div class="menu-item view-mode" data-view-mode="details"><span class="check-icon" style="opacity: 0;">✓</span>詳細</div>
-                    <div class="menu-item view-mode" data-view-mode="compact"><span class="check-icon" style="opacity: 0;">✓</span>コンパクト</div>
+                    <div class="menu-item view-mode" data-view-mode="extralarge"><span class="check-icon"
+                            style="opacity: 0;">✓</span>特大アイコン</div>
+                    <div class="menu-item view-mode" data-view-mode="large"><span class="check-icon"
+                            style="opacity: 0;">✓</span>大アイコン</div>
+                    <div class="menu-item view-mode" data-view-mode="medium"><span class="check-icon"
+                            style="opacity: 0;">✓</span>中アイコン</div>
+                    <div class="menu-item view-mode" data-view-mode="small"><span class="check-icon"
+                            style="opacity: 0;">✓</span>小アイコン</div>
+                    <div class="separator"
+                        style="width: 100%; height: 1px; margin: 4px 0; background: var(--border-light);"></div>
+                    <div class="menu-item view-mode" data-view-mode="details"><span class="check-icon"
+                            style="opacity: 0;">✓</span>詳細</div>
+                    <div class="menu-item view-mode" data-view-mode="compact"><span class="check-icon"
+                            style="opacity: 0;">✓</span>コンパクト</div>
                 </div>
             </div>
 
             <div class="context-item has-submenu">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <polyline points="19 12 12 19 5 12"></polyline>
+                </svg>
                 <span>並べ替え</span>
-                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto; width:14px; height:14px;"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto; width:14px; height:14px;">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
                 <div class="submenu dropdown-menu">
-                    <div class="menu-item sort-item" data-sort-key="0"><span class="check-icon" style="opacity: 0;">✓</span>名前</div>
-                    <div class="menu-item sort-item" data-sort-key="2"><span class="check-icon" style="opacity: 0;">✓</span>更新日時</div>
-                    <div class="menu-item sort-item" data-sort-key="1"><span class="check-icon" style="opacity: 0;">✓</span>作成日時</div>
-                    <div class="menu-item sort-item" data-sort-key="3"><span class="check-icon" style="opacity: 0;">✓</span>種類</div>
-                    <div class="menu-item sort-item" data-sort-key="4"><span class="check-icon" style="opacity: 0;">✓</span>サイズ</div>
-                    <div class="separator" style="width: 100%; height: 1px; margin: 4px 0; background: var(--border-light);"></div>
-                    <div class="menu-item sort-order" data-sort-order="0"><span class="check-icon" style="opacity: 0;">✓</span>昇順</div>
-                    <div class="menu-item sort-order" data-sort-order="1"><span class="check-icon" style="opacity: 0;">✓</span>降順</div>
+                    <div class="menu-item sort-item" data-sort-key="0"><span class="check-icon"
+                            style="opacity: 0;">✓</span>名前</div>
+                    <div class="menu-item sort-item" data-sort-key="2"><span class="check-icon"
+                            style="opacity: 0;">✓</span>更新日時</div>
+                    <div class="menu-item sort-item" data-sort-key="1"><span class="check-icon"
+                            style="opacity: 0;">✓</span>作成日時</div>
+                    <div class="menu-item sort-item" data-sort-key="3"><span class="check-icon"
+                            style="opacity: 0;">✓</span>種類</div>
+                    <div class="menu-item sort-item" data-sort-key="4"><span class="check-icon"
+                            style="opacity: 0;">✓</span>サイズ</div>
+                    <div class="separator"
+                        style="width: 100%; height: 1px; margin: 4px 0; background: var(--border-light);"></div>
+                    <div class="menu-item sort-order" data-sort-order="0"><span class="check-icon"
+                            style="opacity: 0;">✓</span>昇順</div>
+                    <div class="menu-item sort-order" data-sort-order="1"><span class="check-icon"
+                            style="opacity: 0;">✓</span>降順</div>
                 </div>
             </div>
 

@@ -45,6 +45,8 @@ const SettingsManager = {
         this.btnClearGlobalWallpaper = document.getElementById('btn-clear-global-wallpaper');
         this.globalWallpaperFit = document.getElementById('global-wallpaper-fit');
         this.wallpaperHistoryList = document.getElementById('wallpaper-history-list');
+        this.wallpaperOpacitySlider = document.getElementById('wallpaper-opacity-slider');
+        this.wallpaperOpacityValue = document.getElementById('wallpaper-opacity-value');
     },
 
     bindEvents() {
@@ -179,7 +181,8 @@ const SettingsManager = {
                 'settings-zoom', 'settings-high-contrast',
                 'settings-window-preview', 'settings-native-properties',
                 'settings-custom-new-files', 'settings-global-wallpaper-active',
-                'settings-global-wallpaper-fit', 'settings-active-wallpaper-id'
+                'settings-global-wallpaper-fit', 'settings-active-wallpaper-id',
+                'settings-global-wallpaper-opacity'
             ];
             if (e.key && syncKeys.includes(e.key)) {
                 clearTimeout(storageTimeout);
@@ -563,15 +566,22 @@ const SettingsManager = {
     async loadWallpapers() {
         const globalActive = localStorage.getItem('settings-global-wallpaper-active') === 'true';
         const globalFit = localStorage.getItem('settings-global-wallpaper-fit') || 'cover';
+        const globalOpacity = localStorage.getItem('settings-global-wallpaper-opacity') || '65';
         let activeId = localStorage.getItem('settings-active-wallpaper-id') || '';
 
-        window.api.send('RENDERER_LOG', '[DEBUG Wallpaper] loadWallpapers: activeId =', activeId, 'globalActive =', globalActive);
+        window.api.send('RENDERER_LOG', '[DEBUG Wallpaper] loadWallpapers: activeId =', activeId, 'globalActive =', globalActive, 'opacity =', globalOpacity);
 
         if (this.globalWallpaperMode) {
             this.globalWallpaperMode.value = globalActive ? 'image' : 'none';
         }
         if (this.globalWallpaperFit) {
             this.globalWallpaperFit.value = globalFit;
+        }
+        if (this.wallpaperOpacitySlider) {
+            this.wallpaperOpacitySlider.value = globalOpacity;
+            if (this.wallpaperOpacityValue) {
+                this.wallpaperOpacityValue.textContent = globalOpacity + '%';
+            }
         }
 
         // Fetch the 5 wallpapers history list via IPC
@@ -641,10 +651,16 @@ const SettingsManager = {
             document.body.setAttribute('data-wallpaper-active', 'true');
             document.documentElement.style.setProperty('--global-wallpaper-url', `url("${activeItem.dataUrl}")`);
             document.documentElement.style.setProperty('--global-wallpaper-fit', globalFit);
+            document.documentElement.style.setProperty('--global-glass-opacity', `${globalOpacity}%`);
+            // Calc proportional settings glass opacity (+10%, max 95%)
+            const settingsOpacity = Math.min(95, parseInt(globalOpacity) + 10);
+            document.documentElement.style.setProperty('--global-glass-opacity-settings', `${settingsOpacity}%`);
         } else {
             document.body.removeAttribute('data-wallpaper-active');
             document.documentElement.style.removeProperty('--global-wallpaper-url');
             document.documentElement.style.removeProperty('--global-wallpaper-fit');
+            document.documentElement.style.removeProperty('--global-glass-opacity');
+            document.documentElement.style.removeProperty('--global-glass-opacity-settings');
         }
     },
 
@@ -691,6 +707,17 @@ const SettingsManager = {
                 } catch (e) {
                     console.error('Failed to clear wallpapers history:', e);
                 }
+            };
+        }
+
+        if (this.wallpaperOpacitySlider) {
+            this.wallpaperOpacitySlider.oninput = () => {
+                const opacity = this.wallpaperOpacitySlider.value;
+                if (this.wallpaperOpacityValue) {
+                    this.wallpaperOpacityValue.textContent = opacity + '%';
+                }
+                localStorage.setItem('settings-global-wallpaper-opacity', opacity);
+                SettingsManager.loadWallpapers();
             };
         }
     }
