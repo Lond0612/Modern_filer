@@ -530,6 +530,19 @@ const SettingsManager = {
             this.appContainer.style.zoom = factor;
             this.appContainer.style.height = (100 / factor) + 'vh';
             this.appContainer.style.width = (100 / factor) + 'vw';
+
+            // 表示倍率（Zoom）の変更時に、ネイティブのウィンドウ操作ボタン（最小化・最大化・閉じる）が
+            // 下のツールバーに重なったりタブと被ったりするのを防ぐため、タブバーの高さと右余白を動的に補正します。
+            const tabBar = document.getElementById('tab-bar');
+            if (tabBar) {
+                // 画面上でのタブバーの物理的な高さを常に40px以上に保つ
+                const adjustedHeight = Math.max(40, 40 / factor);
+                tabBar.style.height = adjustedHeight + 'px';
+
+                // 右側の余白もズームに応じて動的に調整（物理的な余白を常に140px以上に保つ）
+                const adjustedPaddingRight = Math.max(140, 140 / factor);
+                tabBar.style.paddingRight = adjustedPaddingRight + 'px';
+            }
         }
     }
 };

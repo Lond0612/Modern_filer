@@ -589,7 +589,7 @@ body {
     display: flex;
     align-items: center;
     background: var(--bg-sidebar);
-    padding: 0 100px 0 10px; /* 右側にウィンドウ操作ボタン用の余白を確保 */
+    padding: 0 140px 0 10px; /* 右側にウィンドウ操作ボタン用の余白を確保 */
     gap: 4px;
     height: 40px;
     border-bottom: 1px solid var(--border-main);
@@ -1779,8 +1779,11 @@ body.compact-mode .file-list td {
 }
 
 .settings-container-modern {
-    width: 800px;
-    height: 600px;
+    width: 90%;
+    max-width: 800px;
+    height: 85%;
+    max-height: 600px;
+    min-height: 350px;
     background: var(--settings-main-bg);
     border-radius: 12px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
@@ -2019,6 +2022,83 @@ input[type="range"] {
     height: 64px;
     margin-bottom: 20px;
     opacity: 0.5;
+}
+
+/* Settings Responsive Media Queries */
+@media (max-width: 768px) {
+    .settings-container-modern {
+        flex-direction: column;
+        width: 95%;
+        height: 95%;
+        max-height: none;
+        border-radius: 8px;
+    }
+
+    .settings-sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 5px 50px 5px 0; /* Add padding to prevent tab button overlapping with close button */
+        border-right: none;
+        border-bottom: 1px solid var(--border-main);
+        scrollbar-width: none;
+    }
+
+    .settings-sidebar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .settings-sidebar-header {
+        display: none;
+    }
+
+    .settings-tab-btn {
+        padding: 10px 15px;
+        white-space: nowrap;
+        border-right: none;
+        border-bottom: 3px solid transparent;
+        font-size: 13px;
+        flex-shrink: 0;
+    }
+
+    .settings-tab-btn.active {
+        border-right: none;
+        border-bottom: 3px solid var(--accent-color);
+    }
+
+    .settings-main {
+        padding: 20px;
+        flex: 1;
+    }
+
+    .settings-close-btn {
+        top: 10px;
+        right: 10px;
+        width: 28px;
+        height: 28px;
+    }
+}
+
+@media (max-height: 550px) {
+    .settings-container-modern {
+        height: 95%;
+    }
+    .settings-main {
+        padding: 20px;
+    }
+    .tab-header {
+        font-size: 20px;
+        margin-bottom: 15px;
+    }
+    .setting-group {
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+    }
+    .setting-group-vertical {
+        margin-bottom: 15px;
+    }
 }
 
 /* ==========================================================================
