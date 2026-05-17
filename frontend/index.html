@@ -309,6 +309,10 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3z"></path><path d="M9 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3z"></path></svg>
                     ショートカット
                 </div>
+                <div class="settings-tab-btn" data-tab="wallpaper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                    壁紙
+                </div>
             </div>
             <div class="settings-main">
                 <!-- 全般タブ -->
@@ -512,8 +516,55 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
 
+                <!-- 壁紙タブ -->
+                <div id="tab-wallpaper" class="settings-tab-content">
+                    <div class="tab-header">壁紙設定</div>
+                    
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            <span class="main-label">背景をカスタマイズ</span>
+                            <span class="sub-label">壁紙を画像でカスタマイズするか、単色またはなしに設定します</span>
+                        </div>
+                        <select id="global-wallpaper-mode" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-main); font-size: 12px; cursor: pointer;">
+                            <option value="image">画像</option>
+                            <option value="none">単色またはなし</option>
+                        </select>
+                    </div>
 
+                    <!-- 履歴サムネイル（直近5個）の行 -->
+                    <div class="setting-group-vertical" id="wallpaper-history-section" style="margin-bottom: 25px;">
+                        <span class="sub-label" style="font-size: 12px; color: var(--text-muted);">最近の画像</span>
+                        <div id="wallpaper-history-list" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                            <!-- js/settings.jsにて動的生成される 5スロット -->
+                        </div>
+                    </div>
+
+                    <div class="setting-group" id="wallpaper-select-section">
+                        <div class="setting-label">
+                            <span class="main-label">写真の選択</span>
+                            <span class="sub-label">使用する画像をアップロードして適用します</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button id="btn-select-global-wallpaper" class="btn-primary" style="padding: 6px 16px; font-size: 12px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 6px;">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                画像をアップロード
+                            </button>
+                            <button id="btn-clear-global-wallpaper" class="btn-primary" style="padding: 6px 16px; font-size: 12px; cursor: pointer; border-radius: 4px; background: rgba(255,68,68,0.1); color:#ff4444; border:1px solid rgba(255,68,68,0.2);">履歴を全クリア</button>
+                        </div>
+                    </div>
+
+                    <div class="setting-group" id="wallpaper-fit-section">
+                        <div class="setting-label">
+                            <span class="main-label">表示スタイル</span>
+                            <span class="sub-label">壁紙画像の表示スタイルを選択します</span>
+                        </div>
+                        <select id="global-wallpaper-fit" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-main); background: var(--bg-input); color: var(--text-main); font-size: 12px; cursor: pointer;">
+                            <option value="cover">画面幅に合わせる</option>
+                            <option value="contain">画像に合わせる</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>

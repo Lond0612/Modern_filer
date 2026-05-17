@@ -1,8 +1,8 @@
 const SettingsManager = {
-    init() {
+    async init() {
         this.cacheDOM();
         this.bindEvents();
-        this.loadSettings();
+        await this.loadSettings();
     },
 
     cacheDOM() {
@@ -38,6 +38,13 @@ const SettingsManager = {
         this.newExtValueInput = document.getElementById('new-ext-value');
         this.addExtBtn = document.getElementById('btn-add-extension');
         this.extListContainer = document.getElementById('custom-extension-list');
+
+        // Wallpaper
+        this.globalWallpaperMode = document.getElementById('global-wallpaper-mode');
+        this.btnSelectGlobalWallpaper = document.getElementById('btn-select-global-wallpaper');
+        this.btnClearGlobalWallpaper = document.getElementById('btn-clear-global-wallpaper');
+        this.globalWallpaperFit = document.getElementById('global-wallpaper-fit');
+        this.wallpaperHistoryList = document.getElementById('wallpaper-history-list');
     },
 
     bindEvents() {
@@ -171,12 +178,13 @@ const SettingsManager = {
                 'settings-font-size', 'settings-custom-font',
                 'settings-zoom', 'settings-high-contrast',
                 'settings-window-preview', 'settings-native-properties',
-                'settings-custom-new-files'
+                'settings-custom-new-files', 'settings-global-wallpaper-active',
+                'settings-global-wallpaper-fit', 'settings-active-wallpaper-id'
             ];
             if (e.key && syncKeys.includes(e.key)) {
                 clearTimeout(storageTimeout);
                 storageTimeout = setTimeout(() => {
-                    this.loadSettings();
+                    SettingsManager.loadSettings();
                 }, 100);
             } else if (e.key === 'quickAccessItems' && typeof refreshQuickAccessUI === 'function') {
                 clearTimeout(storageTimeout);
@@ -185,6 +193,9 @@ const SettingsManager = {
                 }, 100);
             }
         });
+
+        // Wallpaper events
+        this.bindWallpaperEvents();
     },
 
     addExtension() {
@@ -444,7 +455,7 @@ const SettingsManager = {
         }
     },
 
-    loadSettings() {
+    async loadSettings() {
         // Dark Mode state
         const isDark = localStorage.getItem('isDarkMode') !== 'false';
         if (!isDark) document.body.classList.add('light-mode');
@@ -518,6 +529,9 @@ const SettingsManager = {
         
         // Customization
         this.renderCustomizationTab();
+
+        // Wallpapers
+        await this.loadWallpapers();
     },
 
     applyHighContrast(enabled) {
@@ -543,6 +557,141 @@ const SettingsManager = {
                 const adjustedPaddingRight = Math.max(140, 140 / factor);
                 tabBar.style.paddingRight = adjustedPaddingRight + 'px';
             }
+        }
+    },
+
+    async loadWallpapers() {
+        const globalActive = localStorage.getItem('settings-global-wallpaper-active') === 'true';
+        const globalFit = localStorage.getItem('settings-global-wallpaper-fit') || 'cover';
+        let activeId = localStorage.getItem('settings-active-wallpaper-id') || '';
+
+        window.api.send('RENDERER_LOG', '[DEBUG Wallpaper] loadWallpapers: activeId =', activeId, 'globalActive =', globalActive);
+
+        if (this.globalWallpaperMode) {
+            this.globalWallpaperMode.value = globalActive ? 'image' : 'none';
+        }
+        if (this.globalWallpaperFit) {
+            this.globalWallpaperFit.value = globalFit;
+        }
+
+        // Fetch the 5 wallpapers history list via IPC
+        let history = [];
+        try {
+            history = await window.api.invoke('GET_WALLPAPERS');
+            window.api.send('RENDERER_LOG', '[DEBUG Wallpaper] History length =', history.length, 'IDs =', history.map(h => h.id));
+        } catch (e) {
+            window.api.send('RENDERER_LOG', 'Failed to get wallpapers history:', e.message);
+        }
+
+        // If no activeId is selected but we have history, default to the first (newest) item
+        if (!activeId && history.length > 0) {
+            activeId = history[0].id;
+            localStorage.setItem('settings-active-wallpaper-id', activeId);
+            window.api.send('RENDERER_LOG', '[DEBUG Wallpaper] Defaulted activeId to', activeId);
+        }
+
+        // Dynamically draw the 5 thumbnail cards in wallpaperHistoryList
+        if (this.wallpaperHistoryList) {
+            this.wallpaperHistoryList.innerHTML = '';
+            
+            // Draw up to 5 slots
+            for (let i = 0; i < 5; i++) {
+                const card = document.createElement('div');
+                card.className = 'wallpaper-option';
+                
+                const preview = document.createElement('div');
+                preview.className = 'wallpaper-preview';
+                
+                if (history[i]) {
+                    // This slot has a wallpaper
+                    const img = document.createElement('img');
+                    img.src = history[i].dataUrl;
+                    img.alt = `Wallpaper ${i + 1}`;
+                    preview.appendChild(img);
+                    
+                    const item = history[i];
+                    card.dataset.wallpaperId = item.id;
+                    if (globalActive && item.id === activeId) {
+                        card.classList.add('active');
+                    }
+                    
+                    // Click to select this wallpaper
+                    card.onclick = (e) => {
+                        const targetId = e.currentTarget.dataset.wallpaperId;
+                        localStorage.setItem('settings-global-wallpaper-active', 'true');
+                        localStorage.setItem('settings-active-wallpaper-id', targetId);
+                        SettingsManager.loadWallpapers();
+                    };
+                } else {
+                    // Empty slot
+                    card.classList.add('empty-slot');
+                    // Add dashed/dotted placeholder with picture SVG icon
+                    preview.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
+                }
+                
+                card.appendChild(preview);
+                this.wallpaperHistoryList.appendChild(card);
+            }
+        }
+
+        // Apply background styling to document.body
+        const activeItem = history.find(item => item.id === activeId);
+        window.api.send('RENDERER_LOG', '[DEBUG Wallpaper] resolved activeItem =', activeItem ? activeItem.id : 'NOT FOUND');
+        if (globalActive && activeItem) {
+            document.body.setAttribute('data-wallpaper-active', 'true');
+            document.documentElement.style.setProperty('--global-wallpaper-url', `url("${activeItem.dataUrl}")`);
+            document.documentElement.style.setProperty('--global-wallpaper-fit', globalFit);
+        } else {
+            document.body.removeAttribute('data-wallpaper-active');
+            document.documentElement.style.removeProperty('--global-wallpaper-url');
+            document.documentElement.style.removeProperty('--global-wallpaper-fit');
+        }
+    },
+
+    bindWallpaperEvents() {
+        if (this.globalWallpaperMode) {
+            this.globalWallpaperMode.onchange = () => {
+                const isImage = this.globalWallpaperMode.value === 'image';
+                localStorage.setItem('settings-global-wallpaper-active', isImage);
+                SettingsManager.loadWallpapers();
+            };
+        }
+
+        if (this.globalWallpaperFit) {
+            this.globalWallpaperFit.onchange = () => {
+                const fit = this.globalWallpaperFit.value;
+                localStorage.setItem('settings-global-wallpaper-fit', fit);
+                SettingsManager.loadWallpapers();
+            };
+        }
+
+        if (this.btnSelectGlobalWallpaper) {
+            this.btnSelectGlobalWallpaper.onclick = async () => {
+                try {
+                    const history = await window.api.invoke('SELECT_WALLPAPER');
+                    if (history && history.length > 0) {
+                        localStorage.setItem('settings-global-wallpaper-active', 'true');
+                        // Auto-select the newly uploaded file (newest is always the first index)
+                        localStorage.setItem('settings-active-wallpaper-id', history[0].id);
+                        await SettingsManager.loadWallpapers();
+                    }
+                } catch (e) {
+                    console.error('Failed to upload/select global wallpaper:', e);
+                }
+            };
+        }
+
+        if (this.btnClearGlobalWallpaper) {
+            this.btnClearGlobalWallpaper.onclick = async () => {
+                try {
+                    const history = await window.api.invoke('CLEAR_WALLPAPER');
+                    localStorage.setItem('settings-global-wallpaper-active', 'false');
+                    localStorage.removeItem('settings-active-wallpaper-id');
+                    await SettingsManager.loadWallpapers();
+                } catch (e) {
+                    console.error('Failed to clear wallpapers history:', e);
+                }
+            };
         }
     }
 };

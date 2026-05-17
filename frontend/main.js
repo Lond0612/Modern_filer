@@ -319,6 +319,126 @@ ipcMain.handle('OPEN_NEW_WINDOW', (event, targetPath) => {
     createWindow(targetPath);
   }
 });
+function getMimeType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  switch (ext) {
+    case '.jpg':
+    case '.jpeg':
+      return 'image/jpeg';
+    case '.png':
+      return 'image/png';
+    case '.gif':
+      return 'image/gif';
+    case '.webp':
+      return 'image/webp';
+    case '.svg':
+      return 'image/svg+xml';
+    default:
+      return 'image/jpeg';
+  }
+}
+
+async function getWallpaperHistory() {
+  const wallpapersDir = path.join(app.getPath('userData'), 'wallpapers');
+  await fs.mkdir(wallpapersDir, { recursive: true });
+
+  const files = await fs.readdir(wallpapersDir);
+  const wpFiles = [];
+
+  for (const file of files) {
+    if (file.startsWith('wp_')) {
+      const filePath = path.join(wallpapersDir, file);
+      try {
+        const stats = await fs.stat(filePath);
+        const baseName = path.basename(file, path.extname(file));
+        const timestampStr = baseName.slice('wp_'.length);
+        const timestamp = parseInt(timestampStr, 10) || stats.mtimeMs;
+        wpFiles.push({ file, filePath, timestamp });
+      } catch (e) {}
+    }
+  }
+
+  // Sort descending by timestamp (newest first)
+  wpFiles.sort((a, b) => b.timestamp - a.timestamp);
+
+  // Keep top 5, delete the rest
+  const keep = wpFiles.slice(0, 5);
+  const remove = wpFiles.slice(5);
+
+  for (const item of remove) {
+    try {
+      await fs.unlink(item.filePath);
+    } catch (e) {
+      console.error(`Failed to delete old wallpaper file: ${item.filePath}`, e);
+    }
+  }
+
+  const history = [];
+  for (const item of keep) {
+    try {
+      const mime = getMimeType(item.filePath);
+      const content = await fs.readFile(item.filePath, 'base64');
+      const dataUrl = `data:${mime};base64,${content}`;
+      const baseName = path.basename(item.file, path.extname(item.file));
+      const id = baseName.slice('wp_'.length);
+      history.push({ id, dataUrl });
+    } catch (e) {
+      console.error(`Failed to read wallpaper: ${item.filePath}`, e);
+    }
+  }
+
+  return history;
+}
+
+ipcMain.handle('SELECT_WALLPAPER', async () => {
+  const { dialog } = require('electron');
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [
+      { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'] }
+    ]
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+
+  const srcPath = result.filePaths[0];
+  const wallpapersDir = path.join(app.getPath('userData'), 'wallpapers');
+  await fs.mkdir(wallpapersDir, { recursive: true });
+
+  const timestamp = Date.now();
+  const ext = path.extname(srcPath);
+  const destName = `wp_${timestamp}${ext}`;
+  const destPath = path.join(wallpapersDir, destName);
+
+  await fs.copyFile(srcPath, destPath);
+
+  // Automatically cleans up and returns the updated history list
+  return await getWallpaperHistory();
+});
+
+ipcMain.handle('GET_WALLPAPERS', async () => {
+  return await getWallpaperHistory();
+});
+
+ipcMain.handle('CLEAR_WALLPAPER', async () => {
+  const wallpapersDir = path.join(app.getPath('userData'), 'wallpapers');
+  try {
+    const files = await fs.readdir(wallpapersDir);
+    for (const file of files) {
+      if (file.startsWith('wp_')) {
+        await fs.unlink(path.join(wallpapersDir, file));
+      }
+    }
+  } catch (err) {
+    console.error('Failed to clear wallpapers:', err);
+  }
+});
+
+ipcMain.on('RENDERER_LOG', (event, ...args) => {
+  console.log('[RENDERER]', ...args);
+});
 
 ipcMain.handle('READ_FILE_TEXT', async (event, filePath) => {
   try {

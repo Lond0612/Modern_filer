@@ -2903,3 +2903,134 @@ body > .preview-action-btn {
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+
+/* ==========================================================================
+   Wallpaper Settings (壁紙機能用スタイル)
+   ========================================================================== */
+body[data-wallpaper-active="true"] {
+    background-image: var(--global-wallpaper-url) !important;
+    background-size: var(--global-wallpaper-fit, cover) !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+body[data-wallpaper-active="true"] .app-container {
+    background: transparent !important;
+}
+
+/* ホーム画面の背景透過設定 */
+body[data-wallpaper-active="true"] .home-view {
+    background: transparent !important;
+}
+
+/* 設定画面のプレミアムなすりガラス（Glassmorphism）効果 */
+body[data-wallpaper-active="true"] .settings-screen {
+    background: color-mix(in srgb, var(--settings-main-bg) 75%, transparent) !important;
+    backdrop-filter: blur(20px);
+}
+body[data-wallpaper-active="true"] .settings-sidebar {
+    background: color-mix(in srgb, var(--settings-sidebar-bg) 75%, transparent) !important;
+}
+
+/* color-mix を用いた美しい半透明・すりガラス効果 */
+body[data-wallpaper-active="true"] .sidebar {
+    background: color-mix(in srgb, var(--bg-sidebar) 65%, transparent) !important;
+    backdrop-filter: blur(12px);
+}
+
+body[data-wallpaper-active="true"] .file-pane {
+    background: color-mix(in srgb, var(--bg-main) 65%, transparent) !important;
+    backdrop-filter: blur(12px);
+}
+
+body[data-wallpaper-active="true"] .terminal-pane {
+    background: color-mix(in srgb, var(--bg-terminal) 65%, transparent) !important;
+    backdrop-filter: blur(12px);
+}
+
+body[data-wallpaper-active="true"] .toolbar {
+    background: color-mix(in srgb, var(--bg-toolbar) 65%, transparent) !important;
+    backdrop-filter: blur(12px);
+}
+
+body[data-wallpaper-active="true"] .actions-bar {
+    background: color-mix(in srgb, var(--bg-actions) 65%, transparent) !important;
+    backdrop-filter: blur(12px);
+}
+
+body[data-wallpaper-active="true"] .tab-bar {
+    background: color-mix(in srgb, var(--bg-tabbar) 65%, transparent) !important;
+    backdrop-filter: blur(12px);
+}
+
+/* ==========================================================================
+   Wallpaper History Cards (本アプリのカラー変更UIと調和した履歴サムネイル)
+   ========================================================================== */
+.wallpaper-option {
+    box-sizing: border-box;
+    width: 64px;
+    height: 48px;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 3px;
+    border: 3px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.wallpaper-option:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+}
+
+.wallpaper-option.active {
+    border-color: var(--theme-preset-border);
+    background: rgba(var(--accent-color-rgb, 0, 122, 204), 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.wallpaper-preview {
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.wallpaper-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 空スロット表示 */
+.wallpaper-option.empty-slot {
+    cursor: default;
+    border: 3px dashed var(--border-main);
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.wallpaper-option.empty-slot:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.wallpaper-option.empty-slot .wallpaper-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    opacity: 0.25;
+}
+
+.wallpaper-option.empty-slot .wallpaper-preview svg {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+}
