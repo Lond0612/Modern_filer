@@ -92,7 +92,7 @@ const SettingsManager = {
         if (this.openBtn) {
             this.openBtn.onclick = () => {
                 const activeTab = document.querySelector('.settings-tab-btn.active');
-                const tabId = activeTab ? activeTab.dataset.tab : 'general';
+                const tabId = activeTab ? activeTab.dataset.tab : 'contents';
                 this.switchTab(tabId);
                 this.screen.style.display = 'flex';
             };

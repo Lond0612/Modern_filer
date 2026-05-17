@@ -298,6 +298,19 @@ ipcMain.handle('GET_USER_THEMES', async () => {
       "--icon-folder": "#f97316",   // フォルダアイコン
       "--icon-file": "#94a3b8"      // ファイルアイコン
     }
+  },
+  {
+    "id": "user-gilded-obsidian",
+    "name": "ギルデッド・オブシディアン",
+    "colors": {
+      "--bg-main": "#0a0a0a",       // メイン背景（深い黒）
+      "--bg-side": "#141414",       // サイドバー背景（わずかに明るい墨色）
+      "--accent-color": "#d4af37",  // アクセント（ゴールド）
+      "--text-main": "#f5f5f7",     // テキスト（オフホワイト）
+      "--border-main": "#262626",   // 境界線（ダークグレー）
+      "--icon-folder": "#d4af37",   // フォルダアイコン（ゴールド）
+      "--icon-file": "#a3a3a3"      // ファイルアイコン（ミディアムグレー）
+    }
   }
 ]`;
       await fs.writeFile(themesFile, initialContent);
@@ -354,7 +367,7 @@ async function getWallpaperHistory() {
         const timestampStr = baseName.slice('wp_'.length);
         const timestamp = parseInt(timestampStr, 10) || stats.mtimeMs;
         wpFiles.push({ file, filePath, timestamp });
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 
