@@ -1,8 +1,14 @@
-const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, shell, protocol, net } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 const { spawn } = require('child_process');
 const { StringDecoder } = require('string_decoder');
+const { pathToFileURL } = require('url');
+
+// 高パフォーマンスなカスタムファイルプロトコルのスキーム登録（メモリリーク・ファイルサイズ制限の解消）
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'orbiter-media', privileges: { bypassCSP: true, secure: true, supportFetchAPI: true } }
+]);
 
 // パッケージ時は実行ファイルと同じ階層のdataフォルダをuserDataとして使用する（ポータブルモード）
 if (app.isPackaged) {
@@ -196,6 +202,20 @@ function startServerForWindow(winId) {
 }
 
 app.whenReady().then(() => {
+  // カスタムメディアプロトコルのハンドラー登録
+  protocol.handle('orbiter-media', (request) => {
+    try {
+      const parsedUrl = new URL(request.url);
+      const fileName = parsedUrl.pathname.replace(/^\//, ''); // 先頭のスラッシュを除去
+      const wallpapersDir = path.join(app.getPath('userData'), 'wallpapers');
+      const filePath = path.join(wallpapersDir, fileName);
+      return net.fetch(pathToFileURL(filePath).toString());
+    } catch (e) {
+      console.error('Failed to handle orbiter-media request:', e);
+      return new Response('File not found', { status: 404 });
+    }
+  });
+
   Menu.setApplicationMenu(null);
 
   createWindow();
@@ -360,25 +380,6 @@ ipcMain.handle('OPEN_NEW_WINDOW', (event, targetPath) => {
 ipcMain.handle('OPEN_WALLPAPER_SELECT_WINDOW', () => {
   createWindow(null, true);
 });
-function getMimeType(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  switch (ext) {
-    case '.jpg':
-    case '.jpeg':
-      return 'image/jpeg';
-    case '.png':
-      return 'image/png';
-    case '.gif':
-      return 'image/gif';
-    case '.webp':
-      return 'image/webp';
-    case '.svg':
-      return 'image/svg+xml';
-    default:
-      return 'image/jpeg';
-  }
-}
-
 async function getWallpaperHistory() {
   const wallpapersDir = path.join(app.getPath('userData'), 'wallpapers');
   await fs.mkdir(wallpapersDir, { recursive: true });
@@ -417,9 +418,7 @@ async function getWallpaperHistory() {
   const history = [];
   for (const item of keep) {
     try {
-      const mime = getMimeType(item.filePath);
-      const content = await fs.readFile(item.filePath, 'base64');
-      const dataUrl = `data:${mime};base64,${content}`;
+      const dataUrl = `orbiter-media://wallpaper/${item.file}`;
       const baseName = path.basename(item.file, path.extname(item.file));
       const id = baseName.slice('wp_'.length);
       history.push({ id, dataUrl });
