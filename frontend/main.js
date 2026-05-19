@@ -12,10 +12,10 @@ if (app.isPackaged) {
 
 const windows = new Map();
 
-function createWindow(initialPath = null) {
+function createWindow(initialPath = null, selectWallpaper = false) {
   let windowOptions = {
-    width: 1200,
-    height: 800,
+    width: selectWallpaper ? 1000 : 1200,
+    height: selectWallpaper ? 700 : 800,
     minWidth: 770,
     backgroundColor: '#1e1e1e',
     titleBarStyle: 'hidden',
@@ -59,11 +59,11 @@ function createWindow(initialPath = null) {
 
   startServerForWindow(winId);
 
-  if (initialPath) {
-    win.loadFile('index.html', { query: { path: initialPath } });
-  } else {
-    win.loadFile('index.html');
-  }
+  const query = {};
+  if (initialPath) query.path = initialPath;
+  if (selectWallpaper) query.selectWallpaper = 'true';
+
+  win.loadFile('index.html', { query });
 
   win.once('ready-to-show', () => {
     win.show();
@@ -332,6 +332,10 @@ ipcMain.handle('OPEN_NEW_WINDOW', (event, targetPath) => {
     createWindow(targetPath);
   }
 });
+
+ipcMain.handle('OPEN_WALLPAPER_SELECT_WINDOW', () => {
+  createWindow(null, true);
+});
 function getMimeType(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   switch (ext) {
@@ -431,6 +435,23 @@ ipcMain.handle('SELECT_WALLPAPER', async () => {
   return await getWallpaperHistory();
 });
 
+ipcMain.handle('SET_WALLPAPER_BY_PATH', async (event, srcPath) => {
+  if (!srcPath) return null;
+
+  const wallpapersDir = path.join(app.getPath('userData'), 'wallpapers');
+  await fs.mkdir(wallpapersDir, { recursive: true });
+
+  const timestamp = Date.now();
+  const ext = path.extname(srcPath);
+  const destName = `wp_${timestamp}${ext}`;
+  const destPath = path.join(wallpapersDir, destName);
+
+  await fs.copyFile(srcPath, destPath);
+
+  // Automatically cleans up and returns the updated history list
+  return await getWallpaperHistory();
+});
+
 ipcMain.handle('GET_WALLPAPERS', async () => {
   return await getWallpaperHistory();
 });
@@ -451,6 +472,73 @@ ipcMain.handle('CLEAR_WALLPAPER', async () => {
 
 ipcMain.on('RENDERER_LOG', (event, ...args) => {
   console.log('[RENDERER]', ...args);
+});
+
+const os = require('os');
+
+async function scanImages(dir, fileList = [], limit = 1000) {
+  if (fileList.length >= limit) return fileList;
+  
+  // アプリフォルダの絶対パスを取得して小文字化
+  const appDir = path.dirname(app.getAppPath()).toLowerCase();
+  const execDir = path.dirname(process.execPath).toLowerCase();
+
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (fileList.length >= limit) break;
+      
+      const fullPath = path.join(dir, entry.name);
+      const fullPathLower = fullPath.toLowerCase();
+
+      // 現在実行中のアプリパッケージフォルダやソースコードは絶対に除外
+      if (fullPathLower.startsWith(appDir) || fullPathLower.startsWith(execDir)) {
+        continue;
+      }
+      
+      // 除外フォルダ（大容量、システム、管理者権限が必要そうなフォルダ、およびアプリフォルダ名）
+      const nameLower = entry.name.toLowerCase();
+      if (entry.name.startsWith('.') || 
+          nameLower.includes('orbiter') || // Orbiterフォルダの除外！
+          ['appdata', 'node_modules', 'local settings', 'application data', 'cookies', 
+           'sendto', 'start menu', 'my documents', 'templates', 'printhood', 'nethood', 
+           'recent', 'system32', 'windows', 'program files', 'program files (x86)',
+           'msocache', 'recovery', 'system volume information', 'searches', 'saved games',
+           'contacts', 'links', 'searches', 'favorites', 'music', 'videos'].includes(nameLower)) {
+        continue;
+      }
+      
+      if (entry.isDirectory()) {
+        try {
+          await scanImages(fullPath, fileList, limit);
+        } catch (e) {
+          // 権限エラーなどはスキップ
+        }
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'].includes(ext)) {
+          fileList.push({
+            path: fullPath,
+            name: entry.name
+          });
+        }
+      }
+    }
+  } catch (e) {
+    // 権限エラーなどはスキップ
+  }
+  return fileList;
+}
+
+ipcMain.handle('SCAN_USER_IMAGES', async () => {
+  const homeDir = os.homedir();
+  const images = [];
+  try {
+    await scanImages(homeDir, images, 1000);
+  } catch (err) {
+    console.error('Scan user images error:', err);
+  }
+  return images;
 });
 
 ipcMain.handle('READ_FILE_TEXT', async (event, filePath) => {

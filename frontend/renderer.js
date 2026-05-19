@@ -176,6 +176,14 @@ let showExtensions = true;
 window.onload = () => {
     // 起動時はバックエンドのREADYを待つ
     initTabs();
+
+    // 壁紙選択用ウィンドウとして開かれた場合の処理
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('selectWallpaper') === 'true') {
+        if (typeof window.startWallpaperSelectionMode === 'function') {
+            window.startWallpaperSelectionMode();
+        }
+    }
 };
 
 function initTabs() {
@@ -1379,6 +1387,14 @@ function addFileRow(data) {
 
     if (!showHiddenFiles && isHidden) return;
 
+    // 壁紙選択モードの場合は画像ファイルのみを表示（ディレクトリも非表示！）
+    if (window.isSelectingWallpaperMode) {
+        const isImg = /\.(jpe?g|png|gif|webp|svg)$/i.test(name);
+        if (type !== 'F' || !isImg) {
+            return;
+        }
+    }
+
     const displayName = type === 'D' ? name : getFileNameWithoutExtension(name);
 
     let element;
@@ -1524,11 +1540,34 @@ function addFileRow(data) {
 
     // (個別要素の onclick/onmousedown は作成時に登録済み)
 
-    element.ondblclick = () => {
+    element.ondblclick = async () => {
         if (isNavigationLocked()) return;
         if (type === 'D') {
             loadPath(currentPath + name + '\\', true);
         } else {
+            // 壁紙選択モード時の割り込み
+            if (window.isSelectingWallpaperMode) {
+                if (/\.(jpe?g|png|gif|webp|svg)$/i.test(name)) {
+                    const fullPath = currentPath + name;
+                    try {
+                        const history = await window.api.invoke('SET_WALLPAPER_BY_PATH', fullPath);
+                        if (history && history.length > 0) {
+                            localStorage.setItem('settings-global-wallpaper-active', 'true');
+                            localStorage.setItem('settings-active-wallpaper-id', history[0].id);
+                            if (typeof SettingsManager !== 'undefined' && typeof SettingsManager.loadWallpapers === 'function') {
+                                await SettingsManager.loadWallpapers();
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Failed to set wallpaper:', e);
+                    }
+                    if (typeof window.endWallpaperSelectionMode === 'function') {
+                        window.endWallpaperSelectionMode(false);
+                    }
+                    return;
+                }
+            }
+
             window.api.sendCommand(`OPEN|${currentPath}${name}`);
             if (typeof PreviewManager !== 'undefined' && PreviewManager.isOpen) {
                 PreviewManager.hide();
@@ -2247,6 +2286,13 @@ window.addEventListener('contextmenu', (e) => {
         if (newWinItem) newWinItem.classList.add('disabled');
     }
 
+    // 壁紙設定項目の表示切替（画像ファイルの場合のみ表示）
+    const isImageFile = hasSelection && !contextTarget.isDir && /\.(jpe?g|png|gif|webp|svg)$/i.test(contextTarget.name);
+    const wallpaperItem = document.getElementById('ctx-set-wallpaper');
+    if (wallpaperItem) {
+        wallpaperItem.style.display = isImageFile ? 'flex' : 'none';
+    }
+
     // お気に入りのテキスト切り替え
     if (hasSelection && contextTarget.isDir) {
         const favItem = document.getElementById('ctx-favorite');
@@ -2451,6 +2497,26 @@ document.getElementById('ctx-open-new-tab').onclick = () => {
 document.getElementById('ctx-open-new-window').onclick = () => {
     if (contextTarget && contextTarget.isDir) {
         window.api.invoke('OPEN_NEW_WINDOW', contextTarget.path);
+    }
+};
+
+document.getElementById('ctx-set-wallpaper').onclick = async () => {
+    if (contextTarget && !contextTarget.isDir) {
+        try {
+            const history = await window.api.invoke('SET_WALLPAPER_BY_PATH', contextTarget.path);
+            if (history && history.length > 0) {
+                localStorage.setItem('settings-global-wallpaper-active', 'true');
+                localStorage.setItem('settings-active-wallpaper-id', history[0].id);
+                if (typeof SettingsManager !== 'undefined' && typeof SettingsManager.loadWallpapers === 'function') {
+                    await SettingsManager.loadWallpapers();
+                }
+            }
+        } catch (e) {
+            console.error('Failed to set wallpaper:', e);
+        }
+        if (window.isSelectingWallpaperMode && typeof window.endWallpaperSelectionMode === 'function') {
+            window.endWallpaperSelectionMode(false);
+        }
     }
 };
 
@@ -2901,3 +2967,154 @@ function showPermissionDialog(path) {
         document.body.removeChild(overlay);
     };
 }
+
+// 壁紙選択モードの開始・終了ヘルパー
+window.isSelectingWallpaperMode = false;
+
+window.startWallpaperSelectionMode = async () => {
+    window.isSelectingWallpaperMode = true;
+    
+    // ボディにギャラリーモードのクラスを追加
+    document.body.classList.add('wallpaper-gallery-mode');
+    
+    // 設定画面を非表示にする
+    const settingsScreen = document.getElementById('settings-screen');
+    if (settingsScreen) settingsScreen.style.display = 'none';
+    
+    // バナーを表示する
+    const banner = document.getElementById('wallpaper-select-banner');
+    if (banner) {
+        banner.style.display = 'flex';
+    }
+
+    // 壁紙専用ウィンドウの場合：独自のギャラリー画面を表示し、ユーザー画像を検索する
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('selectWallpaper') === 'true') {
+        const homeView = document.getElementById('home-view');
+        const explorerView = document.getElementById('explorer-view');
+        const galleryView = document.getElementById('wallpaper-gallery-view');
+        
+        if (homeView) homeView.style.display = 'none';
+        if (explorerView) explorerView.style.display = 'none';
+        if (galleryView) {
+            galleryView.style.display = 'flex';
+            
+            // ローディングプレースホルダーを表示
+            const grid = document.getElementById('wallpaper-gallery-grid');
+            if (grid) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px; font-size: 13px;">画像をスキャン中...（数秒かかる場合があります）</div>';
+            }
+            
+            try {
+                // 画像スキャンの実行（バックエンド呼び出し）
+                const images = await window.api.invoke('SCAN_USER_IMAGES');
+                renderGalleryGrid(images);
+            } catch (err) {
+                console.error('Failed to scan images:', err);
+                if (grid) {
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px; font-size: 13px;">画像の検索に失敗しました。</div>';
+                }
+            }
+        }
+    }
+};
+
+window.endWallpaperSelectionMode = (restoreSettings = false) => {
+    window.isSelectingWallpaperMode = false;
+    
+    // ボディからギャラリーモードのクラスを削除
+    document.body.classList.remove('wallpaper-gallery-mode');
+    
+    // バナーを非表示にする
+    const banner = document.getElementById('wallpaper-select-banner');
+    if (banner) banner.style.display = 'none';
+    
+    // ギャラリービューを隠す
+    const galleryView = document.getElementById('wallpaper-gallery-view');
+    if (galleryView) galleryView.style.display = 'none';
+    
+    // 壁紙専用ウィンドウの場合はウィンドウ自体を閉じる
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('selectWallpaper') === 'true') {
+        window.close();
+        return;
+    }
+
+    if (restoreSettings) {
+        // 設定画面を再表示し、壁紙タブを選択状態にする
+        const settingsScreen = document.getElementById('settings-screen');
+        if (settingsScreen) {
+            settingsScreen.style.display = 'flex';
+            const tabBtn = document.querySelector('.settings-tab-btn[data-tab="wallpaper"]');
+            if (tabBtn) tabBtn.click();
+        }
+    }
+};
+
+function renderGalleryGrid(images) {
+    const grid = document.getElementById('wallpaper-gallery-grid');
+    if (!grid) return;
+    
+    grid.innerHTML = '';
+    
+    if (!images || images.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px; font-size: 13px;">画像ファイルが見つかりませんでした。</div>';
+        return;
+    }
+    
+    images.forEach(img => {
+        const card = document.createElement('div');
+        card.className = 'gallery-card';
+        
+        const fileUri = encodeURI(`file:///${img.path}`.replace(/\\/g, '/')).replace(/#/g, '%23');
+        
+        card.innerHTML = `
+            <div class="gallery-card-thumb">
+                <img src="${fileUri}" loading="lazy" alt="${img.name}" onerror="this.src='build/icon.ico'">
+            </div>
+            <div class="gallery-card-info">
+                <div class="gallery-card-title" title="${img.name}">${img.name}</div>
+                <div class="gallery-card-path" title="${img.path}">${img.path}</div>
+            </div>
+        `;
+        
+        // ダブルクリックで壁紙に設定してクローズ
+        card.ondblclick = async () => {
+            try {
+                const history = await window.api.invoke('SET_WALLPAPER_BY_PATH', img.path);
+                if (history && history.length > 0) {
+                    localStorage.setItem('settings-global-wallpaper-active', 'true');
+                    localStorage.setItem('settings-active-wallpaper-id', history[0].id);
+                    if (typeof SettingsManager !== 'undefined' && typeof SettingsManager.loadWallpapers === 'function') {
+                        await SettingsManager.loadWallpapers();
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to set wallpaper:', e);
+            }
+            if (typeof window.endWallpaperSelectionMode === 'function') {
+                window.endWallpaperSelectionMode(false);
+            }
+        };
+        
+        // シングルクリック（選択ハイライト等）
+        card.onclick = () => {
+            document.querySelectorAll('.gallery-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+        };
+        
+        grid.appendChild(card);
+    });
+}
+
+// バナーキャンセルボタンの初期化
+document.addEventListener('DOMContentLoaded', () => {
+    const cancelBtn = document.getElementById('btn-cancel-wallpaper-select');
+    if (cancelBtn) {
+        cancelBtn.onclick = () => {
+            if (typeof window.endWallpaperSelectionMode === 'function') {
+                window.endWallpaperSelectionMode(false);
+            }
+        };
+    }
+});

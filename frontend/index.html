@@ -8,6 +8,19 @@
 </head>
 
 <body>
+    <!-- 壁紙選択中フローティングバナー -->
+    <div id="wallpaper-select-banner" class="wallpaper-select-banner" style="display: none;">
+        <div class="wallpaper-select-banner-content">
+            <svg viewBox="0 0 24 24" class="wallpaper-banner-icon">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <span class="wallpaper-banner-text">壁紙用画像を選択してください（画像ファイルをダブルクリックまたは右クリック）</span>
+        </div>
+        <button id="btn-cancel-wallpaper-select" class="wallpaper-banner-btn">キャンセル</button>
+    </div>
+
     <div class="app-container">
         <div id="tab-bar" class="tab-bar">
             <!-- Tabs will be generated here -->
@@ -274,6 +287,17 @@
                                     <!-- Favorite folders will be generated here -->
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- 壁紙ギャラリー独自画面 -->
+                    <div id="wallpaper-gallery-view" class="wallpaper-gallery-view" style="display: none;">
+                        <div class="gallery-hero">
+                            <h2>壁紙ギャラリー</h2>
+                            <p>ホームディレクトリ以下のすべての画像ファイルを検出して一覧表示しています。ダブルクリックで壁紙に設定できます。</p>
+                        </div>
+                        <div id="wallpaper-gallery-grid" class="wallpaper-gallery-grid">
+                            <!-- 動的に画像が挿入されます -->
                         </div>
                     </div>
 
@@ -761,6 +785,18 @@
                                 style="padding: 6px 16px; font-size: 12px; cursor: pointer; border-radius: 4px; background: rgba(255,68,68,0.1); color:#ff4444; border:1px solid rgba(255,68,68,0.2);">履歴を全クリア</button>
                         </div>
                     </div>
+                    
+                    <div class="setting-group-vertical" id="wallpaper-dropzone-section" style="margin-top: 15px; margin-bottom: 25px;">
+                        <span class="sub-label" style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">または、ここに画像をドラッグ＆ドロップして設定</span>
+                        <div id="wallpaper-dropzone" class="wallpaper-dropzone">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                            <span>ここに画像ファイルをドロップして壁紙に設定</span>
+                        </div>
+                    </div>
 
                     <div class="setting-group" id="wallpaper-fit-section">
                         <div class="setting-label">
@@ -928,6 +964,16 @@
                     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                 </svg>
                 <span>パスをコピー</span>
+            </div>
+
+            <div class="context-item" id="ctx-set-wallpaper" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <span>壁紙に設定</span>
             </div>
 
             <div class="context-divider"></div>

@@ -48,6 +48,7 @@ const SettingsManager = {
         this.wallpaperHistoryList = document.getElementById('wallpaper-history-list');
         this.wallpaperOpacitySlider = document.getElementById('wallpaper-opacity-slider');
         this.wallpaperOpacityValue = document.getElementById('wallpaper-opacity-value');
+        this.wallpaperDropzone = document.getElementById('wallpaper-dropzone');
 
         // Resets
         this.resetFontSizeBtn = document.getElementById('reset-font-size');
@@ -763,15 +764,9 @@ const SettingsManager = {
         if (this.btnSelectGlobalWallpaper) {
             this.btnSelectGlobalWallpaper.onclick = async () => {
                 try {
-                    const history = await window.api.invoke('SELECT_WALLPAPER');
-                    if (history && history.length > 0) {
-                        localStorage.setItem('settings-global-wallpaper-active', 'true');
-                        // Auto-select the newly uploaded file (newest is always the first index)
-                        localStorage.setItem('settings-active-wallpaper-id', history[0].id);
-                        await SettingsManager.loadWallpapers();
-                    }
+                    await window.api.invoke('OPEN_WALLPAPER_SELECT_WINDOW');
                 } catch (e) {
-                    console.error('Failed to upload/select global wallpaper:', e);
+                    console.error('Failed to open wallpaper select window:', e);
                 }
             };
         }
@@ -806,6 +801,68 @@ const SettingsManager = {
             if (this.resetWallpaperOpacityBtn) {
                 this.resetWallpaperOpacityBtn.onclick = () => setOpacity(65);
             }
+        }
+
+        if (this.wallpaperDropzone) {
+            this.wallpaperDropzone.ondragover = (e) => {
+                e.preventDefault();
+                this.wallpaperDropzone.classList.add('dragover');
+            };
+
+            this.wallpaperDropzone.ondragleave = () => {
+                this.wallpaperDropzone.classList.remove('dragover');
+            };
+
+            this.wallpaperDropzone.ondrop = async (e) => {
+                e.preventDefault();
+                this.wallpaperDropzone.classList.remove('dragover');
+
+                let filePath = null;
+
+                // 1. 外部OSからのドロップ
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    const file = e.dataTransfer.files[0];
+                    if (file.path && /\.(jpe?g|png|gif|webp|svg)$/i.test(file.path)) {
+                        filePath = file.path;
+                    }
+                } 
+                // 2. アプリ内からのドロップ
+                else {
+                    const pathsData = e.dataTransfer.getData('application/x-file-paths');
+                    if (pathsData) {
+                        try {
+                            const paths = JSON.parse(pathsData);
+                            if (paths && paths.length > 0) {
+                                const path = paths[0];
+                                if (/\.(jpe?g|png|gif|webp|svg)$/i.test(path)) {
+                                    filePath = path;
+                                }
+                            }
+                        } catch (err) {
+                            console.error('Failed to parse dropped paths:', err);
+                        }
+                    }
+                }
+
+                if (filePath) {
+                    try {
+                        const history = await window.api.invoke('SET_WALLPAPER_BY_PATH', filePath);
+                        if (history && history.length > 0) {
+                            localStorage.setItem('settings-global-wallpaper-active', 'true');
+                            localStorage.setItem('settings-active-wallpaper-id', history[0].id);
+                            await SettingsManager.loadWallpapers();
+                        }
+                    } catch (err) {
+                        console.error('Failed to set wallpaper from dropped file:', err);
+                    }
+                }
+            };
+
+            this.wallpaperDropzone.onclick = () => {
+                if (this.btnSelectGlobalWallpaper) {
+                    this.btnSelectGlobalWallpaper.click();
+                }
+            };
         }
     }
 };
