@@ -1530,6 +1530,9 @@ function addFileRow(data) {
             loadPath(currentPath + name + '\\', true);
         } else {
             window.api.sendCommand(`OPEN|${currentPath}${name}`);
+            if (typeof PreviewManager !== 'undefined' && PreviewManager.isOpen) {
+                PreviewManager.hide();
+            }
         }
     };
 
@@ -1758,6 +1761,9 @@ function addSearchResult(data) {
             loadPath(dirPath + name + '\\', true);
         } else {
             window.api.sendCommand(`OPEN|${dirPath}${name}`);
+            if (typeof PreviewManager !== 'undefined' && PreviewManager.isOpen) {
+                PreviewManager.hide();
+            }
         }
         searchResults.style.display = 'none';
         searchInput.value = '';
@@ -2429,6 +2435,9 @@ document.getElementById('ctx-open').onclick = () => {
             loadPath(contextTarget.path, true);
         } else {
             window.api.sendCommand(`OPEN|${contextTarget.path}`);
+            if (typeof PreviewManager !== 'undefined' && PreviewManager.isOpen) {
+                PreviewManager.hide();
+            }
         }
     }
 };
