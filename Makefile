@@ -6,7 +6,8 @@ TARGET_SERVER = filer_server.exe
 
 SRCS_SERVER = \
     server.c            \
-    core/filelist.c     \
+    core/fs_orbit.c     \
+    core/win_api.c      \
     core/sort.c         \
     core/search.c       \
     proc/cmd_proc.c

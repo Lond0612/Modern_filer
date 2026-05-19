@@ -1,7 +1,7 @@
 #ifndef SORT_H
 #define SORT_H
 
-#include "filelist.h"
+#include "fs_orbit.h"
 
 // --- ソートキー ---
 typedef enum

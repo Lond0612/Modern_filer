@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "sort.h"
+// sort.h は fs_orbit.h をインクルードしているため FileEntry/FileList が利用可能
 
 // --- qsort コールバック用のスレッドローカルコンテキスト ---
 // （同一スレッド内での使用を前提とする）
