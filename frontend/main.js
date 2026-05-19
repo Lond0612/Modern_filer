@@ -43,6 +43,30 @@ function createWindow(initialPath = null, selectWallpaper = false) {
 
   const win = new BrowserWindow(windowOptions);
 
+  // USBドライブ等の動的認識のためのウィンドウメッセージフック（Windows環境限定）
+  if (process.platform === 'win32') {
+    const WM_DEVICECHANGE = 0x0219;
+    win.hookWindowMessage(WM_DEVICECHANGE, (wParam, lParam) => {
+      let wp = 0;
+      if (Buffer.isBuffer(wParam)) {
+        wp = wParam.readUInt32LE(0);
+      } else if (typeof wParam === 'number') {
+        wp = wParam;
+      }
+      
+      const DBT_DEVICEARRIVAL = 0x8000;
+      const DBT_DEVICEREMOVECOMPLETE = 0x8004;
+      
+      if (wp === DBT_DEVICEARRIVAL || wp === DBT_DEVICEREMOVECOMPLETE) {
+        if (!win.isDestroyed()) {
+          console.log('Main Process: USB Drive Arrival or Removal detected!');
+          win.webContents.send('device-change');
+        }
+      }
+      return true;
+    });
+  }
+
   const winId = win.webContents.id;
   const state = {
     window: win,

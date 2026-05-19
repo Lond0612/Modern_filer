@@ -1226,7 +1226,7 @@ window.api.onBackendResponse((obj) => {
                 showHome();
             }
             initTree('HOME');
-            getDrives();
+            // getDrives() は不要（initTreeがGET_DRIVESを送信して取得するため削除）
             renderTabs();
             break;
 
@@ -3128,3 +3128,11 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
+
+// USBドライブ等の抜き差し（デバイス変更）を検知してツリービューを自動更新
+if (window.api && typeof window.api.onDeviceChange === 'function') {
+    window.api.onDeviceChange(() => {
+        console.log('USB/Removable drive change detected! Refreshing drives list...');
+        initTree('HOME');
+    });
+}
