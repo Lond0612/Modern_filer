@@ -3018,7 +3018,29 @@ window.startWallpaperSelectionMode = async () => {
             try {
                 // 画像スキャンの実行（バックエンド呼び出し）
                 const images = await window.api.invoke('SCAN_USER_IMAGES');
-                renderGalleryGrid(images);
+                
+                // すでに壁紙履歴（履歴リスト）に登録されている画像を除外
+                let history = [];
+                try {
+                    history = await window.api.invoke('GET_WALLPAPERS');
+                } catch (e) {
+                    console.error('Failed to get wallpaper history for catalog exclusion:', e);
+                }
+
+                // 登録済み画像パスのセットを作成（パスの大文字小文字を揃えて比較）
+                const registeredPaths = new Set(
+                    history
+                        .map(item => (item.originalPath || '').toLowerCase().trim())
+                        .filter(p => p !== '')
+                );
+
+                // 履歴に登録されていない画像のみに絞り込む
+                const filteredImages = images.filter(img => {
+                    const imgPathLower = (img.path || '').toLowerCase().trim();
+                    return !registeredPaths.has(imgPathLower);
+                });
+
+                renderGalleryGrid(filteredImages);
             } catch (err) {
                 console.error('Failed to scan images:', err);
                 if (grid) {

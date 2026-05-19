@@ -435,50 +435,67 @@ async function getWallpaperHistory() {
   const wallpapersDir = path.join(app.getPath('userData'), 'wallpapers');
   await fs.mkdir(wallpapersDir, { recursive: true });
 
-  const files = await fs.readdir(wallpapersDir);
-  const wpFiles = [];
-
-  for (const file of files) {
-    if (file.startsWith('wp_')) {
-      const filePath = path.join(wallpapersDir, file);
-      try {
-        const stats = await fs.stat(filePath);
-        const baseName = path.basename(file, path.extname(file));
-        const timestampStr = baseName.slice('wp_'.length);
-        const timestamp = parseInt(timestampStr, 10) || stats.mtimeMs;
-        wpFiles.push({ file, filePath, timestamp });
-      } catch (e) { }
-    }
+  const metadataPath = path.join(wallpapersDir, 'metadata.json');
+  let historyData = [];
+  try {
+    const raw = await fs.readFile(metadataPath, 'utf8');
+    historyData = JSON.parse(raw);
+  } catch (e) {
+    // メタデータファイルが存在しないか破損している場合は新規生成
   }
 
-  // Sort descending by timestamp (newest first)
-  wpFiles.sort((a, b) => b.timestamp - a.timestamp);
+  // 物理ファイルの存在チェックと同期
+  const files = await fs.readdir(wallpapersDir);
+  const wpFiles = files.filter(f => f.startsWith('wp_'));
 
-  // Keep top 5, delete the rest
-  const keep = wpFiles.slice(0, 5);
-  const remove = wpFiles.slice(5);
+  // 実際に存在する画像ファイルのみのメタデータに同期
+  let syncedHistory = historyData.filter(item => wpFiles.includes(item.file));
+
+  // 登録されていない物理画像ファイル（古いバージョン等のデータ）があれば補完
+  const trackedFiles = syncedHistory.map(item => item.file);
+  const untrackedFiles = wpFiles.filter(f => !trackedFiles.includes(f));
+  
+  for (const file of untrackedFiles) {
+    const filePath = path.join(wallpapersDir, file);
+    try {
+      const stats = await fs.stat(filePath);
+      const baseName = path.basename(file, path.extname(file));
+      const timestampStr = baseName.slice('wp_'.length);
+      const timestamp = parseInt(timestampStr, 10) || stats.mtimeMs;
+      const id = timestampStr;
+      const dataUrl = `orbiter-media://wallpaper/${file}`;
+      syncedHistory.push({ id, dataUrl, file, timestamp, originalPath: '' });
+    } catch (e) {}
+  }
+
+  // タイムスタンプ降順（新しい順）にソート
+  syncedHistory.sort((a, b) => b.timestamp - a.timestamp);
+
+  // 上位5枚を保持し、それ以外を削除
+  const keep = syncedHistory.slice(0, 5);
+  const remove = syncedHistory.slice(5);
 
   for (const item of remove) {
     try {
-      await fs.unlink(item.filePath);
+      await fs.unlink(path.join(wallpapersDir, item.file));
     } catch (e) {
-      console.error(`Failed to delete old wallpaper file: ${item.filePath}`, e);
+      console.error(`Failed to delete old wallpaper file: ${item.file}`, e);
     }
   }
 
-  const history = [];
-  for (const item of keep) {
-    try {
-      const dataUrl = `orbiter-media://wallpaper/${item.file}`;
-      const baseName = path.basename(item.file, path.extname(item.file));
-      const id = baseName.slice('wp_'.length);
-      history.push({ id, dataUrl });
-    } catch (e) {
-      console.error(`Failed to read wallpaper: ${item.filePath}`, e);
-    }
+  // メタデータファイルの更新書き出し
+  try {
+    await fs.writeFile(metadataPath, JSON.stringify(keep, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Failed to write wallpaper metadata:', e);
   }
 
-  return history;
+  // レンダラープロセスに返す配列を生成（元ファイルの絶対パス originalPath を含む）
+  return keep.map(item => ({
+    id: item.id,
+    dataUrl: item.dataUrl,
+    originalPath: item.originalPath || ''
+  }));
 }
 
 ipcMain.handle('SELECT_WALLPAPER', async () => {
@@ -505,7 +522,27 @@ ipcMain.handle('SELECT_WALLPAPER', async () => {
 
   await fs.copyFile(srcPath, destPath);
 
-  // Automatically cleans up and returns the updated history list
+  // メタデータファイルにオリジナルの絶対パスを含めて記録
+  const metadataPath = path.join(wallpapersDir, 'metadata.json');
+  let historyData = [];
+  try {
+    const raw = await fs.readFile(metadataPath, 'utf8');
+    historyData = JSON.parse(raw);
+  } catch (e) {}
+
+  const newItem = {
+    id: `${timestamp}`,
+    dataUrl: `orbiter-media://wallpaper/${destName}`,
+    file: destName,
+    timestamp: timestamp,
+    originalPath: srcPath
+  };
+  historyData.unshift(newItem);
+
+  try {
+    await fs.writeFile(metadataPath, JSON.stringify(historyData, null, 2), 'utf8');
+  } catch (e) {}
+
   return await getWallpaperHistory();
 });
 
@@ -522,7 +559,27 @@ ipcMain.handle('SET_WALLPAPER_BY_PATH', async (event, srcPath) => {
 
   await fs.copyFile(srcPath, destPath);
 
-  // Automatically cleans up and returns the updated history list
+  // メタデータファイルにオリジナルの絶対パスを含めて記録
+  const metadataPath = path.join(wallpapersDir, 'metadata.json');
+  let historyData = [];
+  try {
+    const raw = await fs.readFile(metadataPath, 'utf8');
+    historyData = JSON.parse(raw);
+  } catch (e) {}
+
+  const newItem = {
+    id: `${timestamp}`,
+    dataUrl: `orbiter-media://wallpaper/${destName}`,
+    file: destName,
+    timestamp: timestamp,
+    originalPath: srcPath
+  };
+  historyData.unshift(newItem);
+
+  try {
+    await fs.writeFile(metadataPath, JSON.stringify(historyData, null, 2), 'utf8');
+  } catch (e) {}
+
   return await getWallpaperHistory();
 });
 
@@ -535,7 +592,7 @@ ipcMain.handle('CLEAR_WALLPAPER', async () => {
   try {
     const files = await fs.readdir(wallpapersDir);
     for (const file of files) {
-      if (file.startsWith('wp_')) {
+      if (file.startsWith('wp_') || file === 'metadata.json') {
         await fs.unlink(path.join(wallpapersDir, file));
       }
     }
@@ -589,6 +646,12 @@ async function scanImages(dir, fileList = [], limit = 1000) {
           // 権限エラーなどはスキップ
         }
       } else if (entry.isFile()) {
+        const nameLower = entry.name.toLowerCase();
+        // アプリに含まれる3つのアイコン画像をデフォルトで除外
+        if (['drag-icon.png', 'icon.png', 'icon_reencoded.png'].includes(nameLower)) {
+          continue;
+        }
+
         const ext = path.extname(entry.name).toLowerCase();
         if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'].includes(ext)) {
           fileList.push({
