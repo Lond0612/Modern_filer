@@ -121,32 +121,59 @@ function applyTheme(themeName, customThemeObj = null) {
     }
 
     // ウインドウ操作バー（Window Controls Overlay）のカラー同期
-    let overlayColor = '#1e1e1e';
-    let symbolColor = '#ffffff';
+    setTimeout(() => {
+        try {
+            const computedStyle = getComputedStyle(document.body);
+            // ツールバーの背景色、無ければメイン背景色を取得（トリム処理を含む）
+            let bgColor = (computedStyle.getPropertyValue('--bg-toolbar') || 
+                           computedStyle.getPropertyValue('--bg-main') || 
+                           '#1e1e1e').trim();
+            
+            // rgba形式の透明度ブレンドや特殊文字が入る場合のフォールバック
+            if (bgColor.startsWith('rgba') || bgColor === 'transparent' || !bgColor) {
+                bgColor = (computedStyle.getPropertyValue('--bg-main') || '#1e1e1e').trim();
+            }
 
-    if (customThemeObj) {
-        if (customThemeObj.colors) {
-            overlayColor = customThemeObj.colors['--bg-toolbar'] || customThemeObj.colors['--bg-main'] || '#1e1e1e';
-            symbolColor = customThemeObj.colors['--text-main'] || customThemeObj.colors['--text-bright'] || '#ffffff';
+            // 色文字列からRGB値を解析
+            let r = 30, g = 30, b = 30; // デフォルトは暗い色
+            const cleanColor = bgColor.replace(/\s+/g, '').toLowerCase();
+            
+            if (cleanColor.startsWith('#')) {
+                const hex = cleanColor.substring(1);
+                if (hex.length === 3) {
+                    r = parseInt(hex[0] + hex[0], 16);
+                    g = parseInt(hex[1] + hex[1], 16);
+                    b = parseInt(hex[2] + hex[2], 16);
+                } else if (hex.length === 6) {
+                    r = parseInt(hex.substring(0, 2), 16);
+                    g = parseInt(hex.substring(2, 4), 16);
+                    b = parseInt(hex.substring(4, 6), 16);
+                }
+            } else if (cleanColor.startsWith('rgb')) {
+                const m = cleanColor.match(/\d+/g);
+                if (m && m.length >= 3) {
+                    r = parseInt(m[0]);
+                    g = parseInt(m[1]);
+                    b = parseInt(m[2]);
+                }
+            }
+
+            // HSPカラーモデルの輝度計算式を用いて明るさを判定
+            const brightness = Math.sqrt(
+                r * r * 0.299 +
+                g * g * 0.587 +
+                b * b * 0.114
+            );
+
+            // 輝度が一定基準値（130）を超えて明るい（ライト背景）場合、記号の色をダークカラーにする
+            const symbolColor = brightness > 130 ? '#333333' : '#ffffff';
+
+            // メインプロセスへ通知してOS操作ボタン群を即座に再描画
+            if (window.api && typeof window.api.send === 'function') {
+                window.api.send('UPDATE_TITLE_BAR_OVERLAY', { color: bgColor, symbolColor: symbolColor });
+            }
+        } catch (err) {
+            console.error('Failed to sync title bar overlay dynamically:', err);
         }
-    } else {
-        const themeTitleBarOverlayColors = {
-            'default': { color: '#1e1e1e', symbolColor: '#ffffff' },
-            'snow': { color: '#ffffff', symbolColor: '#333333' },
-            'deepblue': { color: '#002142', symbolColor: '#e6f1ff' },
-            'khaki': { color: '#363622', symbolColor: '#f5f5dc' },
-            'sakura': { color: '#ffffff', symbolColor: '#343a40' },
-            'amber': { color: '#ffffff', symbolColor: '#343a40' },
-            'sky': { color: '#ffffff', symbolColor: '#343a40' },
-            'midnight': { color: '#1a0b2e', symbolColor: '#e0d0f0' }
-        };
-        const presetColors = themeTitleBarOverlayColors[themeName] || themeTitleBarOverlayColors['default'];
-        overlayColor = presetColors.color;
-        symbolColor = presetColors.symbolColor;
-    }
-
-    // メインプロセスへ通知
-    if (window.api && typeof window.api.send === 'function') {
-        window.api.send('UPDATE_TITLE_BAR_OVERLAY', { color: overlayColor, symbolColor: symbolColor });
-    }
+    }, 50); // DOMへのCSS変数伝播を保証するため50ms遅延
 }
