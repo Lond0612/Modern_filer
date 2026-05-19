@@ -123,6 +123,23 @@ function applyTheme(themeName, customThemeObj = null) {
     // ウインドウ操作バー（Window Controls Overlay）のカラー同期
     setTimeout(() => {
         try {
+            // 壁紙モードが有効な場合は壁紙の色抽出処理へバイパス
+            const globalWallpaperActive = localStorage.getItem('settings-global-wallpaper-active') === 'true';
+            if (globalWallpaperActive) {
+                if (window.api && typeof window.api.invoke === 'function') {
+                    window.api.invoke('GET_WALLPAPERS').then(history => {
+                        const activeId = localStorage.getItem('settings-active-wallpaper-id') || '';
+                        const activeItem = history.find(item => item.id === activeId) || history[0];
+                        if (activeItem) {
+                            extractColorFromWallpaper(activeItem.dataUrl);
+                        }
+                    }).catch(err => {
+                        console.error('Failed to get wallpaper URL for sync:', err);
+                    });
+                }
+                return;
+            }
+
             const computedStyle = getComputedStyle(document.body);
             // ツールバーの背景色、無ければメイン背景色を取得（トリム処理を含む）
             let bgColor = (computedStyle.getPropertyValue('--bg-toolbar') || 
@@ -176,4 +193,71 @@ function applyTheme(themeName, customThemeObj = null) {
             console.error('Failed to sync title bar overlay dynamically:', err);
         }
     }, 50); // DOMへのCSS変数伝播を保証するため50ms遅延
+}
+
+// 壁紙の画像から色を抽出し、タイトルバーおよびアプリテーマカラーを調和させる
+function extractColorFromWallpaper(url) {
+    if (!url) return;
+    
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = url;
+    img.onload = () => {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 10;
+            canvas.height = 10;
+            const ctx = canvas.getContext('2d');
+            
+            // 操作バーが配置される「画像の最上部10%」の領域を縮小描画
+            // これにより、タイトルバーが壁紙の上部に完全に溶け込みます
+            ctx.drawImage(img, 0, 0, img.width, img.height * 0.1, 0, 0, 10, 10);
+            
+            const imgData = ctx.getImageData(0, 0, 10, 10).data;
+            let rSum = 0, gSum = 0, bSum = 0, count = 0;
+            for (let i = 0; i < imgData.length; i += 4) {
+                if (imgData[i+3] > 50) { // アルファ値が一定以上のピクセルのみ抽出
+                    rSum += imgData[i];
+                    gSum += imgData[i+1];
+                    bSum += imgData[i+2];
+                    count++;
+                }
+            }
+            
+            if (count === 0) return;
+            
+            const r = Math.round(rSum / count);
+            const g = Math.round(gSum / count);
+            const b = Math.round(bSum / count);
+            
+            // HSPカラーモデルの輝度計算式
+            const brightness = Math.sqrt(
+                r * r * 0.299 +
+                g * g * 0.587 +
+                b * b * 0.114
+            );
+            
+            // 輝度が明るい場合はダークグレー、暗い場合はホワイトの操作記号
+            const symbolColor = brightness > 130 ? '#333333' : '#ffffff';
+            
+            // 16進数カラーコードに変換
+            const hexColor = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+            
+            // メインプロセスへ通知してOS操作ボタン群を完全に同化させる
+            if (window.api && typeof window.api.send === 'function') {
+                window.api.send('UPDATE_TITLE_BAR_OVERLAY', { color: hexColor, symbolColor: symbolColor });
+            }
+
+            // アプリケーションのアクセントカラーも壁紙と同調させて調和させる
+            document.documentElement.style.setProperty('--accent-color', hexColor);
+            
+            console.log(`Wallpaper top 10% average color extracted: ${hexColor} (Brightness: ${brightness})`);
+        } catch (e) {
+            console.error("Failed to extract color from wallpaper:", e);
+        }
+    };
+    
+    img.onerror = (e) => {
+        console.error("Failed to load wallpaper image for color extraction:", e);
+    };
 }

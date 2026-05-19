@@ -737,12 +737,24 @@ const SettingsManager = {
             // Calc proportional settings glass opacity (+10%, max 95%)
             const settingsOpacity = Math.min(95, parseInt(globalOpacity) + 10);
             document.documentElement.style.setProperty('--global-glass-opacity-settings', `${settingsOpacity}%`);
+
+            // 壁紙の画像から色を自動で抽出し、操作バーおよびアプリのテーマカラーをシームレスに同期
+            if (typeof extractColorFromWallpaper === 'function') {
+                extractColorFromWallpaper(activeItem.dataUrl);
+            }
         } else {
             document.body.removeAttribute('data-wallpaper-active');
             document.documentElement.style.removeProperty('--global-wallpaper-url');
             document.documentElement.style.removeProperty('--global-wallpaper-fit');
             document.documentElement.style.removeProperty('--global-glass-opacity');
             document.documentElement.style.removeProperty('--global-glass-opacity-settings');
+
+            // 壁紙が無効になった場合は、現在のテーマ背景を解析して通常通り同期
+            if (typeof applyTheme === 'function') {
+                const currentTheme = localStorage.getItem('app-theme') || 'default';
+                const customData = localStorage.getItem('custom-theme-data');
+                applyTheme(currentTheme, customData ? JSON.parse(customData) : null);
+            }
         }
     },
 
