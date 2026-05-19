@@ -1141,6 +1141,19 @@ btnRefresh.onclick = () => {
 };
 
 function loadPath(path, isUserClick = false) {
+    if (window.isSelectingWallpaperMode) {
+        const galleryView = document.getElementById('wallpaper-gallery-view');
+        if (path === 'HOME' || path === 'HOME\\') {
+            if (galleryView) galleryView.style.display = 'flex';
+            if (explorerView) explorerView.style.display = 'none';
+            if (homeView) homeView.style.display = 'none';
+            return;
+        } else {
+            if (galleryView) galleryView.style.display = 'none';
+            if (explorerView) explorerView.style.display = 'block';
+        }
+    }
+
     if (path === 'HOME' || path === 'HOME\\') {
         showHome(isUserClick);
         return;
@@ -1387,13 +1400,7 @@ function addFileRow(data) {
 
     if (!showHiddenFiles && isHidden) return;
 
-    // 壁紙選択モードの場合は画像ファイルのみを表示（ディレクトリも非表示！）
-    if (window.isSelectingWallpaperMode) {
-        const isImg = /\.(jpe?g|png|gif|webp|svg)$/i.test(name);
-        if (type !== 'F' || !isImg) {
-            return;
-        }
-    }
+
 
     const displayName = type === 'D' ? name : getFileNameWithoutExtension(name);
 
@@ -1547,7 +1554,8 @@ function addFileRow(data) {
         } else {
             // 壁紙選択モード時の割り込み
             if (window.isSelectingWallpaperMode) {
-                if (/\.(jpe?g|png|gif|webp|svg)$/i.test(name)) {
+                const isImg = /\.(jpe?g|png|gif|webp|svg)$/i.test(name);
+                if (isImg) {
                     const fullPath = currentPath + name;
                     try {
                         const history = await window.api.invoke('SET_WALLPAPER_BY_PATH', fullPath);
@@ -1564,8 +1572,10 @@ function addFileRow(data) {
                     if (typeof window.endWallpaperSelectionMode === 'function') {
                         window.endWallpaperSelectionMode(false);
                     }
-                    return;
+                } else {
+                    alert('壁紙として設定できるのは画像ファイルのみです。');
                 }
+                return;
             }
 
             window.api.sendCommand(`OPEN|${currentPath}${name}`);

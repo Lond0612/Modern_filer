@@ -3292,8 +3292,6 @@ body.wallpaper-gallery-mode .app-container {
     background: transparent !important;
 }
 
-body.wallpaper-gallery-mode .sidebar,
-body.wallpaper-gallery-mode #resizer-sidebar,
 body.wallpaper-gallery-mode .toolbar,
 body.wallpaper-gallery-mode .actions-bar,
 body.wallpaper-gallery-mode #tab-bar,
@@ -3312,7 +3310,6 @@ body.wallpaper-gallery-mode .main-layout {
 }
 
 body.wallpaper-gallery-mode .file-pane {
-    width: 100% !important;
     height: 100vh !important;
     padding: 0 !important;
     box-sizing: border-box !important;

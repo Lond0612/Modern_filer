@@ -623,8 +623,11 @@ ipcMain.on('CLOSE_PREVIEW_WINDOW', (event) => {
   }
 });
 
+let currentDraggedFiles = [];
+
 // 外部アプリへのドラッグ＆ドロップ
 ipcMain.on('ondragstart', (event, files) => {
+  currentDraggedFiles = files || [];
   try {
     if (!files || files.length === 0) return;
 
@@ -642,6 +645,10 @@ ipcMain.on('ondragstart', (event, files) => {
   } catch (err) {
     console.error('Failed to start native drag:', err);
   }
+});
+
+ipcMain.handle('GET_DRAGGED_FILES', () => {
+  return currentDraggedFiles;
 });
 ipcMain.on('TOGGLE_MAXIMIZE', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
