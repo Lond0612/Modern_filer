@@ -25,13 +25,21 @@ const IconThemeManager = {
         css: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="file-icon-svg"><path fill="var(--icon-file)" d="M376.3 32L0 32 0 408.3c0 19 7.6 37.2 21 50.7s31.7 21 50.7 21l304.6 0c19 0 37.2-7.6 50.7-21s21-31.7 21-50.7l0-304.6c0-19-7.6-37.2-21-50.7s-31.7-21-50.7-21z"/></svg>`,
         js: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="file-icon-svg"><path fill="var(--icon-file)" d="M0 32l0 448 448 0 0-448-448 0z"/></svg>`,
         c: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="file-icon-svg"><path fill="var(--icon-file)" d="M329.1 142.9c-62.5-62.5-155.8-62.5-218.3 0s-62.5 163.8 0 226.3 155.8 62.5 218.3 0c12.5-12.5 32.8-12.5 45.3 0s12.5 32.8 0 45.3c-87.5 87.5-221.3 87.5-308.8 0s-87.5-229.3 0-316.8 221.3-87.5 308.8 0c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0z"/></svg>`,
-        h: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="file-icon-svg"><path fill="var(--icon-file)" d="M320 288l0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-384c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-256 0 0-160c0-17.7-14.3-32-32-32S0 46.3 0 64L0 448c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 256 0z"/></svg>`
+        h: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="file-icon-svg"><path fill="var(--icon-file)" d="M320 288l0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-384c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-256 0 0-160c0-17.7-14.3-32-32-32S0 46.3 0 64L0 448c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 256 0z"/></svg>`,
+        desktop: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="file-icon-svg"><path fill="var(--icon-file)" d="M64 32C28.7 32 0 60.7 0 96L0 352c0 35.3 28.7 64 64 64l144 0-16 48-72 0c-13.3 0-24 10.7-24 24s10.7 24 24 24l272 0c13.3 0 24-10.7 24-24s-10.7-24-24-24l-72 0-16-48 144 0c35.3 0 64-28.7 64-64l0-256c0-35.3-28.7-64-64-64L64 32zM96 96l320 0c17.7 0 32 14.3 32 32l0 160c0 17.7-14.3 32-32 32L96 320c-17.7 0-32-14.3-32-32l0-160c0-17.7 14.3-32 32-32z"/></svg>`,
+        download: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="file-icon-svg"><path fill="var(--icon-file)" d="M256 32c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 210.7-41.4-41.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l96 96c12.5 12.5 32.8 12.5 45.3 0l96-96c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 242.7 256 32zM64 320c-35.3 0-64 28.7-64 64l0 32c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-32c0-35.3-28.7-64-64-64l-46.9 0-56.6 56.6c-31.2 31.2-81.9 31.2-113.1 0L110.9 320 64 320zm304 56a24 24 0 1 1 0 48 24 24 0 1 1 0-48z"/></svg>`
     },
 
     _defaultIcons: null,
 
     getIcon(name, isDir) {
-        if (isDir) return this.customIcons.folder;
+        if (isDir) {
+            // 特殊フォルダはフォルダ名で専用アイコンに切り替える
+            const lower = name.toLowerCase();
+            if (['desktop', 'デスクトップ'].includes(lower)) return this.customIcons.desktop;
+            if (['downloads', 'download', 'ダウンロード'].includes(lower)) return this.customIcons.download;
+            return this.customIcons.folder;
+        }
         const ext = name.split('.').pop().toLowerCase();
         if (['html', 'htm'].includes(ext)) return this.customIcons.html;
         if (ext === 'css') return this.customIcons.css;
