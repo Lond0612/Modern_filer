@@ -119,4 +119,34 @@ function applyTheme(themeName, customThemeObj = null) {
     } else if (typeof currentPath !== 'undefined' && currentPath) {
         window.api.sendCommand(`LIST|${currentPath}`);
     }
+
+    // ウインドウ操作バー（Window Controls Overlay）のカラー同期
+    let overlayColor = '#1e1e1e';
+    let symbolColor = '#ffffff';
+
+    if (customThemeObj) {
+        if (customThemeObj.colors) {
+            overlayColor = customThemeObj.colors['--bg-toolbar'] || customThemeObj.colors['--bg-main'] || '#1e1e1e';
+            symbolColor = customThemeObj.colors['--text-main'] || customThemeObj.colors['--text-bright'] || '#ffffff';
+        }
+    } else {
+        const themeTitleBarOverlayColors = {
+            'default': { color: '#1e1e1e', symbolColor: '#ffffff' },
+            'snow': { color: '#ffffff', symbolColor: '#333333' },
+            'deepblue': { color: '#002142', symbolColor: '#e6f1ff' },
+            'khaki': { color: '#363622', symbolColor: '#f5f5dc' },
+            'sakura': { color: '#ffffff', symbolColor: '#343a40' },
+            'amber': { color: '#ffffff', symbolColor: '#343a40' },
+            'sky': { color: '#ffffff', symbolColor: '#343a40' },
+            'midnight': { color: '#1a0b2e', symbolColor: '#e0d0f0' }
+        };
+        const presetColors = themeTitleBarOverlayColors[themeName] || themeTitleBarOverlayColors['default'];
+        overlayColor = presetColors.color;
+        symbolColor = presetColors.symbolColor;
+    }
+
+    // メインプロセスへ通知
+    if (window.api && typeof window.api.send === 'function') {
+        window.api.send('UPDATE_TITLE_BAR_OVERLAY', { color: overlayColor, symbolColor: symbolColor });
+    }
 }

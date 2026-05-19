@@ -395,9 +395,42 @@ ipcMain.handle('OPEN_NEW_WINDOW', (event, targetPath) => {
   }
 });
 
+ipcMain.on('UPDATE_TITLE_BAR_OVERLAY', (event, data) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win && !win.isDestroyed() && typeof win.setTitleBarOverlay === 'function') {
+    win.setTitleBarOverlay({
+      color: data.color,
+      symbolColor: data.symbolColor,
+      height: 40
+    });
+  }
+});
+
 ipcMain.handle('OPEN_WALLPAPER_SELECT_WINDOW', () => {
+  // 既に壁紙設定ウィンドウが開いているかチェック
+  for (const [id, wState] of windows.entries()) {
+    if (wState.isWallpaperSelectWindow && wState.window && !wState.window.isDestroyed()) {
+      if (wState.window.isMinimized()) {
+        wState.window.restore();
+      }
+      wState.window.focus();
+      return;
+    }
+  }
+
+  // 開いていなければ新しく作成する
   createWindow(null, true);
 });
+
+ipcMain.handle('CLOSE_WALLPAPER_SELECT_WINDOW', () => {
+  // すべての壁紙設定ウィンドウを閉じる
+  for (const [id, wState] of windows.entries()) {
+    if (wState.isWallpaperSelectWindow && wState.window && !wState.window.isDestroyed()) {
+      wState.window.close();
+    }
+  }
+});
+
 async function getWallpaperHistory() {
   const wallpapersDir = path.join(app.getPath('userData'), 'wallpapers');
   await fs.mkdir(wallpapersDir, { recursive: true });

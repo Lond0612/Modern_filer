@@ -108,6 +108,7 @@ const SettingsManager = {
         if (this.closeBtn) {
             this.closeBtn.onclick = () => {
                 this.screen.style.display = 'none';
+                window.api.invoke('CLOSE_WALLPAPER_SELECT_WINDOW');
             };
         }
 
@@ -116,6 +117,7 @@ const SettingsManager = {
             this.screen.onclick = (e) => {
                 if (e.target === this.screen) {
                     this.screen.style.display = 'none';
+                    window.api.invoke('CLOSE_WALLPAPER_SELECT_WINDOW');
                 }
             };
         }
