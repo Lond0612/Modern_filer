@@ -3182,7 +3182,7 @@ body[data-wallpaper-active="true"] .tab-bar {
 /* Wallpaper Select Floating Banner Styles */
 .wallpaper-select-banner {
     position: fixed;
-    top: 15px;
+    bottom: 25px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 3000;
@@ -3195,7 +3195,7 @@ body[data-wallpaper-active="true"] .tab-bar {
     align-items: center;
     gap: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    animation: slideDown 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: slideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     pointer-events: auto;
 }
 
@@ -3243,9 +3243,9 @@ body[data-wallpaper-active="true"] .tab-bar {
     transform: scale(0.95);
 }
 
-@keyframes slideDown {
+@keyframes slideUp {
     from {
-        transform: translate(-50%, -50px);
+        transform: translate(-50%, 50px);
         opacity: 0;
     }
     to {
@@ -3304,13 +3304,13 @@ body.wallpaper-gallery-mode #resizer-preview {
 }
 
 body.wallpaper-gallery-mode .main-layout {
-    height: 100vh !important;
-    padding-top: 0 !important;
+    height: calc(100vh - 30px) !important;
+    padding-top: 30px !important;
     background: transparent !important;
 }
 
 body.wallpaper-gallery-mode .file-pane {
-    height: 100vh !important;
+    height: calc(100vh - 30px) !important;
     padding: 0 !important;
     box-sizing: border-box !important;
     background: transparent !important;
@@ -3417,4 +3417,40 @@ body.wallpaper-gallery-mode .file-pane {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* Drag handle bar at the top of wallpaper window */
+.wallpaper-drag-bar {
+    display: none;
+    height: 30px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-app-region: drag;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.wallpaper-drag-bar::after {
+    content: '';
+    width: 45px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 2px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wallpaper-drag-bar:hover::after {
+    background: var(--accent-color);
+    width: 60px;
+}
+
+body.wallpaper-gallery-mode .wallpaper-drag-bar {
+    display: flex;
 }
