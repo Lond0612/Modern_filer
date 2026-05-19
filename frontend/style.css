@@ -3298,7 +3298,10 @@ body.wallpaper-gallery-mode .toolbar,
 body.wallpaper-gallery-mode .actions-bar,
 body.wallpaper-gallery-mode #tab-bar,
 body.wallpaper-gallery-mode #resizer-terminal,
-body.wallpaper-gallery-mode #terminal-pane {
+body.wallpaper-gallery-mode .terminal-pane,
+body.wallpaper-gallery-mode #home-view,
+body.wallpaper-gallery-mode #preview-pane,
+body.wallpaper-gallery-mode #resizer-preview {
     display: none !important;
 }
 
