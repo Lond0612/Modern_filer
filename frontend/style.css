@@ -3031,7 +3031,7 @@ body[data-wallpaper-active="true"] .home-view {
 /* 設定画面のプレミアムなすりガラス（Glassmorphism）効果 */
 body[data-wallpaper-active="true"] .settings-screen {
     background: color-mix(in srgb, var(--settings-main-bg) var(--global-glass-opacity-settings, 75%), transparent) !important;
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(28px);
 }
 body[data-wallpaper-active="true"] .settings-sidebar {
     background: color-mix(in srgb, var(--settings-sidebar-bg) var(--global-glass-opacity-settings, 75%), transparent) !important;
@@ -3040,7 +3040,7 @@ body[data-wallpaper-active="true"] .settings-sidebar {
 /* color-mix を用いた美しい半透明・すりガラス効果 */
 body[data-wallpaper-active="true"] .sidebar {
     background: color-mix(in srgb, var(--bg-sidebar) var(--global-glass-opacity, 65%), transparent) !important;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(24px);
 }
 
 body[data-wallpaper-active="true"] .file-pane {
@@ -3050,22 +3050,22 @@ body[data-wallpaper-active="true"] .file-pane {
 
 body[data-wallpaper-active="true"] .terminal-pane {
     background: color-mix(in srgb, var(--bg-terminal) var(--global-glass-opacity, 65%), transparent) !important;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(24px);
 }
 
 body[data-wallpaper-active="true"] .toolbar {
     background: color-mix(in srgb, var(--bg-toolbar) var(--global-glass-opacity, 65%), transparent) !important;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(24px);
 }
 
 body[data-wallpaper-active="true"] .actions-bar {
     background: color-mix(in srgb, var(--bg-actions) var(--global-glass-opacity, 65%), transparent) !important;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(24px);
 }
 
 body[data-wallpaper-active="true"] .tab-bar {
     background: color-mix(in srgb, var(--bg-tabbar) var(--global-glass-opacity, 65%), transparent) !important;
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(24px);
 }
 
 /* ==========================================================================
