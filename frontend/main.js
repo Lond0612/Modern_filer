@@ -76,6 +76,7 @@ function createWindow(initialPath = null, selectWallpaper = false) {
   const winId = win.webContents.id;
   const state = {
     window: win,
+    isWallpaperSelectWindow: selectWallpaper,
     filerServer: null,
     decoder: new StringDecoder('utf8'),
     serverBuffer: '',
@@ -115,6 +116,23 @@ function createWindow(initialPath = null, selectWallpaper = false) {
       state.filerServer.kill();
     }
     windows.delete(winId);
+
+    // すべての本アプリウィンドウ（メインウィンドウ）が閉じられたかチェック
+    let mainWindowsCount = 0;
+    for (const [id, wState] of windows.entries()) {
+      if (!wState.isWallpaperSelectWindow) {
+        mainWindowsCount++;
+      }
+    }
+
+    // メインウィンドウが0になったら、残っている壁紙選択ウィンドウもすべて閉じる
+    if (mainWindowsCount === 0) {
+      for (const [id, wState] of windows.entries()) {
+        if (wState.isWallpaperSelectWindow && wState.window && !wState.window.isDestroyed()) {
+          wState.window.close();
+        }
+      }
+    }
   });
 
   // 開発時以外でもF12でデバッグできるようにする（α版用）
