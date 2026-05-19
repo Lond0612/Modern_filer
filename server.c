@@ -645,8 +645,11 @@ int main(void) {
         else if (strncmp(line, "EXEC|", 5) == 0) {
             char cmd_cp932[4096];
             utf8_to_cp932(line + 5, cmd_cp932, sizeof(cmd_cp932));
-            cmd_proc_send(cmd_cp932);
-            cmd_proc_send("@echo __CWD__:%cd%");
+            
+            char combined[8192];
+            _snprintf(combined, sizeof(combined) - 1, "%s & @echo __CWD__:%%cd%%", cmd_cp932);
+            combined[sizeof(combined) - 1] = '\0';
+            cmd_proc_send(combined);
         }
         else if (strncmp(line, "CD|", 3) == 0) {
             char path_cp932[MAX_PATH];
