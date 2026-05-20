@@ -16,6 +16,7 @@ const SettingsManager = {
         // General
         this.windowPreviewToggle = document.getElementById('toggle-window-preview');
         this.nativePropertiesToggle = document.getElementById('toggle-native-properties');
+        this.vimModeToggle = document.getElementById('toggle-vim-mode');
 
         // Theme
         this.themeOptions = document.querySelectorAll('.theme-option');
@@ -190,6 +191,16 @@ const SettingsManager = {
             this.nativePropertiesToggle.onchange = () => {
                 const enabled = this.nativePropertiesToggle.checked;
                 localStorage.setItem('settings-native-properties', enabled);
+            };
+        }
+
+        // Vim Mode toggle
+        if (this.vimModeToggle) {
+            this.vimModeToggle.onchange = () => {
+                const enabled = this.vimModeToggle.checked;
+                localStorage.setItem('settings-vim-mode', enabled);
+                const badge = document.getElementById('vim-mode-badge');
+                if (badge) badge.style.display = enabled ? 'inline-block' : 'none';
             };
         }
 
@@ -612,6 +623,14 @@ const SettingsManager = {
         if (this.nativePropertiesToggle) {
             this.nativePropertiesToggle.checked = nativePropertiesEnabled;
         }
+
+        // Vim Mode load
+        const vimModeEnabled = localStorage.getItem('settings-vim-mode') === 'true';
+        if (this.vimModeToggle) {
+            this.vimModeToggle.checked = vimModeEnabled;
+        }
+        const badge = document.getElementById('vim-mode-badge');
+        if (badge) badge.style.display = vimModeEnabled ? 'inline-block' : 'none';
 
         // User Themes
         this.loadUserThemes();

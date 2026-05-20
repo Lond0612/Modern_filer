@@ -57,6 +57,7 @@
                 </button>
             </div>
             <input type="text" id="address-input" placeholder="Path...">
+            <div id="git-branch-indicator" class="git-branch-indicator" style="display: none;"></div>
             <div class="search-container">
                 <div class="search-box">
                     <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -226,6 +227,7 @@
             </button>
             <div class="separator"></div>
             <div style="flex-grow: 1;"></div>
+            <div id="vim-mode-badge" class="vim-mode-badge" style="display: none;">VIM</div>
             <button id="btn-settings" class="action-btn" title="設定" style="margin-left: auto;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
@@ -542,6 +544,17 @@
                         </div>
                         <label class="toggle-switch">
                             <input type="checkbox" id="toggle-native-properties">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-group">
+                        <div class="setting-label">
+                            <span class="main-label">Vim キーボード操作モード (Vim Mode)</span>
+                            <span class="sub-label">キーボード(j/k/h/l)のみでエクスプローラを高速操作します</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle-vim-mode">
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -1138,6 +1151,32 @@
             </div>
             <div class="property-footer">
                 <button class="btn-primary" id="prop-ok-btn">OK</button>
+            </div>
+        </div>
+    </div>
+    <!-- Command Palette Floating Overlay -->
+    <div id="command-palette" class="hud-overlay" style="display: none;">
+        <div class="hud-container">
+            <div class="hud-search-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hud-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="command-palette-input" placeholder="Type a command..." autocomplete="off">
+            </div>
+            <div id="command-palette-list" class="hud-list">
+                <!-- Dynamic actions list -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Fuzzy Finder HUD Floating Overlay -->
+    <div id="fuzzy-finder-hud" class="hud-overlay" style="display: none;">
+        <div class="hud-container">
+            <div class="hud-search-wrapper">
+                <span class="hud-prompt">/</span>
+                <input type="text" id="fuzzy-finder-input" placeholder="Fuzzy filter files..." autocomplete="off">
+                <span id="fuzzy-finder-count" class="hud-count">0 / 0</span>
+            </div>
+            <div id="fuzzy-finder-list" class="hud-list">
+                <!-- Dynamic match list -->
             </div>
         </div>
     </div>

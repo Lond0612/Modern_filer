@@ -969,6 +969,11 @@ function showHomeUI() {
     if (typeof PreviewManager !== 'undefined') {
         PreviewManager.hide();
     }
+
+    // Git状態の非表示とクリア
+    const gitIndicator = document.getElementById('git-branch-indicator');
+    if (gitIndicator) gitIndicator.style.display = 'none';
+    currentGitStatus = { isRepo: false, branch: '', files: {} };
 }
 
 function showHome(isUserClick = false) {
@@ -1261,6 +1266,9 @@ window.api.onBackendResponse((obj) => {
             addressInput.value = currentPath;
             updateTreeActiveState();
             renderTabs();
+            if (typeof updateGitStatus === 'function') {
+                updateGitStatus(currentPath);
+            }
             break;
 
         case 'CMD_OUT':
@@ -1543,6 +1551,11 @@ function addFileRow(data) {
 
         fileGrid.appendChild(div);
         element = div;
+    }
+
+    const gitStatus = typeof getGitStatusForFile === 'function' ? getGitStatusForFile(name) : null;
+    if (gitStatus) {
+        element.classList.add(`git-status-${gitStatus}`);
     }
 
     // (個別要素の onclick/onmousedown は作成時に登録済み)
@@ -3158,3 +3171,449 @@ if (window.api && typeof window.api.onDeviceChange === 'function') {
         initTree('HOME');
     });
 }
+
+// ==========================================================================
+// Elite Developer Features - Git, Fuzzy Finder, Command Palette
+// ==========================================================================
+
+let currentGitStatus = { isRepo: false, branch: '', files: {} };
+
+async function updateGitStatus(dirPath) {
+    const gitIndicator = document.getElementById('git-branch-indicator');
+    if (!dirPath || dirPath === 'HOME') {
+        currentGitStatus = { isRepo: false, branch: '', files: {} };
+        if (gitIndicator) gitIndicator.style.display = 'none';
+        return;
+    }
+    try {
+        const res = await window.api.invoke('GET_GIT_STATUS', dirPath);
+        if (res && res.isRepo) {
+            currentGitStatus = res;
+            if (gitIndicator) {
+                gitIndicator.textContent = res.branch;
+                gitIndicator.style.display = 'inline-flex';
+            }
+            applyGitStylesToExistingElements();
+        } else {
+            currentGitStatus = { isRepo: false, branch: '', files: {} };
+            if (gitIndicator) gitIndicator.style.display = 'none';
+            // Clear styles if we left a repo
+            applyGitStylesToExistingElements();
+        }
+    } catch (e) {
+        console.error('Failed to update git status:', e);
+        currentGitStatus = { isRepo: false, branch: '', files: {} };
+        if (gitIndicator) gitIndicator.style.display = 'none';
+    }
+}
+
+function getGitStatusForFile(fileName) {
+    if (!currentGitStatus || !currentGitStatus.isRepo || !currentGitStatus.files) return null;
+    const fullPath = (currentPath + fileName).toLowerCase().replace(/\\/g, '/');
+    for (const key in currentGitStatus.files) {
+        if (key.toLowerCase().replace(/\\/g, '/') === fullPath) {
+            return currentGitStatus.files[key];
+        }
+    }
+    return null;
+}
+
+function applyGitStylesToExistingElements() {
+    const rows = document.querySelectorAll('#file-list-body tr, .grid-item');
+    rows.forEach(el => {
+        const name = el.dataset.name;
+        if (!name) return;
+        
+        el.classList.remove('git-status-modified', 'git-status-untracked', 'git-status-staged');
+        
+        const gitStatus = getGitStatusForFile(name);
+        if (gitStatus) {
+            el.classList.add(`git-status-${gitStatus}`);
+        }
+    });
+}
+
+// ⚡ Fuzzy Finder HUD Controller
+const FuzzyFinderHUD = {
+    isOpen: false,
+    activeIndex: -1,
+    filteredItems: [],
+
+    open(initialChar = '') {
+        if (isHomeActive || this.isOpen) return;
+        
+        const hud = document.getElementById('fuzzy-finder-hud');
+        const input = document.getElementById('fuzzy-finder-input');
+        if (!hud || !input) return;
+
+        this.isOpen = true;
+        hud.style.display = 'flex';
+        input.value = initialChar;
+        input.focus();
+        this.activeIndex = -1;
+        
+        this.filter();
+        
+        ShortcutManager.isEnabled = false;
+    },
+
+    close() {
+        if (!this.isOpen) return;
+        this.isOpen = false;
+        
+        const hud = document.getElementById('fuzzy-finder-hud');
+        const input = document.getElementById('fuzzy-finder-input');
+        if (hud) hud.style.display = 'none';
+        if (input) {
+            input.value = '';
+            input.blur();
+        }
+        
+        const rows = document.querySelectorAll('#file-list-body tr, .grid-item');
+        rows.forEach(r => r.style.display = '');
+
+        ShortcutManager.isEnabled = true;
+    },
+
+    filter() {
+        const input = document.getElementById('fuzzy-finder-input');
+        const countSpan = document.getElementById('fuzzy-finder-count');
+        const listContainer = document.getElementById('fuzzy-finder-list');
+        if (!input || !listContainer) return;
+
+        const query = input.value.toLowerCase();
+        const rows = Array.from(document.querySelectorAll('#file-list-body tr, .grid-item'));
+        
+        this.filteredItems = [];
+        listContainer.innerHTML = '';
+
+        let total = rows.length;
+        let matchCount = 0;
+
+        rows.forEach(row => {
+            const name = row.dataset.name || '';
+            const nameLower = name.toLowerCase();
+            
+            let isMatch = true;
+            let lastIdx = -1;
+            for (let i = 0; i < query.length; i++) {
+                const char = query[i];
+                const idx = nameLower.indexOf(char, lastIdx + 1);
+                if (idx === -1) {
+                    isMatch = false;
+                    break;
+                }
+                lastIdx = idx;
+            }
+
+            if (isMatch) {
+                this.filteredItems.push(row);
+                row.style.display = '';
+                matchCount++;
+
+                const itemEl = document.createElement('div');
+                itemEl.className = 'hud-item';
+                const isDir = row.dataset.type === 'D';
+                const icon = IconThemeManager.getIcon(name, isDir);
+                
+                const gitStatus = getGitStatusForFile(name);
+                const colorStyle = gitStatus ? `git-status-${gitStatus}` : '';
+
+                itemEl.innerHTML = `
+                    <div class="hud-item-label ${colorStyle}">
+                        <span style="display:flex;align-items:center;">${icon}</span>
+                        <span>${name}</span>
+                    </div>
+                `;
+                
+                const currentIndex = matchCount - 1;
+                itemEl.onclick = () => {
+                    this.activeIndex = currentIndex;
+                    this.selectActive();
+                    this.executeActive();
+                };
+
+                listContainer.appendChild(itemEl);
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        if (countSpan) {
+            countSpan.textContent = `${matchCount} / ${total}`;
+        }
+
+        if (matchCount > 0) {
+            this.activeIndex = 0;
+            this.updateActiveHighlight();
+            this.selectActive();
+        } else {
+            this.activeIndex = -1;
+        }
+    },
+
+    updateActiveHighlight() {
+        const listContainer = document.getElementById('fuzzy-finder-list');
+        if (!listContainer) return;
+        const items = listContainer.querySelectorAll('.hud-item');
+        items.forEach((item, idx) => {
+            if (idx === this.activeIndex) {
+                item.classList.add('active');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    },
+
+    selectActive() {
+        const rows = document.querySelectorAll('#file-list-body tr, .grid-item');
+        rows.forEach(r => r.classList.remove('selected'));
+
+        if (this.activeIndex >= 0 && this.activeIndex < this.filteredItems.length) {
+            const targetRow = this.filteredItems[this.activeIndex];
+            targetRow.classList.add('selected');
+            
+            const indexInMain = Array.from(rows).indexOf(targetRow);
+            if (indexInMain !== -1) {
+                window.selectionAnchorIndex = indexInMain;
+            }
+            targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            if (typeof onSelectionChanged === 'function') onSelectionChanged();
+        }
+    },
+
+    executeActive() {
+        if (this.activeIndex >= 0 && this.activeIndex < this.filteredItems.length) {
+            const targetRow = this.filteredItems[this.activeIndex];
+            this.close();
+            if (targetRow.ondblclick) {
+                targetRow.ondblclick();
+            }
+        }
+    },
+
+    handleKeyDown(e) {
+        if (!this.isOpen) return;
+
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            this.close();
+            return;
+        }
+
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            this.executeActive();
+            return;
+        }
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (this.filteredItems.length > 0) {
+                this.activeIndex = (this.activeIndex + 1) % this.filteredItems.length;
+                this.updateActiveHighlight();
+                this.selectActive();
+            }
+            return;
+        }
+
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (this.filteredItems.length > 0) {
+                this.activeIndex = (this.activeIndex - 1 + this.filteredItems.length) % this.filteredItems.length;
+                this.updateActiveHighlight();
+                this.selectActive();
+            }
+            return;
+        }
+    }
+};
+
+// 🎨 Command Palette Controller
+const CommandPalette = {
+    isOpen: false,
+    activeIndex: 0,
+    commands: [
+        { label: 'Create New Folder', desc: 'Create a new empty directory', action: () => { if (typeof createNewItem === 'function') createNewItem('directory'); } },
+        { label: 'Create New File', desc: 'Create a new empty text file', action: () => { if (typeof createNewItem === 'function') createNewItem('.txt', '新規メモ'); } },
+        { label: 'Toggle Hidden Files', desc: 'Show/hide system and dotfiles', action: () => { showHiddenFiles = !showHiddenFiles; updateViewMenuUI(); window.api.sendCommand(`LIST|${currentPath}`); } },
+        { label: 'Toggle File Extensions', desc: 'Show/hide file extensions', action: () => { showExtensions = !showExtensions; updateViewMenuUI(); window.api.sendCommand(`LIST|${currentPath}`); } },
+        { label: 'Change View Mode: Details', desc: 'List files in detailed view', action: () => { applyViewMode('details'); } },
+        { label: 'Change View Mode: Compact', desc: 'List files in compact view', action: () => { applyViewMode('compact'); } },
+        { label: 'Change View Mode: Icons', desc: 'List files in medium icons view', action: () => { applyViewMode('medium'); } },
+        { label: 'Sort by Name', desc: 'Sort items alphabetically', action: () => { currentSortKey = 0; updateSortMenuUI(); window.api.sendCommand(`SORT|${currentSortKey}|${currentSortOrder}`); if (currentPath) window.api.sendCommand(`LIST|${currentPath}`); } },
+        { label: 'Sort by Date', desc: 'Sort items by modified date', action: () => { currentSortKey = 1; updateSortMenuUI(); window.api.sendCommand(`SORT|${currentSortKey}|${currentSortOrder}`); if (currentPath) window.api.sendCommand(`LIST|${currentPath}`); } },
+        { label: 'Sort by Size', desc: 'Sort items by file size', action: () => { currentSortKey = 2; updateSortMenuUI(); window.api.sendCommand(`SORT|${currentSortKey}|${currentSortOrder}`); if (currentPath) window.api.sendCommand(`LIST|${currentPath}`); } },
+        { label: 'Toggle Vim Keyboard Mode', desc: 'Toggle keyboard navigation', action: () => {
+            const current = localStorage.getItem('settings-vim-mode') === 'true';
+            const next = !current;
+            localStorage.setItem('settings-vim-mode', next);
+            const toggle = document.getElementById('toggle-vim-mode');
+            if (toggle) toggle.checked = next;
+            const badge = document.getElementById('vim-mode-badge');
+            if (badge) badge.style.display = next ? 'inline-block' : 'none';
+        } },
+        { label: 'Open Settings', desc: 'Configure Modern Filer settings', action: () => { document.getElementById('btn-settings')?.click(); } }
+    ],
+    filteredCommands: [],
+
+    open() {
+        if (this.isOpen) return;
+        
+        const hud = document.getElementById('command-palette');
+        const input = document.getElementById('command-palette-input');
+        if (!hud || !input) return;
+
+        this.isOpen = true;
+        hud.style.display = 'flex';
+        input.value = '';
+        input.focus();
+        this.activeIndex = 0;
+        
+        this.filter();
+        
+        ShortcutManager.isEnabled = false;
+    },
+
+    close() {
+        if (!this.isOpen) return;
+        this.isOpen = false;
+        
+        const hud = document.getElementById('command-palette');
+        const input = document.getElementById('command-palette-input');
+        if (hud) hud.style.display = 'none';
+        if (input) {
+            input.value = '';
+            input.blur();
+        }
+        
+        ShortcutManager.isEnabled = true;
+    },
+
+    filter() {
+        const input = document.getElementById('command-palette-input');
+        const listContainer = document.getElementById('command-palette-list');
+        if (!input || !listContainer) return;
+
+        const query = input.value.toLowerCase();
+        listContainer.innerHTML = '';
+        this.filteredCommands = [];
+
+        this.commands.forEach(cmd => {
+            if (!query || cmd.label.toLowerCase().includes(query) || cmd.desc.toLowerCase().includes(query)) {
+                this.filteredCommands.push(cmd);
+                
+                const itemEl = document.createElement('div');
+                itemEl.className = 'hud-item';
+                itemEl.innerHTML = `
+                    <div class="hud-item-label">
+                        <span style="font-weight: 600;">${cmd.label}</span>
+                        <span style="font-size: 11px; color: var(--text-muted); margin-left: 10px;">${cmd.desc}</span>
+                    </div>
+                `;
+                
+                const currentIndex = this.filteredCommands.length - 1;
+                itemEl.onclick = () => {
+                    this.activeIndex = currentIndex;
+                    this.executeActive();
+                };
+
+                listContainer.appendChild(itemEl);
+            }
+        });
+
+        this.activeIndex = Math.min(this.activeIndex, this.filteredCommands.length - 1);
+        if (this.filteredCommands.length > 0) {
+            if (this.activeIndex < 0) this.activeIndex = 0;
+            this.updateActiveHighlight();
+        } else {
+            this.activeIndex = -1;
+        }
+    },
+
+    updateActiveHighlight() {
+        const listContainer = document.getElementById('command-palette-list');
+        if (!listContainer) return;
+        const items = listContainer.querySelectorAll('.hud-item');
+        items.forEach((item, idx) => {
+            if (idx === this.activeIndex) {
+                item.classList.add('active');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    },
+
+    executeActive() {
+        if (this.activeIndex >= 0 && this.activeIndex < this.filteredCommands.length) {
+            const cmd = this.filteredCommands[this.activeIndex];
+            this.close();
+            cmd.action();
+        }
+    },
+
+    handleKeyDown(e) {
+        if (!this.isOpen) return;
+
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            this.close();
+            return;
+        }
+
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            this.executeActive();
+            return;
+        }
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (this.filteredCommands.length > 0) {
+                this.activeIndex = (this.activeIndex + 1) % this.filteredCommands.length;
+                this.updateActiveHighlight();
+            }
+            return;
+        }
+
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (this.filteredCommands.length > 0) {
+                this.activeIndex = (this.activeIndex - 1 + this.filteredCommands.length) % this.filteredCommands.length;
+                this.updateActiveHighlight();
+            }
+            return;
+        }
+    }
+};
+
+// Expose to window context so shortcuts.js can access
+window.FuzzyFinderHUD = FuzzyFinderHUD;
+window.CommandPalette = CommandPalette;
+
+// Initialize listeners and overlay handlers
+document.addEventListener('DOMContentLoaded', () => {
+    const fInput = document.getElementById('fuzzy-finder-input');
+    if (fInput) {
+        fInput.addEventListener('input', () => FuzzyFinderHUD.filter());
+        fInput.addEventListener('keydown', (e) => FuzzyFinderHUD.handleKeyDown(e));
+    }
+
+    const cpInput = document.getElementById('command-palette-input');
+    if (cpInput) {
+        cpInput.addEventListener('input', () => CommandPalette.filter());
+        cpInput.addEventListener('keydown', (e) => CommandPalette.handleKeyDown(e));
+    }
+});
+
+// Close overlays on clicking outside
+document.addEventListener('mousedown', (e) => {
+    if (CommandPalette.isOpen && !e.target.closest('.hud-container')) {
+        CommandPalette.close();
+    }
+    if (FuzzyFinderHUD.isOpen && !e.target.closest('.hud-container')) {
+        FuzzyFinderHUD.close();
+    }
+});

@@ -35,6 +35,13 @@ const ShortcutManager = {
             active.isContentEditable
         );
 
+        // Vimキーボード操作の割り込み
+        if (!isInput && localStorage.getItem('settings-vim-mode') === 'true') {
+            if (typeof handleVimKey === 'function' && handleVimKey(e)) {
+                return;
+            }
+        }
+
         for (const s of this.shortcuts) {
             if (this.isMatch(e, s.combo)) {
                 if (isInput && !s.options.allowInInputs) continue;
@@ -110,6 +117,14 @@ const ShortcutManager = {
         this.register('Ctrl+e', () => this.helpers.focusSearch());
         this.register('Ctrl+f', () => this.helpers.focusSearch());
         this.register('F3', () => this.helpers.focusSearch());
+
+        // コマンドパレットとファジーファインダーHUD
+        this.register('Ctrl+Shift+p', () => {
+            if (typeof CommandPalette !== 'undefined') CommandPalette.open();
+        });
+        this.register('/', () => {
+            if (typeof FuzzyFinderHUD !== 'undefined') FuzzyFinderHUD.open();
+        });
 
         // 表示モード (Ctrl + Shift + 1-6)
         const modes = ['extralarge', 'large', 'medium', 'small', 'compact', 'details'];
@@ -251,3 +266,175 @@ const ShortcutManager = {
 window.addEventListener('load', () => {
     ShortcutManager.init();
 });
+
+// ==========================================================================
+// Vim Mode Keyboard Interceptor and Sequence Buffer
+// ==========================================================================
+
+let vimKeyBuffer = '';
+let vimBufferTimeout = null;
+
+function handleVimKey(e) {
+    const key = e.key;
+    
+    // Ignore keys with modifier keys (except Shift for uppercase keys like G)
+    if (e.ctrlKey || e.altKey || e.metaKey) {
+        return false;
+    }
+
+    // Ignore functional keys (like F1-F12, ArrowUp, Enter, Tab, etc.) unless they are single character printable
+    if (key.length > 1 && key !== 'Escape' && key !== 'Enter' && key !== 'Delete') {
+        return false;
+    }
+
+    // Clear buffer timeout on any keypress
+    clearTimeout(vimBufferTimeout);
+    
+    // Add to buffer
+    vimKeyBuffer += key;
+    
+    // Start timeout to clear buffer after 1 second if no key follows
+    vimBufferTimeout = setTimeout(() => {
+        vimKeyBuffer = '';
+    }, 1000);
+
+    const activeRow = document.querySelector('#file-list-body tr.selected, .grid-item.selected');
+
+    // Check sequences
+    if (vimKeyBuffer === 'gg') {
+        vimKeyBuffer = '';
+        e.preventDefault();
+        const items = document.querySelectorAll('#file-list-body tr, .grid-item');
+        if (items.length > 0) {
+            items.forEach(el => el.classList.remove('selected'));
+            items[0].classList.add('selected');
+            window.selectionAnchorIndex = 0;
+            items[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            if (typeof onSelectionChanged === 'function') onSelectionChanged();
+        }
+        return true;
+    }
+    
+    if (vimKeyBuffer === 'yy') {
+        vimKeyBuffer = '';
+        e.preventDefault();
+        document.getElementById('btn-copy')?.click();
+        return true;
+    }
+    
+    if (vimKeyBuffer === 'dd') {
+        vimKeyBuffer = '';
+        e.preventDefault();
+        document.getElementById('btn-delete')?.click();
+        return true;
+    }
+    
+    if (vimKeyBuffer === 'xx') {
+        vimKeyBuffer = '';
+        e.preventDefault();
+        document.getElementById('btn-cut')?.click();
+        return true;
+    }
+
+    // If buffer is 2 characters but did not match a 2-char sequence,
+    // evaluate the first character as a single key and keep the second character as the new buffer.
+    if (vimKeyBuffer.length >= 2) {
+        const firstKey = vimKeyBuffer[0];
+        const secondKey = vimKeyBuffer[1];
+        vimKeyBuffer = secondKey;
+        
+        // Execute the first character as a single key if it matches any
+        if (executeSingleVimKey(firstKey, e, activeRow)) {
+            return true;
+        }
+    }
+
+    // If it's a 1-character buffer, check if it matches a single-key command immediately (except 'g', which needs to wait for 'gg')
+    if (vimKeyBuffer.length === 1) {
+        if (vimKeyBuffer === 'g') {
+            // Wait for next 'g' or timeout
+            e.preventDefault();
+            return true;
+        }
+        
+        if (executeSingleVimKey(vimKeyBuffer, e, activeRow)) {
+            vimKeyBuffer = '';
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function executeSingleVimKey(key, e, activeRow) {
+    if (key === 'j') {
+        e.preventDefault();
+        ShortcutManager.helpers.navigateSelection(1);
+        return true;
+    }
+    
+    if (key === 'k') {
+        e.preventDefault();
+        ShortcutManager.helpers.navigateSelection(-1);
+        return true;
+    }
+    
+    if (key === 'h') {
+        e.preventDefault();
+        document.getElementById('btn-up')?.click();
+        return true;
+    }
+    
+    if (key === 'l') {
+        e.preventDefault();
+        if (activeRow && activeRow.ondblclick) {
+            activeRow.ondblclick();
+        }
+        return true;
+    }
+    
+    if (key === 'G') {
+        e.preventDefault();
+        const items = document.querySelectorAll('#file-list-body tr, .grid-item');
+        if (items.length > 0) {
+            items.forEach(el => el.classList.remove('selected'));
+            const lastIdx = items.length - 1;
+            items[lastIdx].classList.add('selected');
+            window.selectionAnchorIndex = lastIdx;
+            items[lastIdx].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            if (typeof onSelectionChanged === 'function') onSelectionChanged();
+        }
+        return true;
+    }
+    
+    if (key === 'p') {
+        e.preventDefault();
+        document.getElementById('btn-paste')?.click();
+        return true;
+    }
+    
+    if (key === 'r') {
+        e.preventDefault();
+        document.getElementById('btn-rename')?.click();
+        return true;
+    }
+    
+    if (key === '/') {
+        e.preventDefault();
+        if (typeof FuzzyFinderHUD !== 'undefined') {
+            FuzzyFinderHUD.open();
+        }
+        return true;
+    }
+
+    // Direct alphanumeric key starts fuzzy find
+    if (/^[a-zA-Z0-9]$/.test(key)) {
+        e.preventDefault();
+        if (typeof FuzzyFinderHUD !== 'undefined') {
+            FuzzyFinderHUD.open(key);
+        }
+        return true;
+    }
+
+    return false;
+}
