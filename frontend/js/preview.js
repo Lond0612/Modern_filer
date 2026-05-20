@@ -7,6 +7,14 @@ const PreviewManager = {
         this.bindEvents();
     },
 
+    resetStyles() {
+        if (this.content) {
+            this.content.style.padding = '';
+            this.content.style.height = '';
+            this.content.style.justifyContent = '';
+        }
+    },
+
     cacheDOM() {
         this.pane = document.getElementById('preview-pane');
         this.resizer = document.getElementById('resizer-preview');
@@ -123,12 +131,15 @@ const PreviewManager = {
             const ext = file.name.split('.').pop().toLowerCase();
             const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'].includes(ext);
             const isVideo = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'wmv', 'flv'].includes(ext);
+            const isPdf = ext === 'pdf';
             const isText = ['txt', 'js', 'json', 'c', 'cpp', 'h', 'hpp', 'py', 'md', 'html', 'css', 'sql', 'sh', 'bat', 'ps1'].includes(ext);
 
             if (isImage) {
                 this.renderImage(file.srcPath);
             } else if (isVideo) {
                 this.renderVideo(file.srcPath);
+            } else if (isPdf) {
+                this.renderPdf(file.srcPath);
             } else if (isText) {
                 await this.renderText(file.srcPath);
             } else {
@@ -141,6 +152,7 @@ const PreviewManager = {
     },
 
     renderPlaceholder() {
+        this.resetStyles();
         this.currentFile = null;
         this.filename.textContent = 'File Preview';
         this.content.innerHTML = `
@@ -156,14 +168,17 @@ const PreviewManager = {
     },
 
     renderLoading() {
+        this.resetStyles();
         this.content.innerHTML = '<div class="preview-placeholder"><p>読み込み中...</p></div>';
     },
 
     renderError(msg) {
+        this.resetStyles();
         this.content.innerHTML = `<div class="preview-placeholder"><p style="color: var(--text-terminal-error)">エラー: ${msg}</p></div>`;
     },
 
     renderImage(path) {
+        this.resetStyles();
         // ElectronのネイティブパスをURLに変換する必要がある場合がある
         // ここでは一旦単純なパス指定（バックエンドで適切に処理される前提）
         const imgUrl = `file:///${path.replace(/\\/g, '/')}`;
@@ -175,6 +190,7 @@ const PreviewManager = {
     },
     
     renderVideo(path) {
+        this.resetStyles();
         const videoUrl = `file:///${path.replace(/\\/g, '/')}`;
         this.content.innerHTML = `
             <div class="preview-video-container" style="display: flex; align-items: center; justify-content: center; height: 100%; background: #000;">
@@ -183,7 +199,21 @@ const PreviewManager = {
         `;
     },
 
+    renderPdf(path) {
+        this.resetStyles();
+        const pdfUrl = `file:///${path.replace(/\\/g, '/')}`;
+        this.content.style.padding = '0';
+        this.content.style.height = '100%';
+        this.content.style.justifyContent = 'stretch';
+        this.content.innerHTML = `
+            <div class="preview-pdf-container" style="width: 100%; height: 100%; overflow: hidden; border-radius: 6px;">
+                <iframe src="${pdfUrl}" style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+        `;
+    },
+
     async renderText(path) {
+        this.resetStyles();
         // メインプロセス経由でテキストを取得
         // window.api.readFileContent などが必要
         const content = await window.api.invoke('READ_FILE_TEXT', path);
@@ -193,6 +223,7 @@ const PreviewManager = {
     },
 
     renderGenericInfo(file) {
+        this.resetStyles();
         this.content.innerHTML = `
             <div class="preview-info-card">
                 <div class="info-row">

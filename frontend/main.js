@@ -34,7 +34,8 @@ function createWindow(initialPath = null, selectWallpaper = false) {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      plugins: true
     },
     show: false
   };
@@ -729,7 +730,8 @@ ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      plugins: true
     }
   });
 
