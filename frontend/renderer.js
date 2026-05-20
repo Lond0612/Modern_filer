@@ -92,10 +92,14 @@ let clipboard = { mode: null, items: [] };
 // items: [{ name: string, srcPath: string }]
 
 // クイックアクセス
-let quickAccessItems = JSON.parse(localStorage.getItem('quickAccessItems') || '[]').map(item => {
+let rawQuickAccessItems = JSON.parse(localStorage.getItem('quickAccessItems') || '[]');
+let quickAccessItems = rawQuickAccessItems.filter(item => item.path !== 'HOME' && item.path !== 'HOME\\' && item.label !== 'HOME' && item.label !== 'ホーム').map(item => {
     if (item.path && !item.path.endsWith('\\')) item.path += '\\';
     return item;
 });
+if (rawQuickAccessItems.length !== quickAccessItems.length) {
+    localStorage.setItem('quickAccessItems', JSON.stringify(quickAccessItems));
+}
 
 // 重複や不正なデータの簡易リペア（ミュージックが重複する等の不具合対策）
 function repairQuickAccess(paths) {
@@ -2401,7 +2405,7 @@ document.querySelectorAll('.has-submenu').forEach(item => {
 const btnCtxQuickAccess = document.getElementById('ctx-quick-access');
 if (btnCtxQuickAccess) {
     btnCtxQuickAccess.onclick = () => {
-        if (!contextTarget || !contextTarget.isDir) return;
+        if (!contextTarget || !contextTarget.isDir || contextTarget.path === 'HOME' || contextTarget.path === 'HOME\\') return;
         
         const index = quickAccessItems.findIndex(item => item.path === contextTarget.path);
         if (index !== -1) {
@@ -3615,5 +3619,107 @@ document.addEventListener('mousedown', (e) => {
     }
     if (FuzzyFinderHUD.isOpen && !e.target.closest('.hud-container')) {
         FuzzyFinderHUD.close();
+    }
+});
+
+
+// ==========================================================================
+// VS Code Layout Event Listeners
+// ==========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    const sidebar = document.getElementById('sidebar');
+    const terminal = document.getElementById('terminal');
+    const mainContent = document.querySelector('.main-content');
+    
+    // Toggle Buttons
+    const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+    const btnToggleTerminal = document.getElementById('btn-toggle-terminal');
+    const btnCloseSidebar = document.getElementById('btn-close-sidebar');
+    const btnCloseConsole = document.getElementById('btn-close-console');
+    
+    if (btnToggleSidebar && sidebar) {
+        btnToggleSidebar.addEventListener('click', () => {
+            sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
+        });
+    }
+    if (btnCloseSidebar && sidebar) {
+        btnCloseSidebar.addEventListener('click', () => {
+            sidebar.style.display = 'none';
+        });
+    }
+    if (btnToggleTerminal && terminal) {
+        btnToggleTerminal.addEventListener('click', () => {
+            terminal.style.display = terminal.style.display === 'none' ? 'flex' : 'none';
+        });
+    }
+    if (btnCloseConsole && terminal) {
+        btnCloseConsole.addEventListener('click', () => {
+            terminal.style.display = 'none';
+        });
+    }
+
+    // HOME Button
+    const btnSidebarHome = document.getElementById('btn-sidebar-home');
+    if (btnSidebarHome) {
+        btnSidebarHome.addEventListener('click', () => {
+            if (typeof showHome === 'function') {
+                showHome(true);
+            }
+        });
+    }
+
+    // Resizers
+    const sidebarResizer = document.getElementById('sidebar-resizer');
+    const terminalResizer = document.getElementById('terminal-resizer');
+
+    if (sidebarResizer && sidebar) {
+        let isResizingSidebar = false;
+        sidebarResizer.addEventListener('mousedown', (e) => {
+            isResizingSidebar = true;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            document.body.classList.add('resizing');
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!isResizingSidebar) return;
+            const newWidth = e.clientX;
+            if (newWidth >= 150 && newWidth <= 600) {
+                sidebar.style.width = newWidth + 'px';
+            }
+        });
+        window.addEventListener('mouseup', () => {
+            if (isResizingSidebar) {
+                isResizingSidebar = false;
+                document.body.style.cursor = 'default';
+                document.body.style.userSelect = 'auto';
+                document.body.classList.remove('resizing');
+            }
+        });
+    }
+
+    if (terminalResizer && terminal && mainContent) {
+        let isResizingTerminal = false;
+        terminalResizer.addEventListener('mousedown', (e) => {
+            isResizingTerminal = true;
+            document.body.style.cursor = 'row-resize';
+            document.body.style.userSelect = 'none';
+            document.body.classList.add('resizing');
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!isResizingTerminal) return;
+            const containerHeight = document.querySelector('.main-layout').clientHeight;
+            const newHeight = containerHeight - e.clientY;
+            if (newHeight >= 100 && newHeight <= 800) {
+                terminal.style.height = newHeight + 'px';
+            }
+        });
+        window.addEventListener('mouseup', () => {
+            if (isResizingTerminal) {
+                isResizingTerminal = false;
+                document.body.style.cursor = 'default';
+                document.body.style.userSelect = 'auto';
+                document.body.classList.remove('resizing');
+            }
+        });
     }
 });

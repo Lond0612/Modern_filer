@@ -135,6 +135,22 @@ const ShortcutManager = {
         // ウィンドウ操作
         this.register('F11', () => window.api.send('TOGGLE_MAXIMIZE'));
 
+        // サイドバー開閉
+        this.register('Ctrl+\\', () => {
+            if (typeof toggleSidebar === 'function') toggleSidebar();
+        });
+        this.register('Ctrl+b', () => {
+            if (typeof toggleSidebar === 'function') toggleSidebar();
+        });
+
+        // ターミナル開閉 (Ctrl+` と Ctrl+j)
+        this.register('Ctrl+`', () => {
+            if (typeof toggleTerminal === 'function') toggleTerminal();
+        });
+        this.register('Ctrl+j', () => {
+            if (typeof toggleTerminal === 'function') toggleTerminal();
+        });
+
         // プレビュー表示の切り替え
         this.register('Space', () => {
             if (typeof PreviewManager !== 'undefined') PreviewManager.toggle();
