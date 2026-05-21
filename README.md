@@ -5,7 +5,7 @@
 [![Version](https://img.shields.io/badge/Version-v2.1.0-blue?style=flat-square)](https://github.com)
 [![License](https://img.shields.io/badge/License-ISC-brightgreen?style=flat-square)](file:///c:/Users/sugim/Desktop/整頓/dev/コマンドライン/LICENSE)
 
-Orbiter（オービター）は、**「Electronによる洗練されたデザイン美」**と**「C言語による圧倒的な極速処理」**を融合した、Windows専用の次世代ファイル管理エクスプローラーです。  
+Orbiter（オービター）は、「Electronによる洗練されたデザイン美」と「C言語による圧倒的な極速処理」を融合した、Windows専用の次世代ファイル管理エクスプローラーです。  
 日常のファイル操作を美しく、滑らかに、そして極めて軽快に行うために設計されています。
 
 ---
