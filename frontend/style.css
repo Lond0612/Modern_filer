@@ -440,6 +440,8 @@ body {
     border-bottom: 1px solid var(--border-main);
     display: flex;
     gap: 10px;
+    position: relative;
+    z-index: 550;
 }
 
 .nav-buttons {
@@ -726,6 +728,8 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
+    position: relative;
+    z-index: 500;
 }
 
 .action-btn {
