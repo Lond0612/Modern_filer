@@ -1860,34 +1860,11 @@ function runSelectedInTerminal(filePath) {
     const ext = filePath.substring(filePath.lastIndexOf('.')).toLowerCase();
     
     // Path conversions
-    const posixWsl = filePath.replace(/^([a-zA-Z]):/, (match, drive) => `/mnt/${drive.toLowerCase()}`).replace(/\\/g, '/');
     const posixGitBash = filePath.replace(/^([a-zA-Z]):/, (match, drive) => `/${drive.toLowerCase()}`).replace(/\\/g, '/');
     
     let cmdToRun = '';
     
-    if (activeShell === 'WSL') {
-        switch (ext) {
-            case '.py':
-                cmdToRun = `python3 "${posixWsl}"`;
-                break;
-            case '.js':
-                cmdToRun = `node "${posixWsl}"`;
-                break;
-            case '.sh':
-                cmdToRun = `bash "${posixWsl}"`;
-                break;
-            case '.ps1':
-                cmdToRun = `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${filePath}"`;
-                break;
-            case '.bat':
-            case '.cmd':
-                cmdToRun = `cmd.exe /c "${filePath}"`;
-                break;
-            default:
-                cmdToRun = `"${posixWsl}"`;
-                break;
-        }
-    } else if (activeShell === 'GitBash') {
+    if (activeShell === 'GitBash') {
         switch (ext) {
             case '.py':
                 cmdToRun = `python "${posixGitBash}"`;
@@ -3150,6 +3127,8 @@ function showPermissionDialog(path) {
         document.body.removeChild(overlay);
     };
 }
+
+
 
 // 壁紙選択モードの開始・終了ヘルパー
 window.isSelectingWallpaperMode = false;

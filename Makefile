@@ -1,6 +1,6 @@
 CC      = gcc
 CFLAGS  = -Wall -Wextra -std=c11 -finput-charset=utf-8
-LDFLAGS = -lshell32 -static
+LDFLAGS = -lshell32 -ladvapi32 -static
 
 TARGET_SERVER = filer_server.exe
 

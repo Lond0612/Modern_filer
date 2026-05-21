@@ -87,6 +87,8 @@ int cmd_proc_start(CmdOutputCallback cb)
     return cmd_proc_start_with_shell(cb, "CMD");
 }
 
+
+
 int cmd_proc_start_with_shell(CmdOutputCallback cb, const char *shell_type)
 {
     s_callback = cb;
@@ -145,10 +147,6 @@ int cmd_proc_start_with_shell(CmdOutputCallback cb, const char *shell_type)
         {
             _snprintf(cmdline, sizeof(cmdline) - 1, "bash.exe --login -i");
         }
-    }
-    else if (strcmp(shell_type, "WSL") == 0)
-    {
-        _snprintf(cmdline, sizeof(cmdline) - 1, "wsl.exe");
     }
     else
     {
@@ -243,17 +241,6 @@ void cmd_proc_cd_with_shell(const char *path, const char *shell_type)
             if (path_fixed[i] == '\\') path_fixed[i] = '/';
         }
         _snprintf(buf, sizeof(buf) - 1, "cd \"%s\"", path_fixed);
-    }
-    else if (strcmp(shell_type, "WSL") == 0)
-    {
-        char path_fixed[MAX_PATH];
-        strncpy(path_fixed, path, MAX_PATH - 1);
-        path_fixed[MAX_PATH - 1] = '\0';
-        for (int i = 0; path_fixed[i] != '\0'; i++)
-        {
-            if (path_fixed[i] == '\\') path_fixed[i] = '/';
-        }
-        _snprintf(buf, sizeof(buf) - 1, "cd \"$(wslpath '%s')\"", path_fixed);
     }
     else
     {

@@ -30,8 +30,7 @@ static SortOrder g_sort_order = SORT_ASC;
 typedef enum {
     SHELL_CMD,
     SHELL_POWERSHELL,
-    SHELL_GITBASH,
-    SHELL_WSL
+    SHELL_GITBASH
 } ShellType;
 
 static ShellType g_shell_type = SHELL_CMD;
@@ -42,11 +41,6 @@ static void format_shell_path(const char *in_path, char *out_path, size_t max_le
         // Git Bash style: /c/path
         char drive = toupper((unsigned char)in_path[1]);
         _snprintf(out_path, max_len - 1, "%c:\\%s", drive, in_path + 3);
-    }
-    else if (strncmp(in_path, "/mnt/", 5) == 0 && isalpha((unsigned char)in_path[5]) && in_path[6] == '/') {
-        // WSL style: /mnt/c/path
-        char drive = toupper((unsigned char)in_path[5]);
-        _snprintf(out_path, max_len - 1, "%c:\\%s", drive, in_path + 7);
     }
     else {
         strncpy(out_path, in_path, max_len - 1);
@@ -401,6 +395,8 @@ void handle_elevate(const char *path_utf8)
     }
 }
 
+
+
 // ---------------------------------------------------------------------------
 // ターミナルペイン：コマンド出力コールバック（標準出力を受信）
 // ---------------------------------------------------------------------------
@@ -417,7 +413,7 @@ void on_cmd_output(const char *raw_output)
             prefix[marker - raw_output] = '\0';
             char prefix_utf8[16384];
             
-            if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+            if (g_shell_type == SHELL_GITBASH)
             {
                 // すでに UTF-8 なので直接コピー
                 strncpy(prefix_utf8, prefix, sizeof(prefix_utf8) - 1);
@@ -444,7 +440,7 @@ void on_cmd_output(const char *raw_output)
             path_raw[len] = '\0';
 
             char path_utf8[MAX_PATH * 4];
-            if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+            if (g_shell_type == SHELL_GITBASH)
             {
                 // すでに UTF-8
                 strncpy(path_utf8, path_raw, sizeof(path_utf8) - 1);
@@ -473,7 +469,7 @@ void on_cmd_output(const char *raw_output)
         if (strlen(raw_output) > 0)
         {
             char text_utf8[32768];
-            if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+            if (g_shell_type == SHELL_GITBASH)
             {
                 // すでに UTF-8
                 strncpy(text_utf8, raw_output, sizeof(text_utf8) - 1);
@@ -608,7 +604,7 @@ int main(void)
         else if (strncmp(line, "EXEC|", 5) == 0)
         {
             char cmd_buf[4096];
-            if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+            if (g_shell_type == SHELL_GITBASH)
             {
                 // すでに UTF-8 なので直接使用
                 strncpy(cmd_buf, line + 5, sizeof(cmd_buf) - 1);
@@ -625,7 +621,7 @@ int main(void)
                 _snprintf(combined, sizeof(combined) - 1,
                           "%s; Write-Output \"__CWD__:$PWD\"", cmd_buf);
             }
-            else if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+            else if (g_shell_type == SHELL_GITBASH)
             {
                 _snprintf(combined, sizeof(combined) - 1,
                           "%s; echo \"__CWD__:$(pwd)\"", cmd_buf);
@@ -642,7 +638,7 @@ int main(void)
         else if (strncmp(line, "CD|", 3) == 0)
         {
             char path_buf[MAX_PATH];
-            if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+            if (g_shell_type == SHELL_GITBASH)
             {
                 // すでに UTF-8
                 strncpy(path_buf, line + 3, sizeof(path_buf) - 1);
@@ -656,7 +652,6 @@ int main(void)
             const char *shell_str = "CMD";
             if (g_shell_type == SHELL_POWERSHELL) shell_str = "PowerShell";
             else if (g_shell_type == SHELL_GITBASH) shell_str = "GitBash";
-            else if (g_shell_type == SHELL_WSL) shell_str = "WSL";
 
             cmd_proc_cd_with_shell(path_buf, shell_str);
             handle_list(line + 3);
@@ -672,8 +667,6 @@ int main(void)
                 g_shell_type = SHELL_POWERSHELL;
             } else if (strcmp(shell_type, "GitBash") == 0) {
                 g_shell_type = SHELL_GITBASH;
-            } else if (strcmp(shell_type, "WSL") == 0) {
-                g_shell_type = SHELL_WSL;
             } else {
                 g_shell_type = SHELL_CMD;
             }
@@ -686,7 +679,7 @@ int main(void)
             else
             {
                 char path_buf[MAX_PATH];
-                if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+                if (g_shell_type == SHELL_GITBASH)
                 {
                     strncpy(path_buf, currentPath, sizeof(path_buf) - 1);
                     path_buf[sizeof(path_buf) - 1] = '\0';
@@ -698,6 +691,7 @@ int main(void)
                 cmd_proc_cd_with_shell(path_buf, shell_type);
             }
         }
+
         // --- ファイルを既定アプリで開く ---
         else if (strncmp(line, "OPEN|", 5) == 0)
         {
@@ -718,6 +712,7 @@ int main(void)
         {
             handle_prop(line + 5);
         }
+
         // --- 終了 ---
         else if (strcmp(line, "QUIT") == 0)
         {
