@@ -586,6 +586,21 @@
                     </div>
 
                     <div class="setting-group-vertical">
+                        <div class="setting-label">
+                            <span class="main-label">デフォルトシェル (Default Shell)</span>
+                            <span class="sub-label">統合ターミナルで使用するデフォルトのコマンドラインシェルを選択します</span>
+                        </div>
+                        <div class="select-control" style="margin-top: 10px;">
+                            <select id="settings-default-shell" class="modern-select" style="max-width: 250px;">
+                                <option value="CMD" style="background: #1e1e1e; color: #cccccc;">Command Prompt (CMD)</option>
+                                <option value="PowerShell" style="background: #1e1e1e; color: #cccccc;">PowerShell</option>
+                                <option value="GitBash" style="background: #1e1e1e; color: #cccccc;">Git Bash</option>
+                                <option value="WSL" style="background: #1e1e1e; color: #cccccc;">WSL (Ubuntu/Debian...)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-group-vertical">
                         <div class="setting-group-header">
                             <div class="setting-label">
                                 <span class="main-label">基本フォントサイズ</span>
@@ -977,6 +992,14 @@
                     <line x1="3" y1="9" x2="21" y2="9"></line>
                 </svg>
                 <span>新しいウィンドウで開く</span>
+            </div>
+
+            <div class="context-item" id="ctx-run-in-terminal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="4 17 10 11 4 5"></polyline>
+                    <line x1="12" y1="19" x2="20" y2="19"></line>
+                </svg>
+                <span>統合ターミナルで実行</span>
             </div>
 
             <div class="context-item disabled" id="ctx-quick-access">

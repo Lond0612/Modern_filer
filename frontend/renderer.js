@@ -974,10 +974,7 @@ function showHomeUI() {
         PreviewManager.hide();
     }
 
-    // Git状態の非表示とクリア
-    const gitIndicator = document.getElementById('git-branch-indicator');
-    if (gitIndicator) gitIndicator.style.display = 'none';
-    currentGitStatus = { isRepo: false, branch: '', files: {} };
+
 }
 
 function showHome(isUserClick = false) {
@@ -1270,9 +1267,7 @@ window.api.onBackendResponse((obj) => {
             addressInput.value = currentPath;
             updateTreeActiveState();
             renderTabs();
-            if (typeof updateGitStatus === 'function') {
-                updateGitStatus(currentPath);
-            }
+
             break;
 
         case 'CMD_OUT':
@@ -1557,10 +1552,7 @@ function addFileRow(data) {
         element = div;
     }
 
-    const gitStatus = typeof getGitStatusForFile === 'function' ? getGitStatusForFile(name) : null;
-    if (gitStatus) {
-        element.classList.add(`git-status-${gitStatus}`);
-    }
+
 
     // (個別要素の onclick/onmousedown は作成時に登録済み)
 
@@ -1861,6 +1853,113 @@ function appendTerminal(text, className = '') {
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
 }
 
+function runSelectedInTerminal(filePath) {
+    if (!filePath) return;
+    
+    const activeShell = localStorage.getItem('settings-default-shell') || 'CMD';
+    const ext = filePath.substring(filePath.lastIndexOf('.')).toLowerCase();
+    
+    // Path conversions
+    const posixWsl = filePath.replace(/^([a-zA-Z]):/, (match, drive) => `/mnt/${drive.toLowerCase()}`).replace(/\\/g, '/');
+    const posixGitBash = filePath.replace(/^([a-zA-Z]):/, (match, drive) => `/${drive.toLowerCase()}`).replace(/\\/g, '/');
+    
+    let cmdToRun = '';
+    
+    if (activeShell === 'WSL') {
+        switch (ext) {
+            case '.py':
+                cmdToRun = `python3 "${posixWsl}"`;
+                break;
+            case '.js':
+                cmdToRun = `node "${posixWsl}"`;
+                break;
+            case '.sh':
+                cmdToRun = `bash "${posixWsl}"`;
+                break;
+            case '.ps1':
+                cmdToRun = `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${filePath}"`;
+                break;
+            case '.bat':
+            case '.cmd':
+                cmdToRun = `cmd.exe /c "${filePath}"`;
+                break;
+            default:
+                cmdToRun = `"${posixWsl}"`;
+                break;
+        }
+    } else if (activeShell === 'GitBash') {
+        switch (ext) {
+            case '.py':
+                cmdToRun = `python "${posixGitBash}"`;
+                break;
+            case '.js':
+                cmdToRun = `node "${posixGitBash}"`;
+                break;
+            case '.sh':
+                cmdToRun = `bash "${posixGitBash}"`;
+                break;
+            case '.ps1':
+                cmdToRun = `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${filePath}"`;
+                break;
+            case '.bat':
+            case '.cmd':
+                cmdToRun = `cmd.exe /c "${filePath}"`;
+                break;
+            default:
+                cmdToRun = `"${posixGitBash}"`;
+                break;
+        }
+    } else if (activeShell === 'PowerShell') {
+        switch (ext) {
+            case '.py':
+                cmdToRun = `python "${filePath}"`;
+                break;
+            case '.js':
+                cmdToRun = `node "${filePath}"`;
+                break;
+            case '.ps1':
+                cmdToRun = `& "${filePath}"`;
+                break;
+            case '.bat':
+            case '.cmd':
+                cmdToRun = `cmd.exe /c "${filePath}"`;
+                break;
+            case '.sh':
+                cmdToRun = `bash "${filePath}"`;
+                break;
+            default:
+                cmdToRun = `& "${filePath}"`;
+                break;
+        }
+    } else { // CMD
+        switch (ext) {
+            case '.py':
+                cmdToRun = `python "${filePath}"`;
+                break;
+            case '.js':
+                cmdToRun = `node "${filePath}"`;
+                break;
+            case '.ps1':
+                cmdToRun = `powershell -NoProfile -ExecutionPolicy Bypass -File "${filePath}"`;
+                break;
+            case '.sh':
+                cmdToRun = `bash "${filePath}"`;
+                break;
+            case '.bat':
+            case '.cmd':
+            default:
+                cmdToRun = `"${filePath}"`;
+                break;
+        }
+    }
+    
+    // Echo command in terminal and send to backend
+    appendTerminal(`> ${cmdToRun}`, 'command-echo');
+    window.api.sendCommand(`EXEC|${cmdToRun}`);
+}
+
+window.runSelectedInTerminal = runSelectedInTerminal;
+
 function formatSize(bytes) {
     const b = parseInt(bytes);
     if (isNaN(b)) return bytes;
@@ -1868,6 +1967,26 @@ function formatSize(bytes) {
     if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
     return (b / (1024 * 1024)).toFixed(1) + ' MB';
 }
+
+// ターミナルコマンド履歴管理
+let terminalHistory = JSON.parse(localStorage.getItem('terminalHistory') || '[]');
+let terminalHistoryIndex = terminalHistory.length;
+const maxTerminalHistory = 200;
+
+function pushTerminalHistory(cmd) {
+    if (!cmd) return;
+    terminalHistory = terminalHistory.filter(c => c !== cmd);
+    terminalHistory.push(cmd);
+    if (terminalHistory.length > maxTerminalHistory) {
+        terminalHistory.shift();
+    }
+    localStorage.setItem('terminalHistory', JSON.stringify(terminalHistory));
+    terminalHistoryIndex = terminalHistory.length;
+}
+
+terminalInput.addEventListener('input', () => {
+    terminalHistoryIndex = terminalHistory.length;
+});
 
 terminalInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -1879,7 +1998,33 @@ terminalInput.addEventListener('keydown', (e) => {
             }
             appendTerminal(`> ${cmd}`, 'command-echo');
             window.api.sendCommand(`EXEC|${cmd}`);
+            pushTerminalHistory(cmd);
             terminalInput.value = '';
+        }
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (terminalHistory.length > 0 && terminalHistoryIndex > 0) {
+            terminalHistoryIndex--;
+            terminalInput.value = terminalHistory[terminalHistoryIndex];
+            terminalInput.setSelectionRange(terminalInput.value.length, terminalInput.value.length);
+        }
+    } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (terminalHistoryIndex < terminalHistory.length - 1) {
+            terminalHistoryIndex++;
+            terminalInput.value = terminalHistory[terminalHistoryIndex];
+            terminalInput.setSelectionRange(terminalInput.value.length, terminalInput.value.length);
+        } else if (terminalHistoryIndex === terminalHistory.length - 1) {
+            terminalHistoryIndex = terminalHistory.length;
+            terminalInput.value = '';
+        }
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        terminalInput.blur();
+        const activeRow = document.querySelector('#file-list-body tr.selected, .grid-item.selected') || 
+                          document.querySelector('#file-list-body tr, .grid-item');
+        if (activeRow) {
+            activeRow.focus();
         }
     }
 });
@@ -2282,10 +2427,15 @@ window.addEventListener('contextmenu', (e) => {
 
     // アイテム選択の有無に応じた制御
     const hasSelection = contextTarget !== null;
-    ['ctx-open', 'ctx-open-new-tab', 'ctx-open-new-window', 'ctx-cut', 'ctx-copy', 'ctx-rename', 'ctx-delete', 'ctx-quick-access', 'ctx-favorite', 'ctx-properties', 'ctx-copy-path'].forEach(id => {
+    ['ctx-open', 'ctx-open-new-tab', 'ctx-open-new-window', 'ctx-run-in-terminal', 'ctx-cut', 'ctx-copy', 'ctx-rename', 'ctx-delete', 'ctx-quick-access', 'ctx-favorite', 'ctx-properties', 'ctx-copy-path'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.toggle('disabled', !hasSelection);
     });
+
+    const runInTerminalItem = document.getElementById('ctx-run-in-terminal');
+    if (runInTerminalItem) {
+        runInTerminalItem.classList.toggle('disabled', !hasSelection || contextTarget.isDir);
+    }
 
     // クイックアクセスのテキスト切り替え
     if (hasSelection && contextTarget.isDir) {
@@ -2524,6 +2674,12 @@ document.getElementById('ctx-open-new-tab').onclick = () => {
 document.getElementById('ctx-open-new-window').onclick = () => {
     if (contextTarget && contextTarget.isDir) {
         window.api.invoke('OPEN_NEW_WINDOW', contextTarget.path);
+    }
+};
+
+document.getElementById('ctx-run-in-terminal').onclick = () => {
+    if (contextTarget && !contextTarget.isDir) {
+        runSelectedInTerminal(contextTarget.path);
     }
 };
 
@@ -3180,62 +3336,7 @@ if (window.api && typeof window.api.onDeviceChange === 'function') {
 // Elite Developer Features - Git, Fuzzy Finder, Command Palette
 // ==========================================================================
 
-let currentGitStatus = { isRepo: false, branch: '', files: {} };
 
-async function updateGitStatus(dirPath) {
-    const gitIndicator = document.getElementById('git-branch-indicator');
-    if (!dirPath || dirPath === 'HOME') {
-        currentGitStatus = { isRepo: false, branch: '', files: {} };
-        if (gitIndicator) gitIndicator.style.display = 'none';
-        return;
-    }
-    try {
-        const res = await window.api.invoke('GET_GIT_STATUS', dirPath);
-        if (res && res.isRepo) {
-            currentGitStatus = res;
-            if (gitIndicator) {
-                gitIndicator.textContent = res.branch;
-                gitIndicator.style.display = 'inline-flex';
-            }
-            applyGitStylesToExistingElements();
-        } else {
-            currentGitStatus = { isRepo: false, branch: '', files: {} };
-            if (gitIndicator) gitIndicator.style.display = 'none';
-            // Clear styles if we left a repo
-            applyGitStylesToExistingElements();
-        }
-    } catch (e) {
-        console.error('Failed to update git status:', e);
-        currentGitStatus = { isRepo: false, branch: '', files: {} };
-        if (gitIndicator) gitIndicator.style.display = 'none';
-    }
-}
-
-function getGitStatusForFile(fileName) {
-    if (!currentGitStatus || !currentGitStatus.isRepo || !currentGitStatus.files) return null;
-    const fullPath = (currentPath + fileName).toLowerCase().replace(/\\/g, '/');
-    for (const key in currentGitStatus.files) {
-        if (key.toLowerCase().replace(/\\/g, '/') === fullPath) {
-            return currentGitStatus.files[key];
-        }
-    }
-    return null;
-}
-
-function applyGitStylesToExistingElements() {
-    const rows = document.querySelectorAll('#file-list-body tr, .grid-item');
-    rows.forEach(el => {
-        const name = el.dataset.name;
-        if (!name) return;
-        
-        el.classList.remove('git-status-modified', 'git-status-untracked', 'git-status-staged');
-        
-        const gitStatus = getGitStatusForFile(name);
-        if (gitStatus) {
-            el.classList.add(`git-status-${gitStatus}`);
-        }
-    });
-}
 
 // ⚡ Fuzzy Finder HUD Controller
 const FuzzyFinderHUD = {
@@ -3320,8 +3421,7 @@ const FuzzyFinderHUD = {
                 const isDir = row.dataset.type === 'D';
                 const icon = IconThemeManager.getIcon(name, isDir);
                 
-                const gitStatus = getGitStatusForFile(name);
-                const colorStyle = gitStatus ? `git-status-${gitStatus}` : '';
+                const colorStyle = '';
 
                 itemEl.innerHTML = `
                     <div class="hud-item-label ${colorStyle}">
@@ -3719,6 +3819,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.style.cursor = 'default';
                 document.body.style.userSelect = 'auto';
                 document.body.classList.remove('resizing');
+            }
+        });
+    }
+});
+
+// ---------------------------------------------------------------------------
+// ターミナル連携 (D&D パス挿入)
+// ---------------------------------------------------------------------------
+window.addEventListener('DOMContentLoaded', () => {
+    const terminalPane = document.querySelector('.terminal-pane');
+    if (terminalPane) {
+        terminalPane.addEventListener('dragover', (e) => {
+            if (e.dataTransfer.types.includes('application/x-file-paths') || 
+                e.dataTransfer.types.includes('application/x-quick-access-path')) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+            }
+        });
+
+        terminalPane.addEventListener('drop', (e) => {
+            let paths = [];
+            if (e.dataTransfer.types.includes('application/x-file-paths')) {
+                const data = e.dataTransfer.getData('application/x-file-paths');
+                if (data) {
+                    try {
+                        paths = JSON.parse(data);
+                    } catch (err) {
+                        console.error('Failed to parse drag paths', err);
+                    }
+                }
+            } else if (e.dataTransfer.types.includes('application/x-quick-access-path')) {
+                const path = e.dataTransfer.getData('application/x-quick-access-path');
+                if (path) paths = [path];
+            }
+
+            if (paths.length > 0) {
+                e.preventDefault();
+                const pathStr = paths.map(p => `"${p}"`).join(' ');
+                
+                const termInput = document.getElementById('terminal-input');
+                if (termInput) {
+                    termInput.focus();
+                    const startPos = termInput.selectionStart;
+                    const endPos = termInput.selectionEnd;
+                    const text = termInput.value;
+                    termInput.value = text.substring(0, startPos) + pathStr + text.substring(endPos);
+                    termInput.selectionStart = termInput.selectionEnd = startPos + pathStr.length;
+                }
             }
         });
     }

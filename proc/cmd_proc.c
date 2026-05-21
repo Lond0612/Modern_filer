@@ -84,6 +84,11 @@ static DWORD WINAPI read_thread(LPVOID _unused)
 // ---------------------------------------------------------------------------
 int cmd_proc_start(CmdOutputCallback cb)
 {
+    return cmd_proc_start_with_shell(cb, "CMD");
+}
+
+int cmd_proc_start_with_shell(CmdOutputCallback cb, const char *shell_type)
+{
     s_callback = cb;
 
     // パイプを作成
@@ -110,7 +115,7 @@ int cmd_proc_start(CmdOutputCallback cb)
     SetHandleInformation(hStdinWrite, HANDLE_FLAG_INHERIT, 0);
     SetHandleInformation(hStdoutRead, HANDLE_FLAG_INHERIT, 0);
 
-    // cmd.exe を起動
+    // シェルを起動
     STARTUPINFOA si;
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
@@ -123,13 +128,38 @@ int cmd_proc_start(CmdOutputCallback cb)
     PROCESS_INFORMATION pi;
     ZeroMemory(&pi, sizeof(pi));
 
-    char cmdline[MAX_PATH + 16];
-    char comspec[MAX_PATH];
-    if (GetEnvironmentVariableA("COMSPEC", comspec, MAX_PATH) == 0)
+    char cmdline[512];
+    if (strcmp(shell_type, "PowerShell") == 0)
     {
-        strcpy(comspec, "cmd.exe");
+        _snprintf(cmdline, sizeof(cmdline) - 1, "powershell.exe -NoLogo");
     }
-    _snprintf(cmdline, sizeof(cmdline) - 1, "%s /Q", comspec);
+    else if (strcmp(shell_type, "GitBash") == 0)
+    {
+        // Check if standard Git Bash exists
+        DWORD attrib = GetFileAttributesA("C:\\Program Files\\Git\\bin\\bash.exe");
+        if (attrib != INVALID_FILE_ATTRIBUTES && !(attrib & FILE_ATTRIBUTE_DIRECTORY))
+        {
+            _snprintf(cmdline, sizeof(cmdline) - 1, "\"C:\\Program Files\\Git\\bin\\bash.exe\" --login -i");
+        }
+        else
+        {
+            _snprintf(cmdline, sizeof(cmdline) - 1, "bash.exe --login -i");
+        }
+    }
+    else if (strcmp(shell_type, "WSL") == 0)
+    {
+        _snprintf(cmdline, sizeof(cmdline) - 1, "wsl.exe");
+    }
+    else
+    {
+        char comspec[MAX_PATH];
+        if (GetEnvironmentVariableA("COMSPEC", comspec, MAX_PATH) == 0)
+        {
+            strcpy(comspec, "cmd.exe");
+        }
+        _snprintf(cmdline, sizeof(cmdline) - 1, "%s /Q", comspec);
+    }
+    cmdline[sizeof(cmdline) - 1] = '\0';
 
     if (!CreateProcessA(NULL, cmdline, NULL, NULL,
                         TRUE, // bInheritHandles
@@ -190,8 +220,46 @@ void cmd_proc_send(const char *line)
 // ---------------------------------------------------------------------------
 void cmd_proc_cd(const char *path)
 {
-    char buf[MAX_PATH + 8];
-    _snprintf(buf, sizeof(buf) - 1, "cd /d \"%s\"", path);
+    cmd_proc_cd_with_shell(path, "CMD");
+}
+
+void cmd_proc_cd_with_shell(const char *path, const char *shell_type)
+{
+    if (s_hStdin == NULL || !s_running)
+        return;
+
+    char buf[MAX_PATH + 64];
+    if (strcmp(shell_type, "PowerShell") == 0)
+    {
+        _snprintf(buf, sizeof(buf) - 1, "Set-Location \"%s\"", path);
+    }
+    else if (strcmp(shell_type, "GitBash") == 0)
+    {
+        char path_fixed[MAX_PATH];
+        strncpy(path_fixed, path, MAX_PATH - 1);
+        path_fixed[MAX_PATH - 1] = '\0';
+        for (int i = 0; path_fixed[i] != '\0'; i++)
+        {
+            if (path_fixed[i] == '\\') path_fixed[i] = '/';
+        }
+        _snprintf(buf, sizeof(buf) - 1, "cd \"%s\"", path_fixed);
+    }
+    else if (strcmp(shell_type, "WSL") == 0)
+    {
+        char path_fixed[MAX_PATH];
+        strncpy(path_fixed, path, MAX_PATH - 1);
+        path_fixed[MAX_PATH - 1] = '\0';
+        for (int i = 0; path_fixed[i] != '\0'; i++)
+        {
+            if (path_fixed[i] == '\\') path_fixed[i] = '/';
+        }
+        _snprintf(buf, sizeof(buf) - 1, "cd \"$(wslpath '%s')\"", path_fixed);
+    }
+    else
+    {
+        _snprintf(buf, sizeof(buf) - 1, "cd /d \"%s\"", path);
+    }
+    buf[sizeof(buf) - 1] = '\0';
     cmd_proc_send(buf);
 }
 

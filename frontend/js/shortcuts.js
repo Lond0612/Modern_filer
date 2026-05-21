@@ -151,6 +151,53 @@ const ShortcutManager = {
             if (typeof toggleTerminal === 'function') toggleTerminal();
         });
 
+        // ターミナルとファイルリストのフォーカス切り替え (Ctrl+Escape)
+        this.register('Ctrl+Escape', () => {
+            const termInput = document.getElementById('terminal-input');
+            if (termInput) {
+                if (document.activeElement === termInput) {
+                    termInput.blur();
+                    const activeRow = document.querySelector('#file-list-body tr.selected, .grid-item.selected') || 
+                                      document.querySelector('#file-list-body tr, .grid-item');
+                    if (activeRow) {
+                        activeRow.focus();
+                    }
+                } else {
+                    termInput.focus();
+                    termInput.select();
+                }
+            }
+        }, { allowInInputs: true });
+
+        // 選択スクリプトの即時実行 (Ctrl+Enter)
+        this.register('Ctrl+Enter', () => {
+            let targetPath = null;
+            let isDir = false;
+            
+            if (window.contextTarget) {
+                targetPath = window.contextTarget.path;
+                isDir = window.contextTarget.isDir;
+            } else {
+                const selectedRows = document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected');
+                if (selectedRows.length > 0) {
+                    const row = selectedRows[0];
+                    isDir = row.dataset.type === 'D';
+                    if (typeof getSelectedItems === 'function') {
+                        const selected = getSelectedItems();
+                        if (selected.length > 0) {
+                            targetPath = selected[0].srcPath;
+                        }
+                    }
+                }
+            }
+
+            if (targetPath && !isDir) {
+                if (typeof runSelectedInTerminal === 'function') {
+                    runSelectedInTerminal(targetPath);
+                }
+            }
+        });
+
         // プレビュー表示の切り替え
         this.register('Space', () => {
             if (typeof PreviewManager !== 'undefined') PreviewManager.toggle();
@@ -435,6 +482,16 @@ function executeSingleVimKey(key, e, activeRow) {
         return true;
     }
     
+    if (key === 'i') {
+        e.preventDefault();
+        const termInput = document.getElementById('terminal-input');
+        if (termInput) {
+            termInput.focus();
+            termInput.select();
+        }
+        return true;
+    }
+
     if (key === '/') {
         e.preventDefault();
         if (typeof FuzzyFinderHUD !== 'undefined') {

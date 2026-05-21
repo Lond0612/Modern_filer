@@ -27,6 +27,40 @@ static char currentPath[MAX_PATH] = {0}; // 現在の作業パス（検索ルー
 static SortKey   g_sort_key   = SORT_NAME;
 static SortOrder g_sort_order = SORT_ASC;
 
+typedef enum {
+    SHELL_CMD,
+    SHELL_POWERSHELL,
+    SHELL_GITBASH,
+    SHELL_WSL
+} ShellType;
+
+static ShellType g_shell_type = SHELL_CMD;
+
+static void format_shell_path(const char *in_path, char *out_path, size_t max_len)
+{
+    if (in_path[0] == '/' && isalpha((unsigned char)in_path[1]) && in_path[2] == '/') {
+        // Git Bash style: /c/path
+        char drive = toupper((unsigned char)in_path[1]);
+        _snprintf(out_path, max_len - 1, "%c:\\%s", drive, in_path + 3);
+    }
+    else if (strncmp(in_path, "/mnt/", 5) == 0 && isalpha((unsigned char)in_path[5]) && in_path[6] == '/') {
+        // WSL style: /mnt/c/path
+        char drive = toupper((unsigned char)in_path[5]);
+        _snprintf(out_path, max_len - 1, "%c:\\%s", drive, in_path + 7);
+    }
+    else {
+        strncpy(out_path, in_path, max_len - 1);
+        out_path[max_len - 1] = '\0';
+    }
+
+    // Replace all '/' with '\'
+    for (size_t i = 0; out_path[i] != '\0'; i++) {
+        if (out_path[i] == '/') {
+            out_path[i] = '\\';
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // 文字コード変換ヘルパー（CP932 / UTF-8）
 // ターミナルペイン（cmd.exe）との文字コード変換専用
@@ -61,13 +95,14 @@ void utf8_to_cp932(const char *utf8, char *cp932, size_t cp932_size)
 // JSON 通信
 // ---------------------------------------------------------------------------
 
-// JSON 特殊文字のエスケープ
+// JSON 特殊文字のエスケープ（0x20未満の制御文字も完全に \u00XX としてエスケープ）
 static void json_escape(const char *input, char *output, size_t out_size)
 {
     size_t j = 0;
-    for (size_t i = 0; input[i] != '\0' && j < out_size - 5; i++)
+    for (size_t i = 0; input[i] != '\0' && j < out_size - 8; i++)
     {
-        switch (input[i])
+        unsigned char c = (unsigned char)input[i];
+        switch (c)
         {
         case '\"': output[j++] = '\\'; output[j++] = '\"'; break;
         case '\\': output[j++] = '\\'; output[j++] = '\\'; break;
@@ -76,7 +111,17 @@ static void json_escape(const char *input, char *output, size_t out_size)
         case '\n': output[j++] = '\\'; output[j++] = 'n';  break;
         case '\r': output[j++] = '\\'; output[j++] = 'r';  break;
         case '\t': output[j++] = '\\'; output[j++] = 't';  break;
-        default:   output[j++] = input[i];
+        default:
+            if (c < 32)
+            {
+                _snprintf(output + j, 7, "\\u00%02x", c);
+                j += 6;
+            }
+            else
+            {
+                output[j++] = input[i];
+            }
+            break;
         }
     }
     output[j] = '\0';
@@ -357,55 +402,87 @@ void handle_elevate(const char *path_utf8)
 }
 
 // ---------------------------------------------------------------------------
-// ターミナルペイン：コマンド出力コールバック（cmd.exe からの標準出力を受信）
+// ターミナルペイン：コマンド出力コールバック（標準出力を受信）
 // ---------------------------------------------------------------------------
 
-void on_cmd_output(const char *text_cp932)
+void on_cmd_output(const char *raw_output)
 {
-    char *marker = strstr(text_cp932, "__CWD__:");
+    char *marker = strstr(raw_output, "__CWD__:");
     if (marker)
     {
         // CWD マーカーより前のテキストを出力
-        if (marker > text_cp932)
+        if (marker > raw_output)
         {
-            char *prefix = _strdup(text_cp932);
-            prefix[marker - text_cp932] = '\0';
+            char *prefix = _strdup(raw_output);
+            prefix[marker - raw_output] = '\0';
             char prefix_utf8[16384];
-            cp932_to_utf8(prefix, prefix_utf8, sizeof(prefix_utf8));
+            
+            if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+            {
+                // すでに UTF-8 なので直接コピー
+                strncpy(prefix_utf8, prefix, sizeof(prefix_utf8) - 1);
+                prefix_utf8[sizeof(prefix_utf8) - 1] = '\0';
+            }
+            else
+            {
+                cp932_to_utf8(prefix, prefix_utf8, sizeof(prefix_utf8));
+            }
+            
             send_json_utf8("CMD_OUT", prefix_utf8);
             free(prefix);
         }
 
         // カレントディレクトリを抽出して currentPath を更新
-        char path_cp932[MAX_PATH];
+        char path_raw[MAX_PATH];
         char *start = marker + 8;
         char *end   = strpbrk(start, "\r\n");
         size_t len  = end ? (size_t)(end - start) : strlen(start);
 
         if (len > 0 && len < MAX_PATH)
         {
-            strncpy(path_cp932, start, len);
-            path_cp932[len] = '\0';
+            strncpy(path_raw, start, len);
+            path_raw[len] = '\0';
 
             char path_utf8[MAX_PATH * 4];
-            cp932_to_utf8(path_cp932, path_utf8, sizeof(path_utf8));
+            if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+            {
+                // すでに UTF-8
+                strncpy(path_utf8, path_raw, sizeof(path_utf8) - 1);
+                path_utf8[sizeof(path_utf8) - 1] = '\0';
+            }
+            else
+            {
+                cp932_to_utf8(path_raw, path_utf8, sizeof(path_utf8));
+            }
 
-            strncpy(currentPath, path_utf8, MAX_PATH - 1);
+            char path_formatted[MAX_PATH * 4];
+            format_shell_path(path_utf8, path_formatted, sizeof(path_formatted));
+
+            strncpy(currentPath, path_formatted, MAX_PATH - 1);
             if (currentPath[strlen(currentPath) - 1] != '\\')
                 strncat(currentPath, "\\", MAX_PATH - strlen(currentPath) - 1);
 
-            send_json_utf8("SYNC_PATH", path_utf8);
+            send_json_utf8("SYNC_PATH", path_formatted);
             Sleep(100);
-            handle_list(path_utf8);
+            handle_list(path_formatted);
         }
         if (end) on_cmd_output(end + strspn(end, "\r\n"));
     }
     else
     {
-        if (strlen(text_cp932) > 0)
+        if (strlen(raw_output) > 0)
         {
             char text_utf8[32768];
-            cp932_to_utf8(text_cp932, text_utf8, sizeof(text_utf8));
+            if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+            {
+                // すでに UTF-8
+                strncpy(text_utf8, raw_output, sizeof(text_utf8) - 1);
+                text_utf8[sizeof(text_utf8) - 1] = '\0';
+            }
+            else
+            {
+                cp932_to_utf8(raw_output, text_utf8, sizeof(text_utf8));
+            }
             send_json_utf8("CMD_OUT", text_utf8);
         }
     }
@@ -530,21 +607,96 @@ int main(void)
         // --- ターミナル：コマンド実行 ---
         else if (strncmp(line, "EXEC|", 5) == 0)
         {
-            char cmd_cp932[4096];
-            utf8_to_cp932(line + 5, cmd_cp932, sizeof(cmd_cp932));
+            char cmd_buf[4096];
+            if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+            {
+                // すでに UTF-8 なので直接使用
+                strncpy(cmd_buf, line + 5, sizeof(cmd_buf) - 1);
+                cmd_buf[sizeof(cmd_buf) - 1] = '\0';
+            }
+            else
+            {
+                utf8_to_cp932(line + 5, cmd_buf, sizeof(cmd_buf));
+            }
+            
             char combined[8192];
-            _snprintf(combined, sizeof(combined) - 1,
-                      "%s & @echo __CWD__:%%cd%%", cmd_cp932);
+            if (g_shell_type == SHELL_POWERSHELL)
+            {
+                _snprintf(combined, sizeof(combined) - 1,
+                          "%s; Write-Output \"__CWD__:$PWD\"", cmd_buf);
+            }
+            else if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+            {
+                _snprintf(combined, sizeof(combined) - 1,
+                          "%s; echo \"__CWD__:$(pwd)\"", cmd_buf);
+            }
+            else
+            {
+                _snprintf(combined, sizeof(combined) - 1,
+                          "%s & @echo __CWD__:%%cd%%", cmd_buf);
+            }
             combined[sizeof(combined) - 1] = '\0';
             cmd_proc_send(combined);
         }
         // --- ターミナル：カレントディレクトリ変更 ---
         else if (strncmp(line, "CD|", 3) == 0)
         {
-            char path_cp932[MAX_PATH];
-            utf8_to_cp932(line + 3, path_cp932, sizeof(path_cp932));
-            cmd_proc_cd(path_cp932);
+            char path_buf[MAX_PATH];
+            if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+            {
+                // すでに UTF-8
+                strncpy(path_buf, line + 3, sizeof(path_buf) - 1);
+                path_buf[sizeof(path_buf) - 1] = '\0';
+            }
+            else
+            {
+                utf8_to_cp932(line + 3, path_buf, sizeof(path_buf));
+            }
+            
+            const char *shell_str = "CMD";
+            if (g_shell_type == SHELL_POWERSHELL) shell_str = "PowerShell";
+            else if (g_shell_type == SHELL_GITBASH) shell_str = "GitBash";
+            else if (g_shell_type == SHELL_WSL) shell_str = "WSL";
+
+            cmd_proc_cd_with_shell(path_buf, shell_str);
             handle_list(line + 3);
+        }
+        // --- ターミナル：シェル変更 ---
+        else if (strncmp(line, "SET_SHELL|", 10) == 0)
+        {
+            char shell_type[64];
+            strncpy(shell_type, line + 10, sizeof(shell_type) - 1);
+            shell_type[sizeof(shell_type) - 1] = '\0';
+            
+            if (strcmp(shell_type, "PowerShell") == 0) {
+                g_shell_type = SHELL_POWERSHELL;
+            } else if (strcmp(shell_type, "GitBash") == 0) {
+                g_shell_type = SHELL_GITBASH;
+            } else if (strcmp(shell_type, "WSL") == 0) {
+                g_shell_type = SHELL_WSL;
+            } else {
+                g_shell_type = SHELL_CMD;
+            }
+
+            cmd_proc_stop();
+            if (!cmd_proc_start_with_shell(on_cmd_output, shell_type))
+            {
+                send_json_utf8("ERROR", "Failed to restart terminal with selected shell");
+            }
+            else
+            {
+                char path_buf[MAX_PATH];
+                if (g_shell_type == SHELL_GITBASH || g_shell_type == SHELL_WSL)
+                {
+                    strncpy(path_buf, currentPath, sizeof(path_buf) - 1);
+                    path_buf[sizeof(path_buf) - 1] = '\0';
+                }
+                else
+                {
+                    utf8_to_cp932(currentPath, path_buf, sizeof(path_buf));
+                }
+                cmd_proc_cd_with_shell(path_buf, shell_type);
+            }
         }
         // --- ファイルを既定アプリで開く ---
         else if (strncmp(line, "OPEN|", 5) == 0)

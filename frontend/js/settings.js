@@ -17,6 +17,7 @@ const SettingsManager = {
         this.windowPreviewToggle = document.getElementById('toggle-window-preview');
         this.nativePropertiesToggle = document.getElementById('toggle-native-properties');
         this.vimModeToggle = document.getElementById('toggle-vim-mode');
+        this.defaultShellSelect = document.getElementById('settings-default-shell');
 
         // Theme
         this.themeOptions = document.querySelectorAll('.theme-option');
@@ -201,6 +202,17 @@ const SettingsManager = {
                 localStorage.setItem('settings-vim-mode', enabled);
                 const badge = document.getElementById('vim-mode-badge');
                 if (badge) badge.style.display = enabled ? 'inline-block' : 'none';
+            };
+        }
+
+        // Default Shell Select
+        if (this.defaultShellSelect) {
+            this.defaultShellSelect.onchange = () => {
+                const shellVal = this.defaultShellSelect.value;
+                localStorage.setItem('settings-default-shell', shellVal);
+                if (window.api && typeof window.api.sendCommand === 'function') {
+                    window.api.sendCommand(`SET_SHELL|${shellVal}`);
+                }
             };
         }
 
@@ -631,6 +643,15 @@ const SettingsManager = {
         }
         const badge = document.getElementById('vim-mode-badge');
         if (badge) badge.style.display = vimModeEnabled ? 'inline-block' : 'none';
+
+        // Default Shell load
+        const defaultShell = localStorage.getItem('settings-default-shell') || 'CMD';
+        if (this.defaultShellSelect) {
+            this.defaultShellSelect.value = defaultShell;
+        }
+        if (window.api && typeof window.api.sendCommand === 'function') {
+            window.api.sendCommand(`SET_SHELL|${defaultShell}`);
+        }
 
         // User Themes
         this.loadUserThemes();

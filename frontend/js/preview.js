@@ -48,6 +48,119 @@ const PreviewManager = {
                 if (this.toggleBtn) this.toggleBtn.classList.remove('active');
             }
         });
+
+        // 動画プレビュー中のキー操作（左右矢印で10秒前戻し・先送り＆アニメーション）
+        window.addEventListener('keydown', (e) => {
+            if (!this.isOpen) return;
+            const videoEl = this.content.querySelector('video');
+            if (!videoEl) return;
+
+            const active = document.activeElement;
+            const isInput = active && (
+                active.tagName === 'INPUT' || 
+                active.tagName === 'TEXTAREA' || 
+                active.isContentEditable
+            );
+            if (isInput) return;
+
+            // スキップアニメーション用のCSS定義を注入
+            if (!document.getElementById('video-skip-animation-styles')) {
+                const style = document.createElement('style');
+                style.id = 'video-skip-animation-styles';
+                style.textContent = `
+                    @keyframes skipFadeScale {
+                        0% { opacity: 0; transform: scale(0.6); }
+                        20% { opacity: 0.9; transform: scale(1.1); }
+                        40% { opacity: 1; transform: scale(1.0); }
+                        80% { opacity: 1; transform: scale(1.0); }
+                        100% { opacity: 0; transform: scale(0.8); }
+                    }
+                    .video-skip-overlay {
+                        position: absolute;
+                        top: 0;
+                        bottom: 0;
+                        width: 40%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        pointer-events: none;
+                        z-index: 10;
+                        background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%);
+                    }
+                    .video-skip-overlay.left {
+                        left: 0;
+                        border-top-left-radius: 6px;
+                        border-bottom-left-radius: 6px;
+                    }
+                    .video-skip-overlay.right {
+                        right: 0;
+                        border-top-right-radius: 6px;
+                        border-bottom-right-radius: 6px;
+                    }
+                    .video-skip-circle {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        width: 80px;
+                        height: 80px;
+                        border-radius: 50%;
+                        background: rgba(15, 15, 15, 0.75);
+                        backdrop-filter: blur(8px);
+                        -webkit-backdrop-filter: blur(8px);
+                        border: 1px solid rgba(255, 255, 255, 0.15);
+                        color: #ffffff;
+                        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+                        animation: skipFadeScale 0.75s ease-out forwards;
+                    }
+                    .video-skip-icon {
+                        width: 28px;
+                        height: 28px;
+                        stroke-width: 2.5;
+                        margin-bottom: 4px;
+                        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+                    }
+                    .video-skip-text {
+                        font-size: 13px;
+                        font-weight: 700;
+                        font-family: 'Outfit', 'Inter', sans-serif;
+                        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            const showSkipOverlay = (container, direction) => {
+                container.querySelectorAll('.video-skip-overlay').forEach(el => el.remove());
+                const overlay = document.createElement('div');
+                overlay.className = `video-skip-overlay ${direction}`;
+                overlay.innerHTML = `
+                    <div class="video-skip-circle">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="video-skip-icon">
+                            ${direction === 'left' 
+                                ? '<polygon points="11 19 2 12 11 5 11 19"></polygon><polygon points="22 19 13 12 22 5 22 19"></polygon>'
+                                : '<polygon points="13 19 22 12 13 5 13 19"></polygon><polygon points="2 19 11 12 2 5 2 19"></polygon>'
+                            }
+                        </svg>
+                        <span class="video-skip-text">${direction === 'left' ? '-10秒' : '+10秒'}</span>
+                    </div>
+                `;
+                container.appendChild(overlay);
+                setTimeout(() => { overlay.remove(); }, 750);
+            };
+
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                videoEl.currentTime = Math.max(0, videoEl.currentTime - 10);
+                const container = this.content.querySelector('.preview-video-container');
+                if (container) showSkipOverlay(container, 'left');
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                videoEl.currentTime = Math.min(videoEl.duration || 0, videoEl.currentTime + 10);
+                const container = this.content.querySelector('.preview-video-container');
+                if (container) showSkipOverlay(container, 'right');
+            }
+        });
     },
 
     toggle() {
@@ -193,7 +306,7 @@ const PreviewManager = {
         this.resetStyles();
         const videoUrl = `file:///${path.replace(/\\/g, '/')}`;
         this.content.innerHTML = `
-            <div class="preview-video-container" style="display: flex; align-items: center; justify-content: center; height: 100%; background: #000;">
+            <div class="preview-video-container" style="position: relative; display: flex; align-items: center; justify-content: center; height: 100%; background: #000;">
                 <video src="${videoUrl}" controls autoplay muted style="max-width: 100%; max-height: 100%;"></video>
             </div>
         `;
