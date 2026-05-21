@@ -1,8 +1,8 @@
 /* ==========================================================================
-   0. Theme Variables (郢晢ｿｽ・ｽ郢晄ｧｫ・ｮ螢ｽ辟・
+   0. Theme Variables
    ========================================================================== */
 :root {
-    /* Dark Mode (Default) */
+    /*  Dark Mode (Default)  */
     --bg-main: #1e1e1e;
     --bg-toolbar: #2d2d2d;
     --bg-input: #3c3c3c;
@@ -20,18 +20,18 @@
     --glass-bg: rgba(45, 45, 45, 0.85);
     --tree-active: rgba(0, 122, 204, 0.2);
 
-    /* Terminal */
+    /*  Terminal  */
     --bg-terminal: #0c0c0c;
     --text-terminal: #00ff00;
     --text-terminal-echo: #00ffff;
     --text-terminal-error: #ff5555;
 
-    /* Icon Fills */
+    /*  Icon Fills  */
     --icon-folder: rgb(255, 212, 59);
     --icon-file: rgb(241, 242, 243);
     --icon-accent: #4facfe;
 
-    /* Settings & Customization */
+    /*  Settings & Customization  */
     --settings-sidebar-bg: #252526;
     --settings-main-bg: #1e1e1e;
     --main-font-size: 13px;
@@ -61,24 +61,24 @@ body.light-mode {
     --glass-bg: rgba(255, 255, 255, 0.9);
     --tree-active: rgba(0, 122, 204, 0.1);
 
-    /* Terminal */
+    /*  Terminal  */
     --bg-terminal: #ffffff;
     --text-terminal: #333333;
     --text-terminal-echo: #005cc5;
     --text-terminal-error: #d73a49;
 
-    /* Icon Fills */
+    /*  Icon Fills  */
     --icon-folder: #e8a600;
     --icon-file: #555555;
     --icon-accent: #007acc;
 
-    /* Settings & Customization */
+    /*  Settings & Customization  */
     --settings-sidebar-bg: #f1f3f5;
     --settings-main-bg: #ffffff;
     --theme-preset-border: #005fa3;
 }
 
-/* Deep Blue (雎ｺ・ｱ鬮ｱ・ｽ) Theme */
+/* Deep Blue Theme */
 body.theme-deepblue {
     --bg-main: #001b36;
     --bg-toolbar: #002142;
@@ -97,24 +97,24 @@ body.theme-deepblue {
     --glass-bg: rgba(0, 21, 41, 0.85);
     --tree-active: rgba(0, 162, 255, 0.2);
 
-    /* Terminal */
+    /*  Terminal  */
     --bg-terminal: #000c18;
     --text-terminal: #00d4ff;
     --text-terminal-echo: #64ffda;
     --text-terminal-error: #ff4d4d;
 
-    /* Icon Fills */
+    /*  Icon Fills  */
     --icon-folder: #00a2ff;
     --icon-file: #8892b0;
     --icon-accent: #64ffda;
 
-    /* Settings & Customization */
+    /*  Settings & Customization  */
     --settings-sidebar-bg: #001529;
     --settings-main-bg: #001b36;
     --theme-preset-border: #0077cc;
 }
 
-/* Khaki (郢ｧ・ｫ郢晢ｽｼ郢ｧ・ｭ) Theme */
+/* Khaki Theme */
 body.theme-khaki {
     --bg-main: #2b2b1b;
     --bg-toolbar: #363622;
@@ -133,24 +133,24 @@ body.theme-khaki {
     --glass-bg: rgba(31, 31, 20, 0.85);
     --tree-active: rgba(194, 178, 128, 0.2);
 
-    /* Terminal */
+    /*  Terminal  */
     --bg-terminal: #1a1a10;
     --text-terminal: #d4d4aa;
     --text-terminal-echo: #c2b280;
     --text-terminal-error: #ff6b6b;
 
-    /* Icon Fills */
+    /*  Icon Fills  */
     --icon-folder: #c2b280;
     --icon-file: #a8a878;
     --icon-accent: #f5f5dc;
 
-    /* Settings & Customization */
+    /*  Settings & Customization  */
     --settings-sidebar-bg: #1f1f14;
     --settings-main-bg: #2b2b1b;
     --theme-preset-border: #8c7b4a;
 }
 
-/* Sakura (髦ｮ・ｽ繝ｴ郢晢ｽｳ郢ｧ・ｯ) Theme */
+/* Sakura (Light Pink) Theme */
 body.theme-sakura {
     --bg-main: #fffcfd;
     --bg-toolbar: #ffffff;
@@ -167,7 +167,7 @@ body.theme-sakura {
     --theme-preset-border: #f48fb1;
 }
 
-/* Amber (魄滂ｿｽ迚｡驍会ｽｻ) Theme */
+/* Amber Theme */
 body.theme-amber {
     --bg-main: #fffbeb;
     --bg-toolbar: #ffffff;
@@ -184,7 +184,7 @@ body.theme-amber {
     --theme-preset-border: #b45309;
 }
 
-/* Sky (邵ｺ・ｽ笆ｲ邵ｺ蜷ｶ・櫁ｱ鯉ｽｴ豼ｶ・ｲ) Theme */
+/* Sky (Light Blue) Theme */
 body.theme-sky {
     --bg-main: #f0f9ff;
     --bg-toolbar: #ffffff;
@@ -201,7 +201,7 @@ body.theme-sky {
     --theme-preset-border: #0284c7;
 }
 
-/* Midnight Purple (魄溷・竊馴恆莉｣・樣ｏ・ｫ) Theme */
+/* Midnight Purple Theme */
 body.theme-midnight {
     --bg-main: #0f051a;
     --bg-toolbar: #1a0b2e;
@@ -220,24 +220,24 @@ body.theme-midnight {
     --glass-bg: rgba(10, 4, 18, 0.85);
     --tree-active: rgba(187, 134, 252, 0.2);
 
-    /* Terminal */
+    /*  Terminal  */
     --bg-terminal: #07020d;
     --text-terminal: #bb86fc;
     --text-terminal-echo: #f06292;
     --text-terminal-error: #cf6679;
 
-    /* Icon Fills */
+    /*  Icon Fills  */
     --icon-folder: #9d4edd;
     --icon-file: #9d8db0;
     --icon-accent: #bb86fc;
 
-    /* Settings & Customization */
+    /*  Settings & Customization  */
     --settings-sidebar-bg: #0a0412;
     --settings-main-bg: #0f051a;
     --theme-preset-border: #7b1fa2;
 }
 
-/* 郢昜ｸ翫≧郢ｧ・ｳ郢晢ｽｳ郢晏現ﾎ帷ｹｧ・ｹ郢晏現ﾎ皮ｹ晢ｽｼ郢晢ｿｽ */
+/* High Contrast Mode */
 body.high-contrast {
     --border-main: var(--accent-color);
     --border-light: var(--accent-color);
@@ -249,7 +249,8 @@ body.light-mode.high-contrast {
     --border-main: #000000;
     --border-light: #333333;
     --bg-item-hover: rgba(0, 0, 0, 0.1);
-    --bg-item-selected: var(--accent-color); /* 魄溷・ﾂｰ郢ｧ蟲ｨ縺・ｹｧ・ｯ郢ｧ・ｻ郢晢ｽｳ郢晏現縺咲ｹ晢ｽｩ郢晢ｽｼ邵ｺ・ｫ陞溽判蟲ｩ */
+    --bg-item-selected: var(--accent-color);
+    /* Changed from black to accent color */
     --text-bright: #000000;
 }
 
@@ -264,7 +265,7 @@ body.high-contrast .theme-option.active {
     outline-offset: 2px;
 }
 
-/* 鬩包ｽｸ隰壽ｨ｣・ｽ・ｽ蟯ｼ邵ｺ・ｮ郢晢ｿｽ縺冗ｹｧ・ｹ郢晞メ・ｦ蜀ｶ・ｪ閧ｴﾂ・ｧ驕抵ｽｺ闖ｫ・ｽ */
+/* Ensure text visibility of selected items */
 body.high-contrast .settings-tab-btn.active {
     background: var(--accent-color) !important;
     color: var(--bg-main) !important;
@@ -275,7 +276,7 @@ body.high-contrast .settings-tab-btn.active svg {
     stroke: var(--bg-main) !important;
 }
 
-/* 郢晢ｽｪ郢ｧ・ｹ郢晏現縺・ｹｧ・､郢晢ｿｽﾎ堤ｸｺ・ｮ陟・ｿｽ髦憺こ螢ｼ・ｼ・ｷ髫ｱ・ｿ */
+/* Enhance list item borders */
 body.high-contrast .file-list td {
     border-bottom: 1px solid var(--border-main) !important;
 }
@@ -286,12 +287,13 @@ body.high-contrast .grid-item {
 
 body.high-contrast .file-list tr.selected td,
 body.high-contrast .grid-item.selected {
-    background: var(--bg-item-selected) !important; /* 郢昜ｸ翫≧郢ｧ・ｳ郢晢ｽｳ郢晏現ﾎ帷ｹｧ・ｹ郢晏沺蜃ｾ邵ｺ・ｯ鬨ｾ荵暦ｿｽ陟趣ｽｦ郢ｧ蟶昶・騾包ｽｨ邵ｺ蜉ｱ竊醍ｸｺ・ｽ */
+    background: var(--bg-item-selected) !important;
+    /* Do not apply opacity in high contrast mode */
     outline: 2px solid var(--accent-color);
     outline-offset: -2px;
 }
 
-/* 鬩包ｽｸ隰壽ｨ雁・邵ｺ・ｮ郢晢ｽｽ縺冗ｹｧ・ｹ郢晞メ迚｡郢ｧ蝣､蜊€邵ｺ・ｫ陟托ｽｷ陋ｻ・ｶ・ｽ蛹ｻ繝ｯ郢ｧ・､郢ｧ・ｳ郢晢ｽｳ郢晏現ﾎ帷ｹｧ・ｹ郢晁ご逡托ｿｽ・ｽ */
+/* Force text color to white when selected (for high contrast) */
 body.high-contrast .selected,
 body.high-contrast .selected * {
     color: #ffffff !important;
@@ -299,7 +301,7 @@ body.high-contrast .selected * {
 
 
 /* ==========================================================================
-   1. Base & Layout (陷茨ｽｨ闖ｴ阮呻ｿｽ髫ｪ・ｭ陞ｳ螢ｹ竊定棔・ｧ隴ｫ・ｽ邵ｺ・ｮ郢晢ｽｬ郢ｧ・､郢ｧ・｢郢ｧ・ｦ郢晢ｿｽ)
+   1. Base & Layout
    ========================================================================== */
 .context-menu {
     position: fixed;
@@ -316,8 +318,15 @@ body.high-contrast .selected * {
 }
 
 @keyframes menuFadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .context-item {
@@ -385,7 +394,9 @@ body.high-contrast .selected * {
     font-size: 10px;
     opacity: 0.8;
 }
-html, body {
+
+html,
+body {
     height: 100%;
     width: 100%;
     margin: 0;
@@ -406,7 +417,7 @@ body {
     height: 100%;
 }
 
-/* 郢ｧ・ｹ郢ｧ・ｯ郢晢ｽｭ郢晢ｽｼ郢晢ｽｫ郢晁・・ｽ邵ｺ・ｮ郢ｧ・ｫ郢ｧ・ｹ郢ｧ・ｿ郢晄ｧｭ縺・ｹｧ・ｺ (郢晢ｽ｢郢敖郢晢ｽｳ郢晢ｿｽ縺倡ｹｧ・､郢晢ｽｳ) */
+/* Custom scrollbar (modern design) */
 ::-webkit-scrollbar {
     width: 14px;
     height: 14px;
@@ -432,7 +443,7 @@ body {
 }
 
 /* ==========================================================================
-   2. Toolbar (闕ｳ莨∃夂ｹ晢ｿｽ・ｽ郢晢ｽｫ郢晁・・ｽ: 隰鯉ｽｻ郢ｧ・ｽ/鬨ｾ・ｲ郢ｧﾂ/郢昜ｻ｣縺・隶諛・ｽｴ・｢)
+   2. Toolbar
    ========================================================================== */
 .toolbar {
     padding: 10px;
@@ -489,7 +500,7 @@ body {
     border-radius: 4px;
 }
 
-/* 隶諛・ｽｴ・｢郢晁・・ｽ */
+/* Search Bar */
 .search-container {
     position: relative;
     flex-shrink: 0;
@@ -585,13 +596,14 @@ body {
 
 
 /* ==========================================================================
-   2.5 Tab Bar (タブバー)
+   2.5 Tab Bar
    ========================================================================== */
 #tab-bar {
     display: flex;
     align-items: center;
     background: var(--bg-sidebar);
-    padding: 0 140px 0 10px; /* 右側にウィンドウ操作ボタン用の余白を確保 */
+    padding: 0 140px 0 10px;
+    /* Reserve space on the right for window control buttons */
     gap: 4px;
     height: 40px;
     border-bottom: 1px solid var(--border-main);
@@ -599,7 +611,8 @@ body {
     overflow-y: hidden;
     white-space: nowrap;
     scrollbar-width: none;
-    -webkit-app-region: drag; /* ウィンドウをドラッグ可能にする */
+    -webkit-app-region: drag;
+    /* Make window draggable */
 }
 
 #tab-bar::-webkit-scrollbar {
@@ -625,7 +638,8 @@ body {
     position: relative;
     user-select: none;
     flex-shrink: 0;
-    -webkit-app-region: no-drag; /* ドラッグ不可（クリックを有効にする） */
+    -webkit-app-region: no-drag;
+    /* Non-draggable (enable clicks) */
 }
 
 .tab-item.pinned {
@@ -701,7 +715,7 @@ body {
     color: var(--text-bright);
 }
 
-/* Tab Drag & Drop visuals */
+/*  Tab Drag & Drop visuals  */
 .tab-item.dragging {
     opacity: 0.95;
     cursor: grabbing;
@@ -719,7 +733,7 @@ body {
 }
 
 /* ==========================================================================
-   3. Actions Bar (郢ｧ・｢郢ｧ・ｯ郢ｧ・ｷ郢晢ｽｧ郢晢ｽｳ郢晁・・ｽ: 隴・ｽｰ髫穂ｸ茨ｽｽ諛茨ｿｽ/郢ｧ・ｫ郢晢ｿｽ繝ｨ/郢ｧ・ｳ郢晄鱒・ｽ驕ｲ・ｽ)
+   3. Actions Bar
    ========================================================================== */
 .actions-bar {
     padding: 6px 10px;
@@ -765,7 +779,7 @@ body {
     margin: 0 8px;
 }
 
-/* 隴・ｽｰ髫穂ｸ茨ｽｽ諛茨ｿｽ郢晄㈱縺｡郢晢ｽｳ郢晢ｽｻ郢晢ｽ｡郢昜ｹ斟礼ｹ晢ｽｼ */
+/* Create New button & menu */
 .new-btn-wrapper {
     position: relative;
 }
@@ -844,7 +858,7 @@ body {
     color: var(--accent-color);
 }
 
-/* 郢昶・縺臥ｹ晢ｿｽ縺醍ｹｧ・｢郢ｧ・､郢ｧ・ｳ郢晢ｽｳ (郢ｧ・ｽ郢晢ｽｼ郢晏現ﾎ鍋ｹ昜ｹ斟礼ｹ晢ｽｼ騾包ｽｨ) */
+/* Check icon (for sort menu) */
 .check-icon {
     display: inline-block;
     width: 16px;
@@ -855,7 +869,7 @@ body {
 }
 
 /* ==========================================================================
-   4. Main Layout & Resizers (郢晢ｽ｡郢ｧ・､郢晢ｽｳ騾包ｽｻ鬮ｱ・｢邵ｺ・ｮ鬯ｪ・ｨ隴ｬ・ｼ邵ｺ・ｨ郢晢ｽｪ郢ｧ・ｵ郢ｧ・､郢ｧ・ｺ郢晁・・ｽ)
+   4. Main Layout & Resizers
    ========================================================================== */
 .main-layout {
     display: flex;
@@ -870,11 +884,11 @@ body {
     min-height: 0;
 }
 
-/* 郢晢ｽｪ郢ｧ・ｵ郢ｧ・､郢ｧ・ｺ郢晁・・ｽ (陋ｻ・､陞ｳ螢ｹ・ｽ陟趣ｿｽ・･邵ｲ竏ｬ・ｦ荵昶螺騾ｶ・ｮ邵ｺ・ｯ驍擾ｽｰ邵ｺ・ｽ) */
+/* Resizer bar (broad hover area, thin line) */
 .resizer-h {
     width: 8px;
     margin: 0 -4px;
-    /* 郢晢ｽｬ郢ｧ・､郢ｧ・｢郢ｧ・ｦ郢晏現・ｽ鬮ｫ蜥惹ｿ｣郢ｧ雋樊ｲらｹｧ竏夲ｽ・*/
+    /* Fill layout gaps */
     background: transparent;
     cursor: col-resize;
     z-index: 100;
@@ -917,7 +931,7 @@ body {
 }
 
 /* ==========================================================================
-   5. Sidebar (郢ｧ・ｵ郢ｧ・､郢晏ｳｨ繝ｰ郢晢ｽｼ: 郢晁ｼ斐°郢晢ｽｫ郢敖郢晢ｿｽﾎ懃ｹ晢ｽｼ)
+   5. Sidebar
    ========================================================================== */
 .sidebar {
     width: calc(240px - 5vh);
@@ -944,7 +958,7 @@ body {
     padding: 5px 0;
 }
 
-/* 郢晢ｿｽﾎ懃ｹ晢ｽｼ鬯・ｿｽ蟯ｼ */
+/* Tree nodes */
 .tree-node {
     user-select: none;
 }
@@ -1012,7 +1026,7 @@ body {
 }
 
 /* ==========================================================================
-   11. Home View (郢晏ｸ呻ｿｽ郢晢ｿｽ騾包ｽｻ鬮ｱ・｢)
+   11. Home View
    ========================================================================== */
 .sidebar-nav {
     padding: 10px;
@@ -1253,7 +1267,7 @@ body {
 }
 
 /* ==========================================================================
-   6. File Pane (郢晁ｼ斐＜郢ｧ・､郢晢ｽｫ闕ｳﾂ髫包ｽｧ郢晏｣ｹ縺・ｹ晢ｽｳ)
+   6. File Pane
    ========================================================================== */
 .file-pane {
     flex: 2;
@@ -1335,7 +1349,7 @@ body {
     background: var(--bg-item-hover);
 }
 
-/* 鬩包ｽｸ隰壽ｨ呈・隲ｷ荵晢ｿｽ隰ｫ蝣ｺ・ｽ諛・・隲ｷ・ｽ */
+/* Selection & action states */
 .file-list tr.selected td {
     background: color-mix(in srgb, var(--bg-item-selected), transparent 40%);
 }
@@ -1344,7 +1358,7 @@ body {
     opacity: 0.4;
 }
 
-/* 郢晁ｼ斐＜郢ｧ・､郢晢ｽｫ陷ｷ髦ｪ縺晉ｹ晢ｽｫ・ｽ蛹ｻ縺・ｹｧ・､郢ｧ・ｳ郢晢ｽｳ邵ｺ・ｨ郢晢ｿｽ縺冗ｹｧ・ｹ郢晢ｿｽ/陷茨ｽ･陷牙ｸ吮ｲ隰ｾ・ｹ髯ｦ蠕鯉ｼ・ｹｧ蠕娯・邵ｺ・ｽ・育ｸｺ・ｽ竊鍋ｸｺ蜷ｶ・具ｿｽ・ｽ */
+/* File name cell (icon, text, prevent wrapping) */
 .file-name {
     white-space: nowrap;
     overflow: hidden;
@@ -1359,7 +1373,7 @@ body {
     margin-right: 6px;
 }
 
-/* 郢ｧ・､郢晢ｽｳ郢晢ｽｩ郢ｧ・､郢晢ｽｳ郢晢ｽｪ郢晞亂・ｽ郢晢ｿｽ */
+/* Inline renaming */
 .rename-input {
     min-width: 20px;
     width: 100%;
@@ -1376,7 +1390,7 @@ body {
 }
 
 /* ==========================================================================
-   7. Terminal Pane (郢ｧ・ｿ郢晢ｽｼ郢晄ｺ倥Μ郢晢ｽｫ郢晏｣ｹ縺・ｹ晢ｽｳ)
+   7. Terminal Pane
    ========================================================================== */
 .terminal-pane {
     height: 140px;
@@ -1417,7 +1431,7 @@ body {
     font-size: var(--main-font-size);
 }
 
-/* 郢ｧ・ｿ郢晢ｽｼ郢晄ｺ倥Μ郢晢ｽｫ郢晢ｿｽ縺冗ｹｧ・ｹ郢晏現縺咲ｹ晢ｽｩ郢晢ｽｼ */
+/* Terminal text color */
 .command-echo {
     color: var(--text-terminal-echo);
 }
@@ -1427,10 +1441,10 @@ body {
 }
 
 /* ==========================================================================
-   8. View Options & Layouts (髯ｦ・ｨ驕会ｽｺ郢晢ｽ｢郢晢ｽｼ郢晏ｳｨﾂ竏壹＆郢晢ｽｳ郢昜ｻ｣縺醍ｹ晏現ﾎ皮ｹ晢ｽｼ郢晁・・ｭ・ｽ)
+   8. View Options & Layouts
    ========================================================================== */
 
-/* 郢ｧ・ｵ郢晄じﾎ鍋ｹ昜ｹ斟礼ｹ晢ｽｼ */
+/* Submenus */
 .has-submenu {
     position: relative;
 }
@@ -1453,7 +1467,7 @@ body {
     display: block;
 }
 
-/* 郢ｧ・ｳ郢晢ｽｳ郢昜ｻ｣縺醍ｹ晏現ﾎ皮ｹ晢ｽｼ郢晢ｿｽ */
+/* Compact Mode */
 body.compact-mode .tree-item {
     padding: 2px 10px;
     font-size: calc(var(--main-font-size) - 1px);
@@ -1464,7 +1478,7 @@ body.compact-mode .file-list td {
     font-size: calc(var(--main-font-size) - 1px);
 }
 
-/* 郢ｧ・ｰ郢晢ｽｪ郢晢ｿｽ繝ｩ郢晁侭ﾎ礼ｹ晢ｽｼ (郢ｧ・｢郢ｧ・､郢ｧ・ｳ郢晢ｽｳ髯ｦ・ｨ驕会ｽｺ) */
+/* File Grid Layout */
 #file-grid {
     display: grid;
     gap: 12px;
@@ -1475,7 +1489,7 @@ body.compact-mode .file-list td {
     height: 100%;
     box-sizing: border-box;
 
-    /* ズーム用の動的変数 */
+    /* Dynamic variables for zoom */
     --grid-icon-size: 40px;
     --grid-item-width: 100px;
 }
@@ -1554,7 +1568,7 @@ body.compact-mode .file-list td {
     align-items: center;
     justify-content: center;
     font-size: 48px;
-    /* Default */
+    /*  Default  */
 }
 
 .grid-icon svg {
@@ -1569,7 +1583,7 @@ body.compact-mode .file-list td {
     vertical-align: middle;
 }
 
-/* 陷ｷ・ｽ縺堤ｹ晢ｽｪ郢晢ｿｽ繝ｩ郢ｧ・ｵ郢ｧ・､郢ｧ・ｺ邵ｺ・ｧ邵ｺ・ｮ郢ｧ・｢郢ｧ・､郢ｧ・ｳ郢晢ｽｳ髫ｱ・ｿ隰ｨ・ｴ */
+/* Icon adjustments for each grid size */
 .grid-size-extralarge .grid-icon-placeholder {
     font-size: 80px;
 }
@@ -1596,14 +1610,16 @@ body.compact-mode .file-list td {
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    line-clamp: 2; /* 互換性のために標準プロパティ 'line-clamp' も定義します */
+    line-clamp: 2;
+    /* Define standard property 'line-clamp' for compatibility */
     -webkit-box-orient: vertical;
-    min-height: 2.8em; /* 2 lines * 1.4 line-height */
+    min-height: 2.8em;
+    /*  2 lines * 1.4 line-height  */
     padding: 0 4px;
     box-sizing: border-box;
 }
 
-/* 郢ｧ・ｰ郢晢ｽｪ郢晢ｿｽ繝ｩ郢ｧ・ｵ郢ｧ・､郢ｧ・ｺ陞ｳ螟ゑｽｾ・ｩ (16:9邵ｺ・ｫ陷ｷ蛹ｻ・冗ｸｺ蟶吮ｻ隶難ｽｪ陝ｷ・ｽ・帝坡・ｿ隰ｨ・ｴ) */
+/* Grid size definitions (width adjusted to 16:9) */
 .grid-size-extralarge {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
@@ -1621,7 +1637,7 @@ body.compact-mode .file-list td {
 }
 
 /* ==========================================================================
-   9. Settings Screen (髫ｪ・ｭ陞ｳ螟ょ愛鬮ｱ・｢)
+   9. Settings Screen
    ========================================================================== */
 .settings-screen {
     position: fixed;
@@ -1714,7 +1730,8 @@ body.compact-mode .file-list td {
     font-size: 12px;
     color: var(--text-muted);
 }
-/* iOS鬯夲ｽｨ郢晏現縺堤ｹ晢ｽｫ郢ｧ・ｹ郢ｧ・､郢晢ｿｽ繝｡ */
+
+/* iOS-style toggle switch */
 .toggle-switch {
     position: relative;
     display: inline-block;
@@ -1798,7 +1815,7 @@ body.compact-mode .file-list td {
     position: relative;
 }
 
-/* 郢ｧ・ｵ郢ｧ・､郢晏ｳｨ繝ｰ郢晢ｽｼ */
+/* Sidebar */
 .settings-sidebar {
     width: 220px;
     background: var(--settings-sidebar-bg);
@@ -1869,7 +1886,7 @@ body.compact-mode .file-list td {
     transform: rotate(90deg);
 }
 
-/* 郢晢ｽ｡郢ｧ・､郢晢ｽｳ郢ｧ・ｳ郢晢ｽｳ郢晢ｿｽﾎｦ郢晢ｿｽ */
+/* Main Content */
 .settings-main {
     flex: 1;
     padding: 40px;
@@ -1892,7 +1909,7 @@ body.compact-mode .file-list td {
     color: var(--text-bright);
 }
 
-/* 髫ｪ・ｭ陞ｳ螢ｹ縺堤ｹ晢ｽｫ郢晢ｽｼ郢晢ｿｽ */
+/* Setting Group */
 .setting-group {
     display: flex;
     align-items: center;
@@ -1959,7 +1976,7 @@ body.compact-mode .file-list td {
     color: var(--text-muted);
 }
 
-/* 郢ｧ・ｳ郢晢ｽｳ郢晏現ﾎ溽ｹ晢ｽｼ郢晢ｽｫ髫補悪・ｴ・ｽ */
+/* Controls */
 .slider-control {
     display: flex;
     align-items: center;
@@ -1986,7 +2003,7 @@ input[type="range"]::-webkit-slider-thumb {
     border-radius: 50%;
     background: var(--accent-color);
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.1s ease;
 }
 
@@ -2015,7 +2032,7 @@ input[type="range"]::-webkit-slider-thumb:active {
     border-color: var(--accent-color);
 }
 
-/* 郢晢ｿｽ・ｽ郢晄ｧｭ・ｽ郢晢ｽｪ郢ｧ・ｻ郢晢ｿｽ繝ｨ */
+/* Theme Presets */
 .theme-presets-container {
     display: flex;
     flex-direction: column;
@@ -2074,10 +2091,11 @@ input[type="range"]::-webkit-slider-thumb:active {
     height: 100%;
     border-radius: 4px;
     border: 1px solid rgba(0, 0, 0, 0.1);
-    box-sizing: border-box; /* Ensure border doesn't expand preview */
+    box-sizing: border-box;
+    /*  Ensure border doesn't expand preview  */
 }
 
-/* 郢晏干ﾎ樒ｹ晢ｽｼ郢ｧ・ｹ郢晏ｸ厥晉ｹ敖郢晢ｽｼ */
+/* Placeholders */
 .placeholder-msg {
     text-align: center;
     color: var(--text-muted);
@@ -2091,7 +2109,7 @@ input[type="range"]::-webkit-slider-thumb:active {
     opacity: 0.5;
 }
 
-/* Settings Responsive Media Queries */
+/*  Settings Responsive Media Queries  */
 @media (max-width: 768px) {
     .settings-container-modern {
         flex-direction: column;
@@ -2107,7 +2125,8 @@ input[type="range"]::-webkit-slider-thumb:active {
         flex-direction: row;
         overflow-x: auto;
         overflow-y: hidden;
-        padding: 5px 50px 5px 0; /* Add padding to prevent tab button overlapping with close button */
+        padding: 5px 50px 5px 0;
+        /*  Add padding to prevent tab button overlapping with close button  */
         border-right: none;
         border-bottom: 1px solid var(--border-main);
         scrollbar-width: none;
@@ -2152,24 +2171,28 @@ input[type="range"]::-webkit-slider-thumb:active {
     .settings-container-modern {
         height: 95%;
     }
+
     .settings-main {
         padding: 20px;
     }
+
     .tab-header {
         font-size: 20px;
         margin-bottom: 15px;
     }
+
     .setting-group {
         margin-bottom: 15px;
         padding-bottom: 10px;
     }
+
     .setting-group-vertical {
         margin-bottom: 15px;
     }
 }
 
 /* ==========================================================================
-   6. Preview Pane (郢晏干ﾎ樒ｹ晁侭ﾎ礼ｹ晢ｽｼ郢晏｣ｹ縺・ｹ晢ｽｳ)
+   6. Preview Pane
    ========================================================================== */
 .preview-pane {
     width: 300px;
@@ -2238,7 +2261,7 @@ input[type="range"]::-webkit-slider-thumb:active {
     justify-content: flex-start;
 }
 
-/* 郢晏干ﾎ樒ｹ晢ｽｼ郢ｧ・ｹ郢晏ｸ厥晉ｹ敖郢晢ｽｼ */
+/* Placeholders */
 .preview-placeholder {
     height: 100%;
     display: flex;
@@ -2261,7 +2284,7 @@ input[type="range"]::-webkit-slider-thumb:active {
     max-width: 200px;
 }
 
-/* 騾包ｽｻ陷剃ｸ奇ｿｽ郢晢ｽｬ郢晁侭ﾎ礼ｹ晢ｽｼ */
+/* Image Preview */
 .preview-image-container {
     width: 100%;
     height: 100%;
@@ -2278,7 +2301,7 @@ input[type="range"]::-webkit-slider-thumb:active {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* 郢晢ｿｽ縺冗ｹｧ・ｹ郢晏現・ｽ郢晢ｽｬ郢晁侭ﾎ礼ｹ晢ｽｼ */
+/* Text Preview */
 .preview-text-container {
     width: 100%;
     background: var(--bg-terminal);
@@ -2290,11 +2313,12 @@ input[type="range"]::-webkit-slider-thumb:active {
     line-height: 1.5;
     white-space: pre-wrap;
     word-break: break-all;
-    user-select: text; /* Allow copying */
+    user-select: text;
+    /*  Allow copying  */
     border: 1px solid var(--border-light);
 }
 
-/* 郢晁ｼ斐＜郢ｧ・､郢晢ｽｫ隲�・ｽ・ｽ・ｱ髯ｦ・ｨ驕会ｽｺ */
+/* File Info Display */
 .preview-info-card {
     width: 100%;
     background: var(--glass-bg);
@@ -2322,11 +2346,12 @@ input[type="range"]::-webkit-slider-thumb:active {
 
 
 /* ==========================================================================
-   10. Preview Actions (郢晏干ﾎ樒ｹ晁侭ﾎ礼ｹ晢ｽｼ郢ｧ・｢郢ｧ・ｯ郢ｧ・ｷ郢晢ｽｧ郢晢ｽｳ)
+   10. Preview Actions
    ========================================================================== */
 .preview-action-btn {
     position: absolute;
-    top: 48px; /* 郢晏･繝｣郢敖郢晢ｽｼ(38px)邵ｺ・ｮ闕ｳ荵昶・陝・ｻ｣・�闖ｴ蜻ｵ・｣霈費ｽ定ｬ問・笆ｲ邵ｺ・ｦ鬩溷調・ｽ・ｮ */
+    top: 48px;
+    /* Position slightly below the header (38px) */
     right: 15px;
     width: 34px;
     height: 34px;
@@ -2366,14 +2391,21 @@ input[type="range"]::-webkit-slider-thumb:active {
     height: 18px;
 }
 
-/* 陋ｻ・･郢ｧ・ｦ郢ｧ・｣郢晢ｽｳ郢晏ｳｨ縺育ｹ晏干ﾎ樒ｹ晁侭ﾎ礼ｹ晢ｽｼ (preview.html) 邵ｺ・ｧ邵ｺ・ｮ髫ｱ・ｿ隰ｨ・ｴ */
-body > .preview-action-btn {
+/* Show/hide styles for preview.html action buttons */
+body>.preview-action-btn {
     top: 15px;
 }
 
 @keyframes slideInRight {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 @keyframes settingsTabFade {
@@ -2381,6 +2413,7 @@ body > .preview-action-btn {
         opacity: 0;
         transform: translateY(12px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -2389,12 +2422,17 @@ body > .preview-action-btn {
 
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 /* ---------------------------------------------------------------------------
- * 驕擾ｽｩ陟厄ｽ｢鬩包ｽｸ隰夲ｿｽ (Marquee Selection)
+ * Marquee Selection
  * --------------------------------------------------------------------------- */
 .selection-rectangle {
     position: fixed;
@@ -2409,12 +2447,14 @@ body > .preview-action-btn {
     user-select: none !important;
 }
 
-/* 隴鯉ｽ｢陝・･・ｽ郢晁ｼ斐＜郢ｧ・､郢晢ｽｫ郢晢ｽｪ郢ｧ・ｹ郢晏現縺・ｹｧ・､郢晢ｿｽﾎ堤ｸｺ蠕後Λ郢晢ｽｩ郢晢ｿｽ縺定叉・ｭ邵ｺ・ｫ鬮ｱ蛛ｵ・･邵ｺ・ｪ郢ｧ蟲ｨ竊醍ｸｺ・ｽ・育ｸｺ・ｽ竊馴坡・ｿ隰ｨ・ｴ */
-#file-list-body tr, .grid-item {
+/* Ensure file list items don't turn blue during dragging */
+#file-list-body tr,
+.grid-item {
     user-select: none;
 }
+
 /* ---------------------------------------------------------------------------
- * 繝峨Λ繝・げ・・ラ繝ｭ繝・・ (Drag and Drop)
+ * Drag and Drop
  * --------------------------------------------------------------------------- */
 .drag-over {
     background: color-mix(in srgb, var(--accent-color), transparent 85%) !important;
@@ -2434,12 +2474,14 @@ body > .preview-action-btn {
     z-index: 100;
 }
 
-/* 荳ｦ縺ｹ譖ｿ縺育畑縺ｮ髫咎俣繧ｨ繝輔ぉ繧ｯ繝・*/
-.drag-gap-top, .drag-gap-bottom {
+/* Gap effects for sorting/reordering */
+.drag-gap-top,
+.drag-gap-bottom {
     position: relative;
 }
 
-.drag-gap-top::before, .drag-gap-bottom::after {
+.drag-gap-top::before,
+.drag-gap-bottom::after {
     content: '';
     position: absolute;
     left: 4px;
@@ -2461,9 +2503,20 @@ body > .preview-action-btn {
 }
 
 @keyframes drag-pulse {
-    0% { opacity: 0.6; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.01); }
-    100% { opacity: 0.6; transform: scale(1); }
+    0% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.01);
+    }
+
+    100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
 }
 
 .drag-ghost {
@@ -2487,8 +2540,9 @@ body > .preview-action-btn {
     filter: grayscale(0.5);
     transform: scale(0.98);
 }
+
 /* ==========================================================================
-   16. Properties Modal (プロパティモーダル)
+   16. Properties Modal
    ========================================================================== */
 .modal-overlay {
     position: fixed;
@@ -2519,8 +2573,15 @@ body > .preview-action-btn {
 }
 
 @keyframes scaleIn {
-    from { transform: scale(0.9); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .property-header {
@@ -2695,11 +2756,12 @@ body > .preview-action-btn {
 }
 
 .attributes-row input[type='checkbox']:disabled {
-    opacity: 1; /* ブラウザのデフォルトの無効化スタイル（薄くなる）を上書き */
+    opacity: 1;
+    /* Override browser default disabled style */
 }
 
 /* ==========================================================================
-   Shortcuts List (ショートカット一覧)
+   Shortcuts List
    ========================================================================== */
 .shortcut-list-container {
     border: 1px solid var(--border-main);
@@ -2713,7 +2775,8 @@ body > .preview-action-btn {
     font-size: 13px;
 }
 
-.shortcut-list th, .shortcut-list td {
+.shortcut-list th,
+.shortcut-list td {
     padding: 12px 15px;
     text-align: left;
     border-bottom: 1px solid var(--border-light);
@@ -2785,7 +2848,7 @@ kbd.kbd-key:hover {
     user-select: none;
 }
 
-/* ユーザカスタマイズタブ */
+/* User Customization Tab */
 .custom-extension-form {
     display: flex;
     gap: 10px;
@@ -2859,7 +2922,7 @@ kbd.kbd-key:hover {
     color: var(--accent-color);
 }
 
-/* Reorder buttons removed */
+/*  Reorder buttons removed  */
 
 .extension-item:last-child {
     border-bottom: none;
@@ -2904,7 +2967,7 @@ kbd.kbd-key:hover {
 }
 
 /* ==========================================================================
-   10. Permission Dialog (アクセス許可ダイアログ)
+   10. Permission Dialog
    ========================================================================== */
 .permission-overlay {
     position: fixed;
@@ -3004,17 +3067,29 @@ kbd.kbd-key:hover {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 /* ==========================================================================
-   Wallpaper Settings (壁紙機能用スタイル)
+   Wallpaper Settings
    ========================================================================== */
 body[data-wallpaper-active="true"] {
     background-image: var(--global-wallpaper-url) !important;
@@ -3027,21 +3102,22 @@ body[data-wallpaper-active="true"] .app-container {
     background: transparent !important;
 }
 
-/* ホーム画面の背景透過設定 */
+/* Transparent background for Home screen */
 body[data-wallpaper-active="true"] .home-view {
     background: transparent !important;
 }
 
-/* 設定画面のプレミアムなすりガラス（Glassmorphism）効果 */
+/* Premium frosted glass (glassmorphism) effect for Settings screen */
 body[data-wallpaper-active="true"] .settings-screen {
     background: color-mix(in srgb, var(--settings-main-bg) var(--global-glass-opacity-settings, 75%), transparent) !important;
     backdrop-filter: blur(28px);
 }
+
 body[data-wallpaper-active="true"] .settings-sidebar {
     background: color-mix(in srgb, var(--settings-sidebar-bg) var(--global-glass-opacity-settings, 75%), transparent) !important;
 }
 
-/* color-mix を用いた美しい半透明・すりガラス効果 */
+/* Beautiful semi-transparent frosted glass effect using color-mix */
 body[data-wallpaper-active="true"] .sidebar {
     background: color-mix(in srgb, var(--bg-sidebar) var(--global-glass-opacity, 65%), transparent) !important;
     backdrop-filter: blur(24px);
@@ -3073,7 +3149,7 @@ body[data-wallpaper-active="true"] .tab-bar {
 }
 
 /* ==========================================================================
-   Wallpaper History Cards (本アプリのカラー変更UIと調和した履歴サムネイル)
+   Wallpaper History Cards
    ========================================================================== */
 .wallpaper-option {
     box-sizing: border-box;
@@ -3117,7 +3193,7 @@ body[data-wallpaper-active="true"] .tab-bar {
     object-fit: cover;
 }
 
-/* 空スロット表示 */
+/* Empty slot display */
 .wallpaper-option.empty-slot {
     cursor: default;
     border: 3px dashed var(--border-main);
@@ -3144,7 +3220,7 @@ body[data-wallpaper-active="true"] .tab-bar {
     color: var(--text-muted);
 }
 
-/* Wallpaper Dropzone Styles */
+/*  Wallpaper Dropzone Styles  */
 .wallpaper-dropzone {
     border: 2px dashed var(--border-main);
     border-radius: 8px;
@@ -3161,7 +3237,8 @@ body[data-wallpaper-active="true"] .tab-bar {
     user-select: none;
 }
 
-.wallpaper-dropzone:hover, .wallpaper-dropzone.dragover {
+.wallpaper-dropzone:hover,
+.wallpaper-dropzone.dragover {
     border-color: var(--accent-color);
     background: rgba(var(--accent-color-rgb, 0, 122, 204), 0.06);
     color: var(--text-bright);
@@ -3177,13 +3254,14 @@ body[data-wallpaper-active="true"] .tab-bar {
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, color 0.25s ease;
 }
 
-.wallpaper-dropzone:hover svg, .wallpaper-dropzone.dragover svg {
+.wallpaper-dropzone:hover svg,
+.wallpaper-dropzone.dragover svg {
     transform: scale(1.15) translateY(-2px);
     opacity: 0.95;
     color: var(--accent-color);
 }
 
-/* Wallpaper Select Floating Banner Styles */
+/*  Wallpaper Select Floating Banner Styles  */
 .wallpaper-select-banner {
     position: fixed;
     bottom: 25px;
@@ -3252,6 +3330,7 @@ body[data-wallpaper-active="true"] .tab-bar {
         transform: translate(-50%, 50px);
         opacity: 0;
     }
+
     to {
         transform: translate(-50%, 0);
         opacity: 1;
@@ -3262,15 +3341,17 @@ body[data-wallpaper-active="true"] .tab-bar {
     0% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.15);
     }
+
     100% {
         transform: scale(1);
     }
 }
 
-/* Premium Wallpaper Gallery Mode Portfolio Styles */
+/*  Premium Wallpaper Gallery Mode Portfolio Styles  */
 body.wallpaper-gallery-mode {
     background: rgba(10, 10, 10, 0.45) !important;
     position: relative;
@@ -3326,7 +3407,8 @@ body.wallpaper-gallery-mode .file-pane {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    padding: 85px 30px 40px 30px; /* バナーの余白を空ける */
+    padding: 85px 30px 40px 30px;
+    /* Leave margin for the banner */
     box-sizing: border-box;
 }
 
@@ -3356,7 +3438,7 @@ body.wallpaper-gallery-mode .file-pane {
     padding-bottom: 40px;
 }
 
-/* ギャラリーカードスタイル */
+/* Gallery Card Styles */
 .gallery-card {
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.02);
@@ -3423,7 +3505,7 @@ body.wallpaper-gallery-mode .file-pane {
     text-overflow: ellipsis;
 }
 
-/* Drag handle bar at the top of wallpaper window */
+/*  Drag handle bar at the top of wallpaper window  */
 .wallpaper-drag-bar {
     display: none;
     height: 30px;
