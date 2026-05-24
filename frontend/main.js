@@ -59,10 +59,10 @@ function createWindow(initialPath = null, selectWallpaper = false) {
       } else if (typeof wParam === 'number') {
         wp = wParam;
       }
-      
+
       const DBT_DEVICEARRIVAL = 0x8000;
       const DBT_DEVICEREMOVECOMPLETE = 0x8004;
-      
+
       if (wp === DBT_DEVICEARRIVAL || wp === DBT_DEVICEREMOVECOMPLETE) {
         if (!win.isDestroyed()) {
           console.log('Main Process: USB Drive Arrival or Removal detected!');
@@ -336,8 +336,8 @@ ipcMain.handle('GET_USER_THEMES', async () => {
       // 初期ファイルを作成（コメント付きの文字列として作成）
       const initialContent = `[
   {
-    "id": "user-emerald-night",
-    "name": "エメラルド・ナイト",
+    "id": "user-emerald",
+    "name": "エメラルド",
     "colors": {
       "--bg-main": "#0b0f0e",       // メイン背景
       "--bg-side": "#121817",       // サイドバー背景
@@ -349,8 +349,8 @@ ipcMain.handle('GET_USER_THEMES', async () => {
     }
   },
   {
-    "id": "user-cyber-slate",
-    "name": "サイバー・スレート",
+    "id": "user-cyber",
+    "name": "サイバー",
     "colors": {
       "--bg-main": "#0f172a",       // メイン背景（ミッドナイトブルー）
       "--bg-side": "#1e293b",       // サイドバー背景
@@ -362,8 +362,8 @@ ipcMain.handle('GET_USER_THEMES', async () => {
     }
   },
   {
-    "id": "user-gilded-obsidian",
-    "name": "ギルデッド・オブシディアン",
+    "id": "user-obsidian",
+    "name": "オブシディアン",
     "colors": {
       "--bg-main": "#0a0a0a",       // メイン背景（深い黒）
       "--bg-side": "#141414",       // サイドバー背景（わずかに明るい墨色）
@@ -454,7 +454,7 @@ async function getWallpaperHistory() {
   // 登録されていない物理画像ファイル（古いバージョン等のデータ）があれば補完
   const trackedFiles = syncedHistory.map(item => item.file);
   const untrackedFiles = wpFiles.filter(f => !trackedFiles.includes(f));
-  
+
   for (const file of untrackedFiles) {
     const filePath = path.join(wallpapersDir, file);
     try {
@@ -465,7 +465,7 @@ async function getWallpaperHistory() {
       const id = timestampStr;
       const dataUrl = `orbiter-media://wallpaper/${file}`;
       syncedHistory.push({ id, dataUrl, file, timestamp, originalPath: '' });
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // タイムスタンプ降順（新しい順）にソート
@@ -528,7 +528,7 @@ ipcMain.handle('SELECT_WALLPAPER', async () => {
   try {
     const raw = await fs.readFile(metadataPath, 'utf8');
     historyData = JSON.parse(raw);
-  } catch (e) {}
+  } catch (e) { }
 
   const newItem = {
     id: `${timestamp}`,
@@ -541,7 +541,7 @@ ipcMain.handle('SELECT_WALLPAPER', async () => {
 
   try {
     await fs.writeFile(metadataPath, JSON.stringify(historyData, null, 2), 'utf8');
-  } catch (e) {}
+  } catch (e) { }
 
   return await getWallpaperHistory();
 });
@@ -565,7 +565,7 @@ ipcMain.handle('SET_WALLPAPER_BY_PATH', async (event, srcPath) => {
   try {
     const raw = await fs.readFile(metadataPath, 'utf8');
     historyData = JSON.parse(raw);
-  } catch (e) {}
+  } catch (e) { }
 
   const newItem = {
     id: `${timestamp}`,
@@ -578,7 +578,7 @@ ipcMain.handle('SET_WALLPAPER_BY_PATH', async (event, srcPath) => {
 
   try {
     await fs.writeFile(metadataPath, JSON.stringify(historyData, null, 2), 'utf8');
-  } catch (e) {}
+  } catch (e) { }
 
   return await getWallpaperHistory();
 });
@@ -609,7 +609,7 @@ const os = require('os');
 
 async function scanImages(dir, fileList = [], limit = 1000) {
   if (fileList.length >= limit) return fileList;
-  
+
   // アプリフォルダの絶対パスを取得して小文字化
   const appDir = path.dirname(app.getAppPath()).toLowerCase();
   const execDir = path.dirname(process.execPath).toLowerCase();
@@ -618,7 +618,7 @@ async function scanImages(dir, fileList = [], limit = 1000) {
     const entries = await fs.readdir(dir, { withFileTypes: true });
     for (const entry of entries) {
       if (fileList.length >= limit) break;
-      
+
       const fullPath = path.join(dir, entry.name);
       const fullPathLower = fullPath.toLowerCase();
 
@@ -626,19 +626,19 @@ async function scanImages(dir, fileList = [], limit = 1000) {
       if (fullPathLower.startsWith(appDir) || fullPathLower.startsWith(execDir)) {
         continue;
       }
-      
+
       // 除外フォルダ（大容量、システム、管理者権限が必要そうなフォルダ、およびアプリフォルダ名）
       const nameLower = entry.name.toLowerCase();
-      if (entry.name.startsWith('.') || 
-          nameLower.includes('orbiter') || // Orbiterフォルダの除外！
-          ['appdata', 'node_modules', 'local settings', 'application data', 'cookies', 
-           'sendto', 'start menu', 'my documents', 'templates', 'printhood', 'nethood', 
-           'recent', 'system32', 'windows', 'program files', 'program files (x86)',
-           'msocache', 'recovery', 'system volume information', 'searches', 'saved games',
-           'contacts', 'links', 'searches', 'favorites', 'music', 'videos'].includes(nameLower)) {
+      if (entry.name.startsWith('.') ||
+        nameLower.includes('orbiter') || // Orbiterフォルダの除外！
+        ['appdata', 'node_modules', 'local settings', 'application data', 'cookies',
+          'sendto', 'start menu', 'my documents', 'templates', 'printhood', 'nethood',
+          'recent', 'system32', 'windows', 'program files', 'program files (x86)',
+          'msocache', 'recovery', 'system volume information', 'searches', 'saved games',
+          'contacts', 'links', 'searches', 'favorites', 'music', 'videos'].includes(nameLower)) {
         continue;
       }
-      
+
       if (entry.isDirectory()) {
         try {
           await scanImages(fullPath, fileList, limit);

@@ -123,9 +123,10 @@ function applyTheme(themeName, customThemeObj = null) {
     // ウインドウ操作バー（Window Controls Overlay）のカラー同期
     setTimeout(() => {
         try {
-            // 壁紙モードが有効な場合は壁紙の色抽出処理へバイパス
+            // 壁紙モードが有効な場合は壁紙の色抽出処理へバイパス（ただし、壁紙選択ウィンドウ自身は除く）
             const globalWallpaperActive = localStorage.getItem('settings-global-wallpaper-active') === 'true';
-            if (globalWallpaperActive) {
+            const isWallpaperSelectWindow = document.body.classList.contains('wallpaper-gallery-mode');
+            if (globalWallpaperActive && !isWallpaperSelectWindow) {
                 if (window.api && typeof window.api.invoke === 'function') {
                     window.api.invoke('GET_WALLPAPERS').then(history => {
                         const activeId = localStorage.getItem('settings-active-wallpaper-id') || '';
