@@ -124,6 +124,7 @@ let favoriteItems = JSON.parse(localStorage.getItem('favoriteItems') || '[]').ma
     return item;
 });
 let homeDisplayMode = localStorage.getItem('homeDisplayMode') || 'recent'; // 'recent' | 'favorite'
+let isTerminalVisible = localStorage.getItem('isTerminalVisible') !== 'false';
 
 // ナビゲーションロック
 let navigationLockUntil = 0;
@@ -168,7 +169,23 @@ let currentSortOrder = 0;
 let currentViewMode = 'details';
 let showHiddenFiles = false;
 let showExtensions = true;
-
+function applyTerminalVisibility() {
+    const terminalPane = document.querySelector('.terminal-pane');
+    const resizerTerminal = document.getElementById('resizer-terminal');
+    const btnTerminalToggle = document.getElementById('btn-terminal-toggle');
+    
+    if (!terminalPane || !resizerTerminal || !btnTerminalToggle) return;
+    
+    if (isTerminalVisible) {
+        terminalPane.style.display = '';
+        resizerTerminal.style.display = '';
+        btnTerminalToggle.classList.add('active');
+    } else {
+        terminalPane.style.display = 'none';
+        resizerTerminal.style.display = 'none';
+        btnTerminalToggle.classList.remove('active');
+    }
+}
 
 // ---------------------------------------------------------------------------
 // 初期化
@@ -176,6 +193,22 @@ let showExtensions = true;
 window.onload = () => {
     // 起動時はバックエンドのREADYを待つ
     initTabs();
+
+    // ターミナル表示の初期設定とイベント紐付け
+    const btnTerminalToggle = document.getElementById('btn-terminal-toggle');
+    if (btnTerminalToggle) {
+        btnTerminalToggle.onclick = () => {
+            isTerminalVisible = !isTerminalVisible;
+            localStorage.setItem('isTerminalVisible', isTerminalVisible);
+            applyTerminalVisibility();
+        };
+    }
+    applyTerminalVisibility();
+
+    // ウィンドウが閉じられる瞬間に現在の状態を localStorage に保存する
+    window.addEventListener('beforeunload', () => {
+        localStorage.setItem('isTerminalVisible', isTerminalVisible);
+    });
 
     // 壁紙選択用ウィンドウとして開かれた場合の処理
     const urlParams = new URLSearchParams(window.location.search);

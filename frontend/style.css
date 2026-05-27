@@ -772,6 +772,11 @@ body {
     background: var(--bg-item-hover);
 }
 
+.action-btn.active {
+    background: var(--bg-item-selected);
+    color: var(--text-bright);
+}
+
 .separator {
     width: 1px;
     height: 20px;
