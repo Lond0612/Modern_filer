@@ -1851,6 +1851,15 @@ function formatSize(bytes) {
     if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
     return (b / (1024 * 1024)).toFixed(1) + ' MB';
 }
+const MAX_TERMINAL_HISTORY = 50;
+let terminalHistory = [];
+try {
+    terminalHistory = JSON.parse(localStorage.getItem('terminalHistory') || '[]');
+} catch (e) {
+    terminalHistory = [];
+}
+let terminalHistoryIndex = terminalHistory.length;
+let terminalDraft = '';
 
 terminalInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -1862,7 +1871,56 @@ terminalInput.addEventListener('keydown', (e) => {
             }
             appendTerminal(`> ${cmd}`, 'command-echo');
             window.api.sendCommand(`EXEC|${cmd}`);
+            
+            // コマンド履歴に追加
+            if (terminalHistory.length === 0 || terminalHistory[terminalHistory.length - 1] !== cmd) {
+                terminalHistory.push(cmd);
+                if (terminalHistory.length > MAX_TERMINAL_HISTORY) {
+                    terminalHistory.shift();
+                }
+                localStorage.setItem('terminalHistory', JSON.stringify(terminalHistory));
+            }
+            terminalHistoryIndex = terminalHistory.length;
+            terminalDraft = '';
+            
             terminalInput.value = '';
+        }
+    } else if (e.key === 'ArrowUp') {
+        if (terminalHistory.length === 0) return;
+        e.preventDefault();
+        
+        // 初めて履歴を遡る場合、現在の下書きを保存する
+        if (terminalHistoryIndex === terminalHistory.length) {
+            terminalDraft = terminalInput.value;
+        }
+        
+        if (terminalHistoryIndex > 0) {
+            terminalHistoryIndex--;
+            terminalInput.value = terminalHistory[terminalHistoryIndex];
+            // カーソルを末尾に移動
+            setTimeout(() => {
+                terminalInput.setSelectionRange(terminalInput.value.length, terminalInput.value.length);
+            }, 0);
+        }
+    } else if (e.key === 'ArrowDown') {
+        if (terminalHistory.length === 0) return;
+        
+        if (terminalHistoryIndex < terminalHistory.length - 1) {
+            e.preventDefault();
+            terminalHistoryIndex++;
+            terminalInput.value = terminalHistory[terminalHistoryIndex];
+            // カーソルを末尾に移動
+            setTimeout(() => {
+                terminalInput.setSelectionRange(terminalInput.value.length, terminalInput.value.length);
+            }, 0);
+        } else if (terminalHistoryIndex === terminalHistory.length - 1) {
+            e.preventDefault();
+            terminalHistoryIndex++;
+            terminalInput.value = terminalDraft;
+            // カーソルを末尾に移動
+            setTimeout(() => {
+                terminalInput.setSelectionRange(terminalInput.value.length, terminalInput.value.length);
+            }, 0);
         }
     }
 });

@@ -1,6 +1,6 @@
 {
   "name": "orbiter",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "description": "A fast and modern file explorer for Windows",
   "main": "main.js",
   "scripts": {
