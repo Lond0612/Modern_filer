@@ -2926,23 +2926,12 @@ function handleDragStart(e) {
     e.dataTransfer.setData('application/x-file-paths', JSON.stringify(paths));
     e.dataTransfer.effectAllowed = 'move';
 
-    // ドラッグイメージ（ゴースト）の作成
-    const dragIcon = document.createElement('div');
-    dragIcon.className = 'drag-ghost';
-    dragIcon.style.position = 'absolute';
-    dragIcon.style.top = '-1000px';
-    
-    // アイコンとバッジ
-    const folderIcon = IconThemeManager.customIcons.folder;
-    const countBadge = count > 1 ? `<span style="background: white; color: var(--accent-color); padding: 0 6px; border-radius: 12px; font-size: 11px; font-weight: 800;">${count}</span>` : '';
-    dragIcon.innerHTML = `<span style="display: flex; align-items: center; gap: 8px;">${folderIcon} ${dragName}</span> ${countBadge}`;
-    
-    document.body.appendChild(dragIcon);
-    e.dataTransfer.setDragImage(dragIcon, 0, 0);
-    
-    setTimeout(() => {
-        if (dragIcon.parentNode) document.body.removeChild(dragIcon);
-    }, 0);
+    // HTML5のデフォルトドラッグゴーストを完全に非表示化する（1x1の透明な画像を設定）
+    const transparentImage = new Image();
+    transparentImage.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    e.dataTransfer.setDragImage(transparentImage, 0, 0);
+
+
     
     item.classList.add('dragging');
 
