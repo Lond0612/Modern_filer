@@ -2926,6 +2926,7 @@ function handleDragStart(e) {
 
     // 【外部アプリへのD&D対応】
     if (window.api.send && !isQA) {
+        e.preventDefault(); // デフォルトのHTML5ドラッグループを無効化してクラッシュを防ぐ
         window.api.send('ondragstart', paths);
     }
 }

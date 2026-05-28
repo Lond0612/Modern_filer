@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Menu, shell, protocol, net } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, shell, protocol, net, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 const { spawn } = require('child_process');
@@ -768,17 +768,24 @@ ipcMain.on('ondragstart', (event, files) => {
   try {
     if (!files || files.length === 0) return;
 
-    // Electronのバージョンやプラットフォームにより引数の形式が異なる場合があるため
-    // 互換性を考慮して単一ファイル(file)と複数ファイル(files)の両方を試みる
+    const iconPath = path.join(__dirname, 'drag-icon.png');
+    let dragIcon = iconPath;
+    try {
+      const img = nativeImage.createFromPath(iconPath);
+      if (!img.isEmpty()) {
+        dragIcon = img.resize({ width: 32, height: 32 }); // クラッシュ防止のために32x32にリサイズ
+      }
+    } catch (e) {
+      console.error('Failed to load/resize drag icon:', e);
+    }
+
     const dragConfig = {
       files: files,
       file: files[0],
-      icon: path.join(__dirname, 'drag-icon.png')
+      icon: dragIcon
     };
 
-    console.log('Native drag start disabled to prevent crash. Files:', files);
-    // 致命的なクラッシュを防ぐため、一時的にネイティブのstartDragを無効化
-    // event.sender.startDrag(dragConfig);
+    event.sender.startDrag(dragConfig);
   } catch (err) {
     console.error('Failed to start native drag:', err);
   }
