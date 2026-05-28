@@ -1313,6 +1313,16 @@ window.api.onBackendResponse((obj) => {
             window.api.sendCommand(`LIST|${currentPath}`);
             break;
 
+        case 'DRAG_END':
+            document.querySelectorAll('.dragging, .cut-item').forEach(el => {
+                el.classList.remove('dragging', 'cut-item');
+            });
+            break;
+
+        case 'REFRESH_LIST':
+            window.api.sendCommand(`LIST|${currentPath}`);
+            break;
+
         case 'ERROR_ACCESS_DENIED':
             showPermissionDialog(obj.content);
             break;
@@ -2192,6 +2202,13 @@ function onSelectionChanged() {
     if (typeof PreviewManager !== 'undefined') {
         PreviewManager.update();
     }
+    // 選択数が0件になったらドラッグやカットのビジュアルをクリア
+    const selectedCount = document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').length;
+    if (selectedCount === 0) {
+        document.querySelectorAll('.dragging, .cut-item').forEach(el => {
+            el.classList.remove('dragging', 'cut-item');
+        });
+    }
 }
 
 // 以前ここにあったショートカット用ヘルパー関数と initShortcuts は js/shortcuts.js へ移動しました
@@ -2867,6 +2884,11 @@ if (document.readyState === 'loading') {
 // ドラッグ＆ドロップ (D&D) 制御
 // ---------------------------------------------------------------------------
 
+// グローバルドラッグ管理用変数
+window.activeDragPaths = null;
+window.hasTriggeredNativeDrag = false;
+window.isDragging = false;
+
 function handleDragStart(e) {
     const item = e.target.closest('tr, .grid-item, .tree-item');
     if (!item) return;
@@ -2924,10 +2946,11 @@ function handleDragStart(e) {
     
     item.classList.add('dragging');
 
-    // 【外部アプリへのD&D対応】
-    if (window.api.send && !isQA) {
-        e.preventDefault(); // デフォルトのHTML5ドラッグループを無効化してクラッシュを防ぐ
-        window.api.send('ondragstart', paths);
+    // ハイブリッドD&D管理変数のセット
+    if (!isQA) {
+        window.activeDragPaths = paths;
+        window.hasTriggeredNativeDrag = false;
+        window.isDragging = true;
     }
 }
 
@@ -2937,7 +2960,23 @@ function handleDragEnd(e) {
     
     // 全てのハイライトを消去
     document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+    // ハイブリッドD&D変数のクリア
+    window.isDragging = false;
+    window.activeDragPaths = null;
+    window.hasTriggeredNativeDrag = false;
 }
+
+// ウィンドウ外へのドラッグアウトを監視してネイティブドラッグへ切り替える
+document.documentElement.addEventListener('dragleave', (e) => {
+    if (window.isDragging && window.activeDragPaths && !window.hasTriggeredNativeDrag) {
+        // マウスがウィンドウの境界外へ完全に出たか（または別アプリの重なり領域に入ったか）を検証
+        if (!e.relatedTarget || e.relatedTarget === document.documentElement) {
+            window.hasTriggeredNativeDrag = true;
+            window.api.send('ondragstart', window.activeDragPaths);
+        }
+    }
+});
 
 function handleDragOver(e) {
     e.preventDefault();

@@ -785,7 +785,75 @@ ipcMain.on('ondragstart', (event, files) => {
       icon: dragIcon
     };
 
+    // ネイティブドラッグを開始（Windowsではこの処理は完了するまで同期ブロックします）
     event.sender.startDrag(dragConfig);
+    
+    // ドラッグ終了後、レンダラーに半透明クリアを指示
+    if (!event.sender.isDestroyed()) {
+      event.sender.send('backend-response', { type: 'DRAG_END' });
+    }
+
+    // --- 同一ドライブ内へのドロップ時の「移動（カット）」エミュレーション処理 ---
+    const { exec } = require('child_process');
+    const cmd = 'powershell -NoProfile -Command "`$shell = New-Object -ComObject Shell.Application; try { `$shell.Windows() | ForEach-Object { if (`$_.Document.Folder.Self.Path) { `$_.Document.Folder.Self.Path } } } catch {}; [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop)"';
+    
+    // ドロップ後のファイル書き込み完了を少し待つ（300ms）
+    setTimeout(() => {
+      exec(cmd, async (err, stdout) => {
+        if (err) return;
+        const destDirs = stdout.split(/\r?\n/).map(p => p.trim()).filter(p => p.length > 0);
+        const uniqueDestDirs = [...new Set(destDirs)];
+        
+        let filesMoved = false;
+        for (const srcPath of files) {
+          try {
+            const srcStat = await fs.stat(srcPath);
+            const fileName = path.basename(srcPath);
+            const srcDrive = srcPath[0].toLowerCase();
+            const isDirectory = srcStat.isDirectory();
+            
+            for (const destDir of uniqueDestDirs) {
+              const destDrive = destDir[0].toLowerCase();
+              if (srcDrive !== destDrive) continue; // 異なるドライブならコピーなので無視
+              
+              const destPath = path.join(destDir, fileName);
+              if (destPath.toLowerCase() === srcPath.toLowerCase()) continue;
+              
+              try {
+                const destStat = await fs.stat(destPath);
+                const now = Date.now();
+                const isRecent = (now - destStat.mtimeMs < 5000) || (now - destStat.ctimeMs < 5000);
+                
+                let matches = false;
+                if (isDirectory && destStat.isDirectory()) {
+                  matches = isRecent;
+                } else if (!isDirectory && !destStat.isDirectory()) {
+                  matches = (destStat.size === srcStat.size) && isRecent;
+                }
+                
+                if (matches) {
+                  // 同一ドライブへのコピーが成功したため、元のファイルを削除（移動を完結）
+                  if (isDirectory) {
+                    await fs.rm(srcPath, { recursive: true, force: true });
+                  } else {
+                    await fs.unlink(srcPath);
+                  }
+                  filesMoved = true;
+                  console.log(`Same-drive move completed: ${srcPath} -> ${destPath}`);
+                  break;
+                }
+              } catch (e) {}
+            }
+          } catch (e) {}
+        }
+        
+        // 移動が発生した場合はリストを更新
+        if (filesMoved && !event.sender.isDestroyed()) {
+          event.sender.send('backend-response', { type: 'REFRESH_LIST' });
+        }
+      });
+    }, 300);
+
   } catch (err) {
     console.error('Failed to start native drag:', err);
   }
