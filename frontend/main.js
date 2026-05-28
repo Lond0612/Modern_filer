@@ -797,62 +797,94 @@ ipcMain.on('ondragstart', (event, files) => {
     const { exec } = require('child_process');
     const cmd = 'powershell -NoProfile -Command "`$shell = New-Object -ComObject Shell.Application; try { `$shell.Windows() | ForEach-Object { if (`$_.Document.Folder.Self.Path) { `$_.Document.Folder.Self.Path } } } catch {}; [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop)"';
     
-    // ドロップ後のファイル書き込み完了を少し待つ（300ms）
-    setTimeout(() => {
-      exec(cmd, async (err, stdout) => {
-        if (err) return;
-        const destDirs = stdout.split(/\r?\n/).map(p => p.trim()).filter(p => p.length > 0);
-        const uniqueDestDirs = [...new Set(destDirs)];
-        
-        let filesMoved = false;
-        for (const srcPath of files) {
-          try {
-            const srcStat = await fs.stat(srcPath);
-            const fileName = path.basename(srcPath);
-            const srcDrive = srcPath[0].toLowerCase();
-            const isDirectory = srcStat.isDirectory();
-            
-            for (const destDir of uniqueDestDirs) {
-              const destDrive = destDir[0].toLowerCase();
-              if (srcDrive !== destDrive) continue; // 異なるドライブならコピーなので無視
-              
-              const destPath = path.join(destDir, fileName);
-              if (destPath.toLowerCase() === srcPath.toLowerCase()) continue;
-              
+    // ドロップ後のファイル書き込み完了を少し待つ（300ms, 1200ms, 3000ms の多段階リトライで大容量ファイルや低速ディスクにも対応）
+    const checkAttempts = [300, 1200, 3000];
+    checkAttempts.forEach((delay) => {
+      setTimeout(() => {
+        exec(cmd, async (err, stdout) => {
+          let destDirs = [];
+          if (!err && stdout) {
+            destDirs = stdout.split(/\r?\n/).map(p => p.trim()).filter(p => p.length > 0);
+          }
+          
+          // OneDriveや標準のデスクトップパスを明示的に補完（ registryや環境変数の遅延・COMの空振りに備える）
+          const home = os.homedir();
+          const commonDesktops = [
+            path.join(home, 'Desktop'),
+            path.join(home, 'desktop'),
+            path.join(home, 'OneDrive', 'Desktop'),
+            path.join(home, 'OneDrive', 'desktop'),
+            path.join(home, 'OneDrive', 'デスクトップ'),
+            path.join(home, 'OneDrive - 個人用', 'Desktop'),
+            path.join(home, 'OneDrive - 個人用', 'desktop'),
+            path.join(home, 'OneDrive - 個人用', 'デスクトップ')
+          ];
+          
+          destDirs = destDirs.concat(commonDesktops);
+          const uniqueDestDirs = [...new Set(destDirs)];
+          
+          let filesMoved = false;
+          for (const srcPath of files) {
+            try {
+              // 既に別のアテンプトや処理で元のファイルが削除（移動完了）されている場合はスキップ
               try {
-                const destStat = await fs.stat(destPath);
-                const now = Date.now();
-                const isRecent = (now - destStat.mtimeMs < 5000) || (now - destStat.ctimeMs < 5000);
+                await fs.access(srcPath);
+              } catch (e) {
+                continue;
+              }
+              
+              const srcStat = await fs.stat(srcPath);
+              const fileName = path.basename(srcPath);
+              const srcDrive = srcPath[0].toLowerCase();
+              const isDirectory = srcStat.isDirectory();
+              
+              for (const destDir of uniqueDestDirs) {
+                const destDrive = destDir[0].toLowerCase();
+                if (srcDrive !== destDrive) continue; // 異なるドライブならコピーなので無視
                 
-                let matches = false;
-                if (isDirectory && destStat.isDirectory()) {
-                  matches = isRecent;
-                } else if (!isDirectory && !destStat.isDirectory()) {
-                  matches = (destStat.size === srcStat.size) && isRecent;
-                }
+                const destPath = path.join(destDir, fileName);
+                if (destPath.toLowerCase() === srcPath.toLowerCase()) continue;
                 
-                if (matches) {
-                  // 同一ドライブへのコピーが成功したため、元のファイルを削除（移動を完結）
-                  if (isDirectory) {
-                    await fs.rm(srcPath, { recursive: true, force: true });
-                  } else {
-                    await fs.unlink(srcPath);
+                try {
+                  const destStat = await fs.stat(destPath);
+                  const now = Date.now();
+                  
+                  const birthtimeVal = destStat.birthtime ? destStat.birthtime.getTime() : (destStat.birthtimeMs || 0);
+                  const ctimeVal = destStat.ctime ? destStat.ctime.getTime() : (destStat.ctimeMs || 0);
+                  
+                  // Windows Explorerによる複製時は作成日時およびメタデータ更新日時が現在時刻になるため両方を監視（15秒の猶予を持たせる）
+                  const isRecent = (now - birthtimeVal < 15000) || (now - ctimeVal < 15000);
+                  
+                  let matches = false;
+                  if (isDirectory && destStat.isDirectory()) {
+                    matches = isRecent;
+                  } else if (!isDirectory && !destStat.isDirectory()) {
+                    matches = (destStat.size === srcStat.size) && isRecent;
                   }
-                  filesMoved = true;
-                  console.log(`Same-drive move completed: ${srcPath} -> ${destPath}`);
-                  break;
-                }
-              } catch (e) {}
-            }
-          } catch (e) {}
-        }
-        
-        // 移動が発生した場合はリストを更新
-        if (filesMoved && !event.sender.isDestroyed()) {
-          event.sender.send('backend-response', { type: 'REFRESH_LIST' });
-        }
-      });
-    }, 300);
+                  
+                  if (matches) {
+                    // 同一ドライブへのコピーが成功したため、元のファイルを完全に削除（ゴミ箱にすらいかないようにする）
+                    if (isDirectory) {
+                      await fs.rm(srcPath, { recursive: true, force: true });
+                    } else {
+                      await fs.unlink(srcPath);
+                    }
+                    filesMoved = true;
+                    console.log(`Same-drive move completed on delay ${delay}ms: ${srcPath} -> ${destPath}`);
+                    break;
+                  }
+                } catch (e) {}
+              }
+            } catch (e) {}
+          }
+          
+          // 移動が発生した場合はリストを更新
+          if (filesMoved && !event.sender.isDestroyed()) {
+            event.sender.send('backend-response', { type: 'REFRESH_LIST' });
+          }
+        });
+      }, delay);
+    });
 
   } catch (err) {
     console.error('Failed to start native drag:', err);

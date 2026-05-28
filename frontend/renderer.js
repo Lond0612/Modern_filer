@@ -2967,12 +2967,39 @@ function handleDragEnd(e) {
     window.hasTriggeredNativeDrag = false;
 }
 
+// HTML5ドラッグセッションを強制的にキャンセルしてゴースト画像を破棄するライフサイクルハック
+function cancelHtml5Drag() {
+    const item = document.querySelector('.dragging');
+    if (!item) return;
+    
+    const parent = item.parentNode;
+    if (!parent) return;
+    
+    const nextSibling = item.nextSibling;
+    
+    // 一時的にDOMから離脱させることで、ブラウザにHTML5ドラッグループを強制終了させる
+    parent.removeChild(item);
+    
+    // 50ms後に安全に再挿入（非同期にすることでChromiumにD&Dセッションを確実に破棄させる）
+    setTimeout(() => {
+        if (nextSibling) {
+            parent.insertBefore(item, nextSibling);
+        } else {
+            parent.appendChild(item);
+        }
+    }, 50);
+}
+
 // ウィンドウ外へのドラッグアウトを監視してネイティブドラッグへ切り替える
 document.documentElement.addEventListener('dragleave', (e) => {
     if (window.isDragging && window.activeDragPaths && !window.hasTriggeredNativeDrag) {
         // マウスがウィンドウの境界外へ完全に出たか（または別アプリの重なり領域に入ったか）を検証
         if (!e.relatedTarget || e.relatedTarget === document.documentElement) {
             window.hasTriggeredNativeDrag = true;
+            
+            // ブラウザのHTML5ドラッグセッションをキャンセルし、ゴーストを消滅させる
+            cancelHtml5Drag();
+            
             window.api.send('ondragstart', window.activeDragPaths);
         }
     }
