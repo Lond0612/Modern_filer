@@ -1,3 +1,4 @@
+// アイコンやテーマ切り替えを管理するオブジェクト
 const IconThemeManager = {
     customIcons: {
         folder: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="file-icon-svg"><path fill="var(--icon-folder)" d="M64 448l384 0c35.3 0 64-28.7 64-64l0-240c0-35.3-28.7-64-64-64L298.7 80c-6.9 0-13.7-2.2-19.2-6.4L241.1 44.8C230 36.5 216.5 32 202.7 32L64 32C28.7 32 0 60.7 0 96L0 384c0 35.3 28.7 64 64 64z"/></svg>`,
@@ -21,6 +22,7 @@ const IconThemeManager = {
         h: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="file-icon-svg"><path fill="var(--icon-file)" d="M320 288l0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-384c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-256 0 0-160c0-17.7-14.3-32-32-32S0 46.3 0 64L0 448c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 256 0z"/></svg>`
     },
 
+    // 拡張子などから対応するアイコンのHTMLを返す
     getIcon(name, isDir) {
         if (isDir) return this.customIcons.folder;
         const ext = name.split('.').pop().toLowerCase();
@@ -42,21 +44,23 @@ const IconThemeManager = {
         return this.customIcons.file;
     },
 
-    // アイコンの初期状態を保持（リセット用）
     _defaultIcons: null,
     
+    // アイコンの初期状態を保存する
     saveDefaults() {
         if (!this._defaultIcons) {
             this._defaultIcons = { ...this.customIcons };
         }
     },
 
+    // アイコンの状態を初期状態に戻す
     resetIcons() {
         if (this._defaultIcons) {
             this.customIcons = { ...this._defaultIcons };
         }
     },
 
+    // 指定したアイコン定義で上書きする
     overrideIcons(icons) {
         this.saveDefaults();
         if (icons) {
@@ -65,20 +69,16 @@ const IconThemeManager = {
     }
 };
 
-// テーマ適用
+// 指定したテーマ名またはカスタムテーマオブジェクトをアプリに適用する
 function applyTheme(themeName, customThemeObj = null) {
-    // 既存のテーマクラスとカスタムスタイルをクリア
     document.body.classList.remove('theme-deepblue', 'theme-khaki', 'theme-sakura', 'theme-amber', 'theme-sky', 'theme-midnight', 'light-mode');
     
-    // インラインスタイルのクリア（カスタムカラー用）
     const customStyleEl = document.getElementById('custom-theme-styles');
     if (customStyleEl) customStyleEl.remove();
     
-    // アイコンのリセット
     IconThemeManager.resetIcons();
 
     if (customThemeObj) {
-        // ユーザー定義テーマの適用
         const style = document.createElement('style');
         style.id = 'custom-theme-styles';
         let css = 'body { ';
@@ -91,7 +91,6 @@ function applyTheme(themeName, customThemeObj = null) {
         style.textContent = css;
         document.head.appendChild(style);
 
-        // アイコンの上書き
         if (customThemeObj.icons) {
             IconThemeManager.overrideIcons(customThemeObj.icons);
         }
@@ -99,7 +98,6 @@ function applyTheme(themeName, customThemeObj = null) {
         localStorage.setItem('app-theme', 'custom-' + customThemeObj.id);
         localStorage.setItem('custom-theme-data', JSON.stringify(customThemeObj));
     } else {
-        // プリセットテーマの適用
         const lightThemes = ['snow', 'sakura', 'amber', 'sky'];
         if (lightThemes.includes(themeName)) {
             document.body.classList.add('light-mode');
@@ -113,17 +111,14 @@ function applyTheme(themeName, customThemeObj = null) {
         localStorage.removeItem('custom-theme-data');
     }
 
-    // 画面の更新
     if (typeof renderHomeContent === 'function' && isHomeActive) {
         renderHomeContent();
     } else if (typeof currentPath !== 'undefined' && currentPath) {
         window.api.sendCommand(`LIST|${currentPath}`);
     }
 
-    // ウインドウ操作バー（Window Controls Overlay）のカラー同期
     setTimeout(() => {
         try {
-            // 壁紙モードが有効な場合は壁紙の色抽出処理へバイパス（ただし、壁紙選択ウィンドウ自身は除く）
             const globalWallpaperActive = localStorage.getItem('settings-global-wallpaper-active') === 'true';
             const isWallpaperSelectWindow = document.body.classList.contains('wallpaper-gallery-mode');
             if (globalWallpaperActive && !isWallpaperSelectWindow) {
@@ -142,18 +137,15 @@ function applyTheme(themeName, customThemeObj = null) {
             }
 
             const computedStyle = getComputedStyle(document.body);
-            // ツールバーの背景色、無ければメイン背景色を取得（トリム処理を含む）
             let bgColor = (computedStyle.getPropertyValue('--bg-toolbar') || 
                            computedStyle.getPropertyValue('--bg-main') || 
                            '#1e1e1e').trim();
             
-            // rgba形式の透明度ブレンドや特殊文字が入る場合のフォールバック
             if (bgColor.startsWith('rgba') || bgColor === 'transparent' || !bgColor) {
                 bgColor = (computedStyle.getPropertyValue('--bg-main') || '#1e1e1e').trim();
             }
 
-            // 色文字列からRGB値を解析
-            let r = 30, g = 30, b = 30; // デフォルトは暗い色
+            let r = 30, g = 30, b = 30;
             const cleanColor = bgColor.replace(/\s+/g, '').toLowerCase();
             
             if (cleanColor.startsWith('#')) {
@@ -176,27 +168,24 @@ function applyTheme(themeName, customThemeObj = null) {
                 }
             }
 
-            // HSPカラーモデルの輝度計算式を用いて明るさを判定
             const brightness = Math.sqrt(
                 r * r * 0.299 +
                 g * g * 0.587 +
                 b * b * 0.114
             );
 
-            // 輝度が一定基準値（130）を超えて明るい（ライト背景）場合、記号の色をダークカラーにする
             const symbolColor = brightness > 130 ? '#333333' : '#ffffff';
 
-            // メインプロセスへ通知してOS操作ボタン群を即座に再描画
             if (window.api && typeof window.api.send === 'function') {
                 window.api.send('UPDATE_TITLE_BAR_OVERLAY', { color: bgColor, symbolColor: symbolColor });
             }
         } catch (err) {
             console.error('Failed to sync title bar overlay dynamically:', err);
         }
-    }, 50); // DOMへのCSS変数伝播を保証するため50ms遅延
+    }, 50);
 }
 
-// 壁紙の画像から色を抽出し、タイトルバーおよびアプリテーマカラーを調和させる
+// 壁紙の画像から色を抽出し、タイトルバーおよびアプリのテーマカラーに調和させる
 function extractColorFromWallpaper(url) {
     if (!url) return;
     
@@ -210,14 +199,12 @@ function extractColorFromWallpaper(url) {
             canvas.height = 10;
             const ctx = canvas.getContext('2d');
             
-            // 操作バーが配置される「画像の最上部10%」の領域を縮小描画
-            // これにより、タイトルバーが壁紙の上部に完全に溶け込みます
             ctx.drawImage(img, 0, 0, img.width, img.height * 0.1, 0, 0, 10, 10);
             
             const imgData = ctx.getImageData(0, 0, 10, 10).data;
             let rSum = 0, gSum = 0, bSum = 0, count = 0;
             for (let i = 0; i < imgData.length; i += 4) {
-                if (imgData[i+3] > 50) { // アルファ値が一定以上のピクセルのみ抽出
+                if (imgData[i+3] > 50) {
                     rSum += imgData[i];
                     gSum += imgData[i+1];
                     bSum += imgData[i+2];
@@ -231,25 +218,19 @@ function extractColorFromWallpaper(url) {
             const g = Math.round(gSum / count);
             const b = Math.round(bSum / count);
             
-            // HSPカラーモデルの輝度計算式
             const brightness = Math.sqrt(
                 r * r * 0.299 +
                 g * g * 0.587 +
                 b * b * 0.114
             );
             
-            // 輝度が明るい場合はダークグレー、暗い場合はホワイトの操作記号
             const symbolColor = brightness > 130 ? '#333333' : '#ffffff';
-            
-            // 16進数カラーコードに変換
             const hexColor = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
             
-            // メインプロセスへ通知してOS操作ボタン群を完全に同化させる
             if (window.api && typeof window.api.send === 'function') {
                 window.api.send('UPDATE_TITLE_BAR_OVERLAY', { color: hexColor, symbolColor: symbolColor });
             }
 
-            // アプリケーションのアクセントカラーも壁紙と同調させて調和させる
             document.documentElement.style.setProperty('--accent-color', hexColor);
             
             console.log(`Wallpaper top 10% average color extracted: ${hexColor} (Brightness: ${brightness})`);

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "filelist.h"
 
-// --- FileList の初期化 ---
+// FileList構造体を初期化し、空のリストを生成する
 FileList filelist_create(void)
 {
     FileList list;
@@ -13,8 +13,7 @@ FileList filelist_create(void)
     return list;
 }
 
-// --- 指定パスのファイル一覧を取得して list に格納 ---
-// 戻り値：成功した件数、失敗時 -1
+// 指定パスのファイル一覧を取得してリストに格納する。戻り値は取得件数、またはエラーコード
 int filelist_fetch(FileList *list, const char *path_utf8)
 {
     wchar_t wpath[MAX_PATH];
@@ -29,7 +28,7 @@ int filelist_fetch(FileList *list, const char *path_utf8)
     if (hFind == INVALID_HANDLE_VALUE)
     {
         DWORD err = GetLastError();
-        if (err == ERROR_ACCESS_DENIED) return -5; // 5 = Access Denied
+        if (err == ERROR_ACCESS_DENIED) return -5;
         return -1;
     }
 
@@ -40,7 +39,6 @@ int filelist_fetch(FileList *list, const char *path_utf8)
         if (wcscmp(findData.cFileName, L".") == 0 || wcscmp(findData.cFileName, L"..") == 0)
             continue;
 
-        // 容量が足りなければ2倍に拡張
         if (list->count >= list->capacity)
         {
             int new_cap = list->capacity * 2;
@@ -58,7 +56,6 @@ int filelist_fetch(FileList *list, const char *path_utf8)
         e->created_at = findData.ftCreationTime;
         e->updated_at = findData.ftLastWriteTime;
 
-        // 拡張子を抽出
         const wchar_t *dot = wcsrchr(findData.cFileName, L'.');
         if (dot && !(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
         {
@@ -89,7 +86,7 @@ int filelist_fetch(FileList *list, const char *path_utf8)
     return list->count;
 }
 
-// --- FileList の解放 ---
+// FileList構造体で使用しているメモリ領域を解放する
 void filelist_free(FileList *list)
 {
     free(list->entries);

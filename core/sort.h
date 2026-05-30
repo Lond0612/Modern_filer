@@ -3,7 +3,6 @@
 
 #include "filelist.h"
 
-// --- ソートキー ---
 typedef enum
 {
     SORT_NAME,
@@ -13,20 +12,19 @@ typedef enum
     SORT_SIZE,
 } SortKey;
 
-// --- ソート順 ---
 typedef enum
 {
     SORT_ASC,
     SORT_DESC,
 } SortOrder;
 
-// ソート設定をまとめた構造体（グローバル変数を使わずに渡す）
 typedef struct
 {
     SortKey key;
     SortOrder order;
 } SortContext;
 
+// 与えられたリストを指定のコンテキスト（ソートキーと順序）に従って並べ替える
 void filelist_sort(FileList *list, SortContext ctx);
 
 #endif // SORT_H

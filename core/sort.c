@@ -2,10 +2,9 @@
 #include <stdlib.h>
 #include "sort.h"
 
-// --- qsort コールバック用のスレッドローカルコンテキスト ---
-// （同一スレッド内での使用を前提とする）
 static _Thread_local SortContext s_ctx;
 
+// 2つのFILETIME構造体の時刻の前後を比較する
 static int compare_filetime(const FILETIME *a, const FILETIME *b)
 {
     if (a->dwHighDateTime != b->dwHighDateTime)
@@ -15,20 +14,19 @@ static int compare_filetime(const FILETIME *a, const FILETIME *b)
     return 0;
 }
 
+// 2つのファイルエントリの並び順を比較する（ディレクトリ優先、その後ソートキーに応じた比較を行う）
 static int file_entry_compare(const void *a, const void *b)
 {
     const FileEntry *ea = (const FileEntry *)a;
     const FileEntry *eb = (const FileEntry *)b;
     int result = 0;
 
-    // --- 1. ディレクトリを優先して上に表示するロジック ---
     int a_is_dir = (ea->attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
     int b_is_dir = (eb->attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
-    if (a_is_dir && !b_is_dir) return -1; // aがディレクトリなら上へ
-    if (!a_is_dir && b_is_dir) return 1;  // bがディレクトリなら下へ
+    if (a_is_dir && !b_is_dir) return -1;
+    if (!a_is_dir && b_is_dir) return 1;
 
-    // --- 2. 同じカテゴリ（両方フォルダ or 両方ファイル）内でのソート ---
     switch (s_ctx.key)
     {
     case SORT_NAME:
@@ -54,7 +52,7 @@ static int file_entry_compare(const void *a, const void *b)
     return (s_ctx.order == SORT_ASC) ? result : -result;
 }
 
-// --- ソート実行 ---
+// 指定されたソート条件（キーと昇順/降順）に従ってファイルリストをソートする
 void filelist_sort(FileList *list, SortContext ctx)
 {
     s_ctx = ctx;

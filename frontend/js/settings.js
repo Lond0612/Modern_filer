@@ -1,4 +1,5 @@
 const SettingsManager = {
+    // 設定マネージャーを初期化する
     async init() {
         this.cacheDOM();
         this.bindEvents();
@@ -6,6 +7,7 @@ const SettingsManager = {
         await this.loadSettings();
     },
 
+    // DOM要素をキャッシュする
     cacheDOM() {
         this.screen = document.getElementById('settings-screen');
         this.openBtn = document.getElementById('btn-settings');
@@ -13,15 +15,12 @@ const SettingsManager = {
         this.tabBtns = document.querySelectorAll('.settings-tab-btn');
         this.tabContents = document.querySelectorAll('.settings-tab-content');
         
-        // General
         this.windowPreviewToggle = document.getElementById('toggle-window-preview');
         this.nativePropertiesToggle = document.getElementById('toggle-native-properties');
 
-        // Theme
         this.themeOptions = document.querySelectorAll('.theme-option');
         this.highContrastToggle = document.getElementById('toggle-high-contrast');
         
-        // Contents
         this.fontSizeSlider = document.getElementById('font-size-slider');
         this.fontSizeValue = document.getElementById('font-size-value');
 
@@ -29,18 +28,15 @@ const SettingsManager = {
         this.zoomValue = document.getElementById('zoom-value');
         this.appContainer = document.querySelector('.app-container');
 
-        // User Themes
         this.userThemesContainer = document.getElementById('user-themes-container');
         this.openThemesFolderBtn = document.getElementById('btn-open-themes-folder');
         this.refreshThemesBtn = document.getElementById('btn-refresh-themes');
 
-        // Customization
         this.newExtLabelInput = document.getElementById('new-ext-label');
         this.newExtValueInput = document.getElementById('new-ext-value');
         this.addExtBtn = document.getElementById('btn-add-extension');
         this.extListContainer = document.getElementById('custom-extension-list');
 
-        // Wallpaper
         this.globalWallpaperMode = document.getElementById('global-wallpaper-mode');
         this.btnSelectGlobalWallpaper = document.getElementById('btn-select-global-wallpaper');
         this.btnClearGlobalWallpaper = document.getElementById('btn-clear-global-wallpaper');
@@ -50,16 +46,15 @@ const SettingsManager = {
         this.wallpaperOpacityValue = document.getElementById('wallpaper-opacity-value');
         this.wallpaperDropzone = document.getElementById('wallpaper-dropzone');
 
-        // Resets
         this.resetFontSizeBtn = document.getElementById('reset-font-size');
         this.resetZoomBtn = document.getElementById('reset-zoom');
         this.resetWallpaperOpacityBtn = document.getElementById('reset-wallpaper-opacity');
 
-        // Shortcuts Search
         this.shortcutSearchInput = document.getElementById('shortcut-search-input');
         this.shortcutTable = document.querySelector('.shortcut-list');
     },
 
+    // スライダーの進捗表示（背景色）を更新する
     updateSliderProgress(slider) {
         if (!slider) return;
         const min = parseFloat(slider.min) || 0;
@@ -69,6 +64,7 @@ const SettingsManager = {
         slider.style.setProperty('--slider-progress', percent + '%');
     },
 
+    // ショートカットキーの表示スタイルを整形する
     formatShortcutKeys() {
         document.querySelectorAll('.shortcut-key').forEach(el => {
             const rawText = el.textContent;
@@ -88,8 +84,8 @@ const SettingsManager = {
         });
     },
 
+    // 設定画面のイベントリスナーを登録する
     bindEvents() {
-        // Open
         if (this.openBtn) {
             this.openBtn.onclick = () => {
                 const activeTab = document.querySelector('.settings-tab-btn.active');
@@ -99,12 +95,10 @@ const SettingsManager = {
             };
         }
 
-        // Tab switching
         this.tabBtns.forEach(btn => {
             btn.onclick = () => this.switchTab(btn.dataset.tab);
         });
 
-        // Close
         if (this.closeBtn) {
             this.closeBtn.onclick = () => {
                 this.screen.style.display = 'none';
@@ -112,7 +106,6 @@ const SettingsManager = {
             };
         }
 
-        // Close on overlay click
         if (this.screen) {
             this.screen.onclick = (e) => {
                 if (e.target === this.screen) {
@@ -122,7 +115,6 @@ const SettingsManager = {
             };
         }
 
-        // Theme Presets
         this.themeOptions.forEach(opt => {
             opt.onclick = () => {
                 const theme = opt.dataset.theme;
@@ -130,7 +122,6 @@ const SettingsManager = {
             };
         });
 
-        // Font Size
         if (this.fontSizeSlider) {
             const setFontSize = (size) => {
                 this.fontSizeSlider.value = size;
@@ -148,9 +139,6 @@ const SettingsManager = {
             }
         }
 
-
-
-        // Zoom
         if (this.zoomSlider) {
             const setZoom = (zoom) => {
                 this.zoomSlider.value = zoom;
@@ -168,7 +156,6 @@ const SettingsManager = {
             }
         }
 
-        // High Contrast
         if (this.highContrastToggle) {
             this.highContrastToggle.onchange = () => {
                 const enabled = this.highContrastToggle.checked;
@@ -177,7 +164,6 @@ const SettingsManager = {
             };
         }
 
-        // Window Preview
         if (this.windowPreviewToggle) {
             this.windowPreviewToggle.onchange = () => {
                 const enabled = this.windowPreviewToggle.checked;
@@ -185,7 +171,6 @@ const SettingsManager = {
             };
         }
 
-        // Native Properties
         if (this.nativePropertiesToggle) {
             this.nativePropertiesToggle.onchange = () => {
                 const enabled = this.nativePropertiesToggle.checked;
@@ -193,18 +178,15 @@ const SettingsManager = {
             };
         }
 
-        // Open Themes Folder
         if (this.openThemesFolderBtn) {
             this.openThemesFolderBtn.onclick = () => {
                 window.api.invoke('OPEN_THEMES_FOLDER');
             };
         }
 
-        // Refresh Themes
         if (this.refreshThemesBtn) {
             this.refreshThemesBtn.onclick = () => {
                 this.loadUserThemes();
-                // ボタンを回転させるアニメーション
                 const svg = this.refreshThemesBtn.querySelector('svg');
                 if (svg) {
                     svg.style.transition = 'transform 0.5s ease';
@@ -217,12 +199,10 @@ const SettingsManager = {
             };
         }
 
-        // Add Extension
         if (this.addExtBtn) {
             this.addExtBtn.onclick = () => this.addExtension();
         }
 
-        // ウィンドウ間の設定リアルタイム同期
         let storageTimeout;
         window.addEventListener('storage', (e) => {
             const syncKeys = [
@@ -247,7 +227,6 @@ const SettingsManager = {
             }
         });
 
-        // Shortcuts Search Filter
         if (this.shortcutSearchInput && this.shortcutTable) {
             const tableBody = this.shortcutTable.querySelector('tbody');
             this.shortcutSearchInput.oninput = () => {
@@ -266,13 +245,11 @@ const SettingsManager = {
                     }
                 });
 
-                // Remove existing "No results" row if present
                 const existingNoResults = tableBody.querySelector('.no-results-row');
                 if (existingNoResults) {
                     existingNoResults.remove();
                 }
 
-                // If no visible rows, add a beautiful premium placeholder row
                 if (visibleCount === 0) {
                     const noResultsRow = document.createElement('tr');
                     noResultsRow.className = 'no-results-row';
@@ -286,17 +263,16 @@ const SettingsManager = {
             };
         }
 
-        // Wallpaper events
         this.bindWallpaperEvents();
     },
 
+    // 新規作成用のカスタム拡張子を追加する
     addExtension() {
         const label = this.newExtLabelInput.value.trim();
         let ext = this.newExtValueInput.value.trim();
 
         if (!label || !ext) return;
 
-        // 拡張子のドットを補完
         if (!ext.startsWith('.')) ext = '.' + ext;
 
         const newExt = {
@@ -315,6 +291,7 @@ const SettingsManager = {
         this.notifyChange();
     },
 
+    // カスタム拡張子を削除する
     removeExtension(id) {
         const list = this.getCustomExtensions();
         const filtered = list.filter(item => item.id !== id);
@@ -323,12 +300,14 @@ const SettingsManager = {
         this.notifyChange();
     },
 
+    // カスタム拡張子のドラッグ開始イベントを処理する
     handleExtDragStart(e, id) {
         e.dataTransfer.setData('text/plain', id);
         e.target.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
     },
 
+    // カスタム拡張子のドラッグオーバーイベントを処理する
     handleExtDragOver(e) {
         e.preventDefault();
         const item = e.target.closest('.extension-item');
@@ -345,6 +324,7 @@ const SettingsManager = {
         }
     },
 
+    // カスタム拡張子のドラッグリーブイベントを処理する
     handleExtDragLeave(e) {
         const item = e.target.closest('.extension-item');
         if (item) {
@@ -352,6 +332,7 @@ const SettingsManager = {
         }
     },
 
+    // カスタム拡張子のドロップイベントを処理する
     handleExtDrop(e, targetId) {
         e.preventDefault();
         const draggedId = e.dataTransfer.getData('text/plain');
@@ -378,6 +359,7 @@ const SettingsManager = {
         this.notifyChange();
     },
 
+    // 保存されているカスタム拡張子リストを取得する
     getCustomExtensions() {
         const data = localStorage.getItem('settings-custom-new-files');
         return data ? JSON.parse(data) : [
@@ -385,10 +367,12 @@ const SettingsManager = {
         ];
     },
 
+    // カスタム拡張子リストを保存する
     saveCustomExtensions(list) {
         localStorage.setItem('settings-custom-new-files', JSON.stringify(list));
     },
 
+    // カスタマイズタブのコンテンツを描画する
     renderCustomizationTab() {
         if (!this.extListContainer) return;
 
@@ -412,7 +396,6 @@ const SettingsManager = {
                 </button>
             `;
             
-            // D&D Events
             div.ondragstart = (e) => this.handleExtDragStart(e, item.id);
             div.ondragover = (e) => this.handleExtDragOver(e);
             div.ondragleave = (e) => this.handleExtDragLeave(e);
@@ -428,11 +411,10 @@ const SettingsManager = {
         });
     },
 
+    // カスタム拡張子の変更を通知・同期する
     notifyChange() {
-        // storageイベントを発火させるために値を更新（別ウィンドウ用）
         localStorage.setItem('settings-custom-new-files-updated', Date.now());
         
-        // 同一ウィンドウ内のメニューを即座に更新
         if (typeof window.updateNewFileMenus === 'function') {
             window.updateNewFileMenus();
         } else if (typeof updateNewFileMenus === 'function') {
@@ -440,6 +422,7 @@ const SettingsManager = {
         }
     },
 
+    // 設定画面の表示タブを切り替える
     switchTab(tabId) {
         this.tabBtns.forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tab === tabId);
@@ -453,6 +436,7 @@ const SettingsManager = {
         }
     },
 
+    // プリセットテーマを適用する
     applyThemePreset(theme) {
         document.body.classList.remove('theme-deepblue', 'theme-khaki', 'theme-sakura', 'theme-amber', 'theme-sky', 'theme-midnight', 'light-mode');
         this.themeOptions.forEach(opt => opt.classList.remove('active'));
@@ -472,14 +456,12 @@ const SettingsManager = {
             localStorage.setItem('isDarkMode', 'true');
         }
         localStorage.setItem('app-theme', theme);
-        localStorage.removeItem('custom-theme-data'); // プリセット時はカスタムデータを消す
+        localStorage.removeItem('custom-theme-data');
         
-        // アイコンのリセットが必要な場合は applyTheme (js/theme.js) を呼ぶのが確実
         if (typeof applyTheme === 'function') {
             applyTheme(theme);
         }
         
-        // Re-render
         if (typeof renderHomeContent === 'function' && isHomeActive) {
             renderHomeContent();
         } else if (typeof currentPath !== 'undefined' && currentPath) {
@@ -487,17 +469,18 @@ const SettingsManager = {
         }
     },
 
+    // テーマ設定の選択表示を更新する
     updateThemeActive(theme) {
         this.themeOptions.forEach(opt => {
             opt.classList.toggle('active', opt.dataset.theme === theme);
         });
-        // ユーザーテーマの選択状態も更新
         document.querySelectorAll('.user-theme-option').forEach(opt => {
             opt.classList.toggle('active', 'custom-' + opt.dataset.themeId === theme);
         });
         localStorage.setItem('app-theme', theme);
     },
 
+    // ユーザー作成テーマ一覧を読み込む
     async loadUserThemes() {
         if (!this.userThemesContainer) return;
         
@@ -518,7 +501,6 @@ const SettingsManager = {
             opt.dataset.themeId = theme.id;
             opt.title = theme.name || theme.id;
             
-            // プレビュー表示の簡素化（斜め分割）
             const bg = theme.colors ? (theme.colors['--bg-main'] || '#1e1e1e') : '#1e1e1e';
             const accent = theme.colors ? (theme.colors['--accent-color'] || '#007acc') : '#007acc';
             
@@ -535,8 +517,8 @@ const SettingsManager = {
         });
     },
 
+    // ユーザー作成テーマを適用する
     applyCustomTheme(themeObj) {
-        // 既存の選択解除
         this.themeOptions.forEach(opt => opt.classList.remove('active'));
         document.querySelectorAll('.user-theme-option').forEach(opt => {
             opt.classList.toggle('active', opt.dataset.themeId === themeObj.id);
@@ -547,12 +529,11 @@ const SettingsManager = {
         }
     },
 
+    // 設定情報をロードし、画面や表示倍率、壁紙等を初期適用する
     async loadSettings() {
-        // Dark Mode state
         const isDark = localStorage.getItem('isDarkMode') !== 'false';
         if (!isDark) document.body.classList.add('light-mode');
 
-        // Theme Preset
         const theme = localStorage.getItem('app-theme') || (isDark ? 'default' : 'snow');
         
         if (theme.startsWith('custom-')) {
@@ -574,7 +555,6 @@ const SettingsManager = {
             this.applyThemePreset(theme);
         }
 
-        // Font Size
         const fontSize = localStorage.getItem('settings-font-size') || '13';
         if (this.fontSizeSlider) {
             this.fontSizeSlider.value = fontSize;
@@ -583,9 +563,6 @@ const SettingsManager = {
             this.updateSliderProgress(this.fontSizeSlider);
         }
 
-
-
-        // Zoom
         const zoom = localStorage.getItem('settings-zoom') || '100';
         if (this.zoomSlider) {
             this.zoomSlider.value = zoom;
@@ -594,39 +571,33 @@ const SettingsManager = {
             this.updateSliderProgress(this.zoomSlider);
         }
 
-        // High Contrast
         const highContrastEnabled = localStorage.getItem('settings-high-contrast') === 'true';
         if (this.highContrastToggle) {
             this.highContrastToggle.checked = highContrastEnabled;
             this.applyHighContrast(highContrastEnabled);
         }
 
-        // Window Preview
         const windowPreviewEnabled = localStorage.getItem('settings-window-preview') === 'true';
         if (this.windowPreviewToggle) {
             this.windowPreviewToggle.checked = windowPreviewEnabled;
         }
 
-        // Native Properties
         const nativePropertiesEnabled = localStorage.getItem('settings-native-properties') === 'true';
         if (this.nativePropertiesToggle) {
             this.nativePropertiesToggle.checked = nativePropertiesEnabled;
         }
 
-        // User Themes
         this.loadUserThemes();
-        
-        // Customization
         this.renderCustomizationTab();
-
-        // Wallpapers
         await this.loadWallpapers();
     },
 
+    // ハイコントラストモードの適用を切り替える
     applyHighContrast(enabled) {
         document.body.classList.toggle('high-contrast', enabled);
     },
 
+    // アプリケーション全体のズーム倍率を適用・調整する
     applyZoom(zoomPercent) {
         const factor = zoomPercent / 100;
         if (this.appContainer) {
@@ -634,21 +605,18 @@ const SettingsManager = {
             this.appContainer.style.height = (100 / factor) + 'vh';
             this.appContainer.style.width = (100 / factor) + 'vw';
 
-            // 表示倍率（Zoom）の変更時に、ネイティブのウィンドウ操作ボタン（最小化・最大化・閉じる）が
-            // 下のツールバーに重なったりタブと被ったりするのを防ぐため、タブバーの高さと右余白を動的に補正します。
             const tabBar = document.getElementById('tab-bar');
             if (tabBar) {
-                // 画面上でのタブバーの物理的な高さを常に40px以上に保つ
                 const adjustedHeight = Math.max(40, 40 / factor);
                 tabBar.style.height = adjustedHeight + 'px';
 
-                // 右側の余白もズームに応じて動的に調整（物理的な余白を常に140px以上に保つ）
                 const adjustedPaddingRight = Math.max(140, 140 / factor);
                 tabBar.style.paddingRight = adjustedPaddingRight + 'px';
             }
         }
     },
 
+    // 壁紙情報（履歴）をロードして適用・サムネイル描画を行う
     async loadWallpapers() {
         const globalActive = localStorage.getItem('settings-global-wallpaper-active') === 'true';
         const globalFit = localStorage.getItem('settings-global-wallpaper-fit') || 'cover';
@@ -669,7 +637,6 @@ const SettingsManager = {
             this.updateSliderProgress(this.wallpaperOpacitySlider);
         }
 
-        // Fetch the 5 wallpapers history list via IPC
         let history = [];
         try {
             history = await window.api.invoke('GET_WALLPAPERS');
@@ -677,17 +644,14 @@ const SettingsManager = {
             console.error('Failed to get wallpapers history:', e.message);
         }
 
-        // If no activeId is selected but we have history, default to the first (newest) item
         if (!activeId && history.length > 0) {
             activeId = history[0].id;
             localStorage.setItem('settings-active-wallpaper-id', activeId);
         }
 
-        // Dynamically draw the 5 thumbnail cards in wallpaperHistoryList
         if (this.wallpaperHistoryList) {
             this.wallpaperHistoryList.innerHTML = '';
             
-            // Draw up to 5 slots
             for (let i = 0; i < 5; i++) {
                 const card = document.createElement('div');
                 card.className = 'wallpaper-option';
@@ -696,7 +660,6 @@ const SettingsManager = {
                 preview.className = 'wallpaper-preview';
                 
                 if (history[i]) {
-                    // This slot has a wallpaper
                     const img = document.createElement('img');
                     img.src = history[i].dataUrl;
                     img.alt = `Wallpaper ${i + 1}`;
@@ -708,7 +671,6 @@ const SettingsManager = {
                         card.classList.add('active');
                     }
                     
-                    // Click to select this wallpaper
                     card.onclick = (e) => {
                         const targetId = e.currentTarget.dataset.wallpaperId;
                         localStorage.setItem('settings-global-wallpaper-active', 'true');
@@ -716,9 +678,7 @@ const SettingsManager = {
                         SettingsManager.loadWallpapers();
                     };
                 } else {
-                    // Empty slot
                     card.classList.add('empty-slot');
-                    // Add dashed/dotted placeholder with picture SVG icon
                     preview.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
                 }
                 
@@ -727,18 +687,15 @@ const SettingsManager = {
             }
         }
 
-        // Apply background styling to document.body
         const activeItem = history.find(item => item.id === activeId);
         if (globalActive && activeItem) {
             document.body.setAttribute('data-wallpaper-active', 'true');
             document.documentElement.style.setProperty('--global-wallpaper-url', `url("${activeItem.dataUrl}")`);
             document.documentElement.style.setProperty('--global-wallpaper-fit', globalFit);
             document.documentElement.style.setProperty('--global-glass-opacity', `${globalOpacity}%`);
-            // Calc proportional settings glass opacity (+10%, max 95%)
             const settingsOpacity = Math.min(95, parseInt(globalOpacity) + 10);
             document.documentElement.style.setProperty('--global-glass-opacity-settings', `${settingsOpacity}%`);
 
-            // 壁紙の画像から色を自動で抽出し、操作バーおよびアプリのテーマカラーをシームレスに同期
             if (typeof extractColorFromWallpaper === 'function') {
                 extractColorFromWallpaper(activeItem.dataUrl);
             }
@@ -749,7 +706,6 @@ const SettingsManager = {
             document.documentElement.style.removeProperty('--global-glass-opacity');
             document.documentElement.style.removeProperty('--global-glass-opacity-settings');
 
-            // 壁紙が無効になった場合は、現在のテーマ背景を解析して通常通り同期
             if (typeof applyTheme === 'function') {
                 const currentTheme = localStorage.getItem('app-theme') || 'default';
                 const customData = localStorage.getItem('custom-theme-data');
@@ -758,6 +714,7 @@ const SettingsManager = {
         }
     },
 
+    // 壁紙関連の設定項目イベントを登録する
     bindWallpaperEvents() {
         if (this.globalWallpaperMode) {
             this.globalWallpaperMode.onchange = () => {
@@ -788,7 +745,7 @@ const SettingsManager = {
         if (this.btnClearGlobalWallpaper) {
             this.btnClearGlobalWallpaper.onclick = async () => {
                 try {
-                    const history = await window.api.invoke('CLEAR_WALLPAPER');
+                    await window.api.invoke('CLEAR_WALLPAPER');
                     localStorage.setItem('settings-global-wallpaper-active', 'false');
                     localStorage.removeItem('settings-active-wallpaper-id');
                     await SettingsManager.loadWallpapers();
@@ -817,19 +774,15 @@ const SettingsManager = {
             }
         }
 
-        // グローバルなデフォルトのD&D動作を防止（ナビゲーション防止等）
         window.addEventListener('dragover', (e) => {
             e.preventDefault();
         }, false);
         window.addEventListener('drop', (e) => {
             e.preventDefault();
         }, false);
-
-
     }
 };
 
-// 初期化
 document.addEventListener('DOMContentLoaded', () => {
     SettingsManager.init();
 });

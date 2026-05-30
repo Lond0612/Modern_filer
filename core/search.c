@@ -7,7 +7,7 @@
 #include <wchar.h>
 #include <wctype.h>
 
-// --- SearchQuery の初期化 ---
+// SearchQuery構造体を初期化し、検索条件を設定する
 SearchQuery searchquery_create(const wchar_t *keyword, SearchMatchType match_type,
                                int include_dirs, int case_sensitive)
 {
@@ -20,12 +20,11 @@ SearchQuery searchquery_create(const wchar_t *keyword, SearchMatchType match_typ
     return q;
 }
 
-// --- 文字列一致判定ヘルパー ---
+// ファイル名が検索クエリ（キーワードやマッチ方法）に一致するか判定する
 static int match_keyword(const wchar_t *target, const SearchQuery *query)
 {
     const wchar_t *kw = query->keyword;
 
-    // case_insensitive の wcsstr は標準にないので自前で処理
     wchar_t t_lower[MAX_PATH], k_lower[MAX_PATH];
     if (!query->case_sensitive)
     {
@@ -58,7 +57,7 @@ static int match_keyword(const wchar_t *target, const SearchQuery *query)
     return 0;
 }
 
-// --- FileList から条件に合うエントリだけを抽出して新しい FileList として返す ---
+// ファイルリストから検索条件に合致する項目のみを抽出した新しいファイルリストを生成する
 FileList filelist_search(FileList *list, const SearchQuery *query)
 {
     FileList result = filelist_create();
@@ -67,14 +66,12 @@ FileList filelist_search(FileList *list, const SearchQuery *query)
     {
         FileEntry *e = &list->entries[i];
 
-        // ディレクトリを除外する設定の場合はスキップ
         if (!query->include_dirs && (e->attributes & FILE_ATTRIBUTE_DIRECTORY))
             continue;
 
         if (!match_keyword(e->name, query))
             continue;
 
-        // 容量が足りなければ拡張
         if (result.count >= result.capacity)
         {
             result.capacity *= 2;

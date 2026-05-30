@@ -1,7 +1,4 @@
-// ---------------------------------------------------------------------------
-// 状態変数・タブ管理
-// ---------------------------------------------------------------------------
-
+// タブの状態と情報を管理するクラス
 class Tab {
     constructor(id, path = 'HOME', isPinned = false) {
         this.id = id;
@@ -30,8 +27,8 @@ let contextTabId = null;
 let recentlyClosedTabs = [];
 const tabContextMenu = document.getElementById('tab-context-menu');
 
+// ピン留めされたタブの状態を保存する
 function saveTabsState() {
-    // ピン留めされたタブのみを保存対象とする
     const pinnedTabs = tabs.filter(t => t.isPinned).map(t => ({
         id: t.id,
         path: t.path,
@@ -40,6 +37,7 @@ function saveTabsState() {
     localStorage.setItem('pinnedTabsState', JSON.stringify(pinnedTabs));
 }
 
+// ピン留めされたタブの状態を復元する
 function loadTabsState() {
     const saved = localStorage.getItem('pinnedTabsState');
     if (saved) {
@@ -56,12 +54,12 @@ function loadTabsState() {
     return false;
 }
 
+// 現在アクティブなタブオブジェクトを取得する
 function getActiveTab() {
     return tabs.find(t => t.id === activeTabId);
 }
 
-// 互換性のためのゲッター/セッター（既存コードの修正を最小限にするため、
-// 内部で activeTab のプロパティを参照するようにする）
+// 互換性のためのゲッター/セッター（既存コードの修正を最小限にするため内部で activeTab のプロパティを参照するようにする）
 // ※ 最終的にはこれらもリファクタリングして getActiveTab().path 等に置き換えるのが望ましい
 
 function getCurrentPath() { return getActiveTab()?.path || ''; }
@@ -71,38 +69,31 @@ function setIsHomeActive(val) { if (getActiveTab()) getActiveTab().isHomeActive 
 function getHistoryBack() { return getActiveTab()?.historyBack || []; }
 function getHistoryForward() { return getActiveTab()?.historyForward || []; }
 
-// 既存コードとの互換性のためにグローバル変数としてアクセス可能にする
 Object.defineProperty(window, 'currentPath', { get: getCurrentPath, set: setCurrentPath, configurable: true });
 Object.defineProperty(window, 'isHomeActive', { get: getIsHomeActive, set: setIsHomeActive, configurable: true });
 Object.defineProperty(window, 'historyBack', { get: getHistoryBack, configurable: true });
 Object.defineProperty(window, 'historyForward', { get: getHistoryForward, configurable: true });
 
-// 外部ショートカット管理用の公開
 Object.defineProperty(window, 'activeTabId', { get: () => activeTabId, set: (val) => activeTabId = val, configurable: true });
 Object.defineProperty(window, 'tabs', { get: () => tabs, set: (val) => tabs = val, configurable: true });
 Object.defineProperty(window, 'contextTarget', { get: () => contextTarget, set: (val) => contextTarget = val, configurable: true });
 Object.defineProperty(window, 'selectionAnchorIndex', { get: () => selectionAnchorIndex, set: (val) => selectionAnchorIndex = val, configurable: true });
 
 let recentFolders = JSON.parse(localStorage.getItem('recentFolders') || '[]');
-let pendingRename = null; // 作成直後のリネーム待ちファイル名
+let pendingRename = null;
 
-// クリップボード状態
 let clipboard = { mode: null, items: [] };
-// mode: 'copy' | 'cut'
-// items: [{ name: string, srcPath: string }]
 
-// クイックアクセス
 let quickAccessItems = JSON.parse(localStorage.getItem('quickAccessItems') || '[]').map(item => {
     if (item.path && !item.path.endsWith('\\')) item.path += '\\';
     return item;
 });
 
-// 重複や不正なデータの簡易リペア（ミュージックが重複する等の不具合対策）
+// クイックアクセスの重複や不正なデータを修復する
 function repairQuickAccess(paths) {
     if (!paths) return;
     const normalize = p => (p && !p.endsWith('\\')) ? p + '\\' : p;
-    
-    // システムパスに基づき、特定のラベルを持つアイテムのパスを強制修正
+
     let changed = false;
     quickAccessItems.forEach(item => {
         if (item.label === "デスクトップ" && item.path !== normalize(paths.desktop)) { item.path = normalize(paths.desktop); changed = true; }
@@ -123,16 +114,17 @@ let favoriteItems = JSON.parse(localStorage.getItem('favoriteItems') || '[]').ma
     if (item.path && !item.path.endsWith('\\')) item.path += '\\';
     return item;
 });
-let homeDisplayMode = localStorage.getItem('homeDisplayMode') || 'recent'; // 'recent' | 'favorite'
+let homeDisplayMode = localStorage.getItem('homeDisplayMode') || 'recent';
 let isTerminalVisible = localStorage.getItem('isTerminalVisible') !== 'false';
 
-// ナビゲーションロック
 let navigationLockUntil = 0;
 
+// ナビゲーションがロックされているか判定する
 function isNavigationLocked() {
     return Date.now() < navigationLockUntil;
 }
 
+// 指定時間ナビゲーションをロックする
 function setNavigationLock(duration = 300) {
     navigationLockUntil = Date.now() + duration;
 }
@@ -169,13 +161,14 @@ let currentSortOrder = 0;
 let currentViewMode = 'details';
 let showHiddenFiles = false;
 let showExtensions = true;
+// ターミナルの表示状態を適用する
 function applyTerminalVisibility() {
     const terminalPane = document.querySelector('.terminal-pane');
     const resizerTerminal = document.getElementById('resizer-terminal');
     const btnTerminalToggle = document.getElementById('btn-terminal-toggle');
-    
+
     if (!terminalPane || !resizerTerminal || !btnTerminalToggle) return;
-    
+
     if (isTerminalVisible) {
         terminalPane.style.display = '';
         resizerTerminal.style.display = '';
@@ -187,14 +180,10 @@ function applyTerminalVisibility() {
     }
 }
 
-// ---------------------------------------------------------------------------
-// 初期化
-// ---------------------------------------------------------------------------
+// アプリケーション起動時の初期設定を行う
 window.onload = () => {
-    // 起動時はバックエンドのREADYを待つ
     initTabs();
 
-    // ターミナル表示の初期設定とイベント紐付け
     const btnTerminalToggle = document.getElementById('btn-terminal-toggle');
     if (btnTerminalToggle) {
         btnTerminalToggle.onclick = () => {
@@ -205,12 +194,10 @@ window.onload = () => {
     }
     applyTerminalVisibility();
 
-    // ウィンドウが閉じられる瞬間に現在の状態を localStorage に保存する
     window.addEventListener('beforeunload', () => {
         localStorage.setItem('isTerminalVisible', isTerminalVisible);
     });
 
-    // 壁紙選択用ウィンドウとして開かれた場合の処理
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('selectWallpaper') === 'true') {
         if (typeof window.startWallpaperSelectionMode === 'function') {
@@ -219,28 +206,27 @@ window.onload = () => {
     }
 };
 
+// タブ状態の初期化を行う
 function initTabs() {
-    // 1. ピン留めタブを復元
     loadTabsState();
-    
-    // 2. 常に新規HOMEタブを追加してアクティブにする
+
     const urlParams = new URLSearchParams(window.location.search);
     const initialPath = urlParams.get('path') || 'HOME';
     addTab(initialPath);
 }
 
+// 新規タブを追加する
 function addTab(path = 'HOME', switchImmediately = true) {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
     const newTab = new Tab(id, path);
-    
-    // ピン留めタブの後に挿入
+
     const lastPinnedIndex = tabs.findLastIndex(t => t.isPinned);
     if (lastPinnedIndex !== -1) {
         tabs.splice(lastPinnedIndex + 1, 0, newTab);
     } else {
         tabs.push(newTab);
     }
-    
+
     if (switchImmediately) {
         switchTab(id);
     } else {
@@ -249,6 +235,7 @@ function addTab(path = 'HOME', switchImmediately = true) {
     saveTabsState();
 }
 
+// 指定したIDのタブに切り替える
 function switchTab(id) {
     const prevTab = getActiveTab();
     if (prevTab) {
@@ -264,38 +251,36 @@ function switchTab(id) {
     } else {
         showExplorerUI(tab.path);
     }
-    
+
     addressInput.value = tab.path;
     updateNavButtons();
     renderTabs();
-    
-    // アクティブなタブを視界に入れる
+
     const tabEl = document.querySelector(`.tab-item[data-id="${id}"]`);
     if (tabEl) {
         tabEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     }
-    
+
     saveTabsState();
 
-    // ターミナルの同期（カレントディレクトリの移動）
     if (tab.path && tab.path !== 'HOME') {
         window.api.sendCommand(`CD|${tab.path}`);
     }
 }
 
+// 指定したIDのタブを閉じる
 function closeTab(id, e) {
     if (e) e.stopPropagation();
-    
+
     const index = tabs.findIndex(t => t.id === id);
     if (index === -1) return;
-    
+
     const tabToClose = tabs[index];
     if (tabs.length <= 1) {
         window.close();
         return;
     }
 
-    // 閉じたタブをスタックに保存
     recentlyClosedTabs.push({ path: tabToClose.path, isPinned: tabToClose.isPinned });
     if (recentlyClosedTabs.length > 20) recentlyClosedTabs.shift();
 
@@ -311,6 +296,7 @@ function closeTab(id, e) {
     saveTabsState();
 }
 
+// 直前に閉じたタブを復元する
 function restoreRecentlyClosedTab() {
     const last = recentlyClosedTabs.pop();
     if (last) {
@@ -318,11 +304,11 @@ function restoreRecentlyClosedTab() {
     }
 }
 
+// 全てのタブを描画する
 function renderTabs() {
     const tabBar = document.getElementById('tab-bar');
     if (!tabBar) return;
 
-    // FLIP: First (現在の位置を記録)
     const oldRects = new Map();
     tabBar.querySelectorAll('.tab-item').forEach(el => {
         const id = el.dataset.id;
@@ -335,25 +321,22 @@ function renderTabs() {
         tabEl.className = `tab-item${tab.id === activeTabId ? ' active' : ''}${tab.id === draggedTabId ? ' dragging' : ''}${tab.isPinned ? ' pinned' : ''}`;
         tabEl.draggable = false;
         tabEl.dataset.id = tab.id;
-        
+
         const iconHtml = IconThemeManager.getIcon(tab.path, true);
-        
+
         tabEl.innerHTML = `
             <span class="tab-icon">${iconHtml}</span>
             <span class="tab-title">${tab.title}</span>
             <span class="tab-close" onclick="closeTab('${tab.id}', event)">&times;</span>
         `;
-        
-        // 選択は onMouseUp で処理（ドラッグと区別するため）
-        
+
         tabEl.onmousedown = (e) => handleTabMouseDown(e, tab.id);
-        
+
         tabEl.oncontextmenu = (e) => {
             e.preventDefault();
             e.stopPropagation();
             contextTabId = tab.id;
-            
-            // 表示位置の計算
+
             tabContextMenu.style.display = 'block';
             const menuWidth = tabContextMenu.offsetWidth;
             const menuHeight = tabContextMenu.offsetHeight;
@@ -366,7 +349,7 @@ function renderTabs() {
             tabContextMenu.style.left = `${x}px`;
             tabContextMenu.style.top = `${y}px`;
         };
-        
+
         tabBar.appendChild(tabEl);
     });
 
@@ -376,19 +359,16 @@ function renderTabs() {
     addBtn.onclick = () => addTab('HOME');
     tabBar.appendChild(addBtn);
 
-    // ホイールでの横スクロール対応
     tabBar.onwheel = (e) => {
         e.preventDefault();
         tabBar.scrollLeft += e.deltaY;
     };
 
-    // FLIP: Last, Invert, Play (新しい位置との差分をアニメーション)
     requestAnimationFrame(() => {
         tabBar.querySelectorAll('.tab-item').forEach(el => {
             const id = el.dataset.id;
-            
+
             if (id === draggedTabId) {
-                // ドラッグ中のタブはオフセットを直接適用
                 el.style.transition = 'none';
                 el.style.transform = `translateX(${tabDragOffsetX}px)`;
                 el.style.zIndex = '100';
@@ -400,11 +380,11 @@ function renderTabs() {
             if (oldRect) {
                 const newRect = el.getBoundingClientRect();
                 const dx = oldRect.left - newRect.left;
-                
+
                 if (dx !== 0) {
                     el.style.transition = 'none';
                     el.style.transform = `translateX(${dx}px)`;
-                    
+
                     requestAnimationFrame(() => {
                         el.style.transition = 'transform 0.3s cubic-bezier(0.2, 0, 0, 1)';
                         el.style.transform = '';
@@ -415,18 +395,16 @@ function renderTabs() {
     });
 }
 
-// ---------------------------------------------------------------------------
-// タブのカスタムドラッグ＆ドロップ
-// ---------------------------------------------------------------------------
+// タブのマウスダウンイベント（ドラッグ＆ドロップおよび閉じる処理）
 function handleTabMouseDown(e, id) {
-    if (e.button === 1) { // 中ボタンクリックでタブを閉じる
+    if (e.button === 1) {
         e.preventDefault();
         e.stopPropagation();
         closeTab(id);
         return;
     }
-    if (e.button !== 0) return; // 左クリック以外（右クリック等）は無視
-    if (e.target.closest('.tab-close')) return; 
+    if (e.button !== 0) return;
+    if (e.target.closest('.tab-close')) return;
 
     e.preventDefault();
     draggedTabId = id;
@@ -435,39 +413,37 @@ function handleTabMouseDown(e, id) {
 
     const onMouseMove = (moveEvent) => {
         if (!draggedTabId) return;
-        
+
         tabDragCurrentX = moveEvent.clientX;
         tabDragOffsetX = tabDragCurrentX - tabDragStartX;
 
         const tabBar = document.getElementById('tab-bar');
         const tabEl = tabBar.querySelector(`.tab-item[data-id="${draggedTabId}"]`);
-        
+
         if (tabEl) {
             const tabBarRect = tabBar.getBoundingClientRect();
             const offsetY = moveEvent.clientY - (tabBarRect.top + tabBarRect.height / 2);
-            const isDetached = Math.abs(offsetY) > 60; // 60px以上離れたら切り離しモード
+            const isDetached = Math.abs(offsetY) > 60;
 
             tabEl.style.transition = 'none';
             tabEl.style.zIndex = '1000';
             tabEl.classList.add('dragging');
 
             if (isDetached && tabs.length > 1) {
-                // 切り離し中
                 tabEl.classList.add('detaching');
                 tabEl.style.transform = `translate(${tabDragOffsetX}px, ${offsetY}px) scale(0.85)`;
-                return; // 切り離し中は入れ替え判定を行わない
+                return;
             } else {
                 tabEl.classList.remove('detaching');
                 tabEl.style.transform = `translateX(${tabDragOffsetX}px)`;
             }
 
-            // 他のタブとの入れ替え判定
             const tabsElements = Array.from(tabBar.querySelectorAll('.tab-item:not(.dragging)'));
             const draggedRect = tabEl.getBoundingClientRect();
             const draggedMid = draggedRect.left + draggedRect.width / 2;
 
             const srcIndex = tabs.findIndex(t => t.id === draggedTabId);
-            
+
             for (const otherEl of tabsElements) {
                 const otherId = otherEl.dataset.id;
                 const otherRect = otherEl.getBoundingClientRect();
@@ -475,7 +451,6 @@ function handleTabMouseDown(e, id) {
                 const otherIndex = tabs.findIndex(t => t.id === otherId);
 
                 if (srcIndex < otherIndex && draggedMid > otherMid) {
-                    // 右方向への入れ替え
                     const item = tabs.splice(srcIndex, 1)[0];
                     tabs.splice(otherIndex, 0, item);
                     tabDragStartX += otherRect.width + 4;
@@ -483,7 +458,6 @@ function handleTabMouseDown(e, id) {
                     renderTabs();
                     break;
                 } else if (srcIndex > otherIndex && draggedMid < otherMid) {
-                    // 左方向への入れ替え
                     const item = tabs.splice(srcIndex, 1)[0];
                     tabs.splice(otherIndex, 0, item);
                     tabDragStartX -= otherRect.width + 4;
@@ -502,8 +476,7 @@ function handleTabMouseDown(e, id) {
             const tabBarRect = tabBar.getBoundingClientRect();
             const offsetY = upEvent.clientY - (tabBarRect.top + tabBarRect.height / 2);
             const totalDragDistance = Math.sqrt(Math.pow(tabDragOffsetX, 2) + Math.pow(offsetY, 2));
-            
-            // 60px以上離れた場所で離した場合、かつタブが複数ある場合
+
             if (Math.abs(offsetY) > 60 && tabs.length > 1) {
                 const tab = tabs.find(t => t.id === draggedTabId);
                 if (tab) {
@@ -517,7 +490,6 @@ function handleTabMouseDown(e, id) {
                 }
             }
 
-            // ドラッグ距離が小さければタブ切り替え（クリック判定）
             if (totalDragDistance < 10) {
                 switchTab(id);
             }
@@ -533,11 +505,7 @@ function handleTabMouseDown(e, id) {
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
 }
-
-// ---------------------------------------------------------------------------
 // 各種ボタン・メニュー制御
-// ---------------------------------------------------------------------------
-
 btnNew.onclick = (e) => {
     if (isHomeActive) return;
     e.stopPropagation();
@@ -567,14 +535,13 @@ if (btnView) {
     };
 }
 
-// 新規作成メニューの動的生成
-window.updateNewFileMenus = function() {
+// 新規作成メニューを動的に生成する
+window.updateNewFileMenus = function () {
     const data = localStorage.getItem('settings-custom-new-files');
     const customExtensions = data ? JSON.parse(data) : [
         { id: 'default-text', label: 'テキストファイル', extension: '.txt' }
     ];
 
-    // 1. ツールバーのメニュー更新
     const newMenuEl = document.getElementById('new-menu') || (typeof newMenu !== 'undefined' ? newMenu : null);
     if (newMenuEl) {
         newMenuEl.innerHTML = `
@@ -602,7 +569,6 @@ window.updateNewFileMenus = function() {
             newMenuEl.appendChild(menuEl);
         });
 
-        // フォルダ作成のイベント付け直し
         const dirItem = newMenuEl.querySelector('[data-type="directory"]');
         if (dirItem) {
             dirItem.onclick = (e) => {
@@ -613,7 +579,6 @@ window.updateNewFileMenus = function() {
         }
     }
 
-    // 2. コンテキストメニューのサブメニュー更新
     const ctxNewSubmenu = document.querySelector('#ctx-new-empty .submenu');
     if (ctxNewSubmenu) {
         ctxNewSubmenu.innerHTML = `
@@ -639,7 +604,6 @@ window.updateNewFileMenus = function() {
             ctxNewSubmenu.appendChild(menuEl);
         });
 
-        // フォルダ作成のイベント付け直し
         const ctxDirItem = document.getElementById('ctx-new-dir');
         if (ctxDirItem) {
             ctxDirItem.onclick = (e) => {
@@ -651,9 +615,10 @@ window.updateNewFileMenus = function() {
     }
 }
 
+// 新規のファイルまたはフォルダを作成する
 function createNewItem(typeOrExt, label = '') {
     if (!currentPath) return;
-    
+
     let defaultName = '';
     let command = '';
 
@@ -661,7 +626,6 @@ function createNewItem(typeOrExt, label = '') {
         defaultName = '新しいフォルダ';
         command = 'MKDIR';
     } else {
-        // 拡張子つきファイル
         const ext = typeOrExt.startsWith('.') ? typeOrExt : '.' + typeOrExt;
         defaultName = (label || '新規ファイル') + ext;
         command = 'NEW_FILE';
@@ -672,8 +636,7 @@ function createNewItem(typeOrExt, label = '') {
     window.api.sendCommand(`${command}|${currentPath}${defaultName}`);
 }
 
-// 初期化と同期
-updateNewFileMenus(); // 即座に実行
+updateNewFileMenus();
 
 window.addEventListener('storage', (e) => {
     if (e.key === 'settings-custom-new-files' || e.key === 'settings-custom-new-files-updated') {
@@ -681,7 +644,6 @@ window.addEventListener('storage', (e) => {
     }
 });
 
-// メニュー以外をクリックしたら閉じる、ファイルリスト外をクリックしたら選択解除
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.new-btn-wrapper')) {
         newMenu.classList.remove('visible');
@@ -697,10 +659,8 @@ document.addEventListener('click', (e) => {
 btnCut.onclick = () => {
     const selected = getSelectedItems();
     if (selected.length === 0) return;
-    // 前のカット状態をクリア
     document.querySelectorAll('#file-list-body tr.cut-item, .grid-item.cut-item').forEach(r => r.classList.remove('cut-item'));
     clipboard = { mode: 'cut', items: selected };
-    // 選択行を半透明に
     selected.forEach(item => {
         const row = document.querySelector(`tr[data-name="${CSS.escape(item.name)}"], .grid-item[data-name="${CSS.escape(item.name)}"]`);
         if (row) row.classList.add('cut-item');
@@ -744,13 +704,12 @@ btnDelete.onclick = () => {
 };
 
 btnRename.onclick = () => {
-    // 選択中の先頭が1つの行に対してリネームを開始
     const selectedRows = document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected');
     if (selectedRows.length === 0) return;
     startRename(selectedRows[0]);
 };
 
-// ソートメニューのイベント
+// ソート表示メニューのチェックマークUIを更新する
 function updateSortMenuUI() {
     document.querySelectorAll('.sort-item .check-icon').forEach(icon => icon.style.opacity = '0');
     document.querySelectorAll(`.sort-item[data-sort-key="${currentSortKey}"] .check-icon`).forEach(icon => icon.style.opacity = '1');
@@ -758,7 +717,6 @@ function updateSortMenuUI() {
     document.querySelectorAll('.sort-order .check-icon').forEach(icon => icon.style.opacity = '0');
     document.querySelectorAll(`.sort-order[data-sort-order="${currentSortOrder}"] .check-icon`).forEach(icon => icon.style.opacity = '1');
 }
-// デフォルト状態（名前・昇順）のチェックマークを初期表示
 updateSortMenuUI();
 
 document.querySelectorAll('.sort-item').forEach(item => {
@@ -781,21 +739,17 @@ document.querySelectorAll('.sort-order').forEach(item => {
     };
 });
 
-
-// 表示モードの順序
 const viewModeOrder = ['compact', 'details', 'small', 'medium', 'large', 'extralarge'];
-let currentIconSize = 40; // デフォルトサイズ（中アイコン相当）
+let currentIconSize = 40;
 
-// 表示モードを適用する共通関数
+// 表示モード（詳細・グリッドなど）を適用する
 function applyViewMode(mode, customSize = null) {
     const prevMode = currentViewMode;
     currentViewMode = mode;
-    
-    // アイコンサイズの設定
+
     if (customSize) {
         currentIconSize = Math.max(24, Math.min(256, customSize));
     } else {
-        // 固定モード名からサイズを設定
         if (mode === 'small') currentIconSize = 24;
         else if (mode === 'medium') currentIconSize = 40;
         else if (mode === 'large') currentIconSize = 56;
@@ -807,7 +761,7 @@ function applyViewMode(mode, customSize = null) {
     } else {
         document.body.classList.remove('compact-mode');
     }
-    
+
     const isIconMode = !['details', 'compact'].includes(currentViewMode);
     const wasIconMode = !['details', 'compact'].includes(prevMode);
 
@@ -818,11 +772,10 @@ function applyViewMode(mode, customSize = null) {
     } else {
         fileTable.style.display = 'none';
         fileGrid.style.display = 'grid';
-        
-        // カスタムサイズが指定されているか、固定サイズか
+
         if (customSize || !['small', 'medium', 'large', 'extralarge'].includes(mode)) {
             fileGrid.className = 'grid-custom';
-            const itemWidth = Math.max(80, currentIconSize * 2.2); // 少し余裕を持たせる
+            const itemWidth = Math.max(80, currentIconSize * 2.2);
             fileGrid.style.setProperty('--grid-icon-size', `${currentIconSize}px`);
             fileGrid.style.setProperty('--grid-item-width', `${itemWidth}px`);
         } else {
@@ -830,34 +783,32 @@ function applyViewMode(mode, customSize = null) {
             fileGrid.className = `grid-size-${currentViewMode}`;
         }
     }
-    
+
     updateViewMenuUI();
 
-    // モード体系（テーブル vs グリッド）が変わった場合のみリロード
     if (isIconMode !== wasIconMode || (currentViewMode !== prevMode && !isIconMode)) {
         if (currentPath) window.api.sendCommand(`LIST|${currentPath}`);
     }
 }
 
-// マウスホイールによるズーム（Ctrl + Wheel）
+// コントロールキーを押しながらのホイールスクロールによるズーム制御
 window.addEventListener('wheel', (e) => {
     if (e.ctrlKey) {
         e.preventDefault();
-        
+
         const isIconMode = !['details', 'compact'].includes(currentViewMode);
 
-        if (e.deltaY < 0) { // 上にスクロール（拡大）
+        if (e.deltaY < 0) {
             if (currentViewMode === 'compact') {
                 applyViewMode('details');
             } else if (currentViewMode === 'details') {
                 applyViewMode('small');
             } else if (isIconMode) {
-                // 既にアイコンモードならサイズを増やす
                 if (currentIconSize < 256) {
                     applyViewMode('icons-custom', currentIconSize + 8);
                 }
             }
-        } else { // 下にスクロール（縮小）
+        } else {
             if (isIconMode) {
                 if (currentIconSize > 24) {
                     applyViewMode('icons-custom', currentIconSize - 8);
@@ -871,7 +822,7 @@ window.addEventListener('wheel', (e) => {
     }
 }, { passive: false });
 
-// updateViewMenuUI の修正（カスタムサイズ時も近いモードにチェックを入れる）
+// 表示設定メニューのチェックマークUIを更新する
 function updateViewMenuUI() {
     let activeMode = currentViewMode;
     if (activeMode === 'icons-custom') {
@@ -907,15 +858,13 @@ document.querySelectorAll('.view-toggle').forEach(item => {
         const toggle = item.dataset.toggle;
         if (toggle === 'hidden') showHiddenFiles = !showHiddenFiles;
         if (toggle === 'extension') showExtensions = !showExtensions;
-        
+
         updateViewMenuUI();
-        window.api.sendCommand(`LIST|${currentPath}`); // Reload
+        window.api.sendCommand(`LIST|${currentPath}`);
     };
 });
 
-// ---------------------------------------------------------------------------
-// ナビゲーション
-// ---------------------------------------------------------------------------
+// ナビゲーションボタン（戻る・進む・上へ）の有効無効状態を更新する
 function updateNavButtons() {
     const tab = getActiveTab();
     if (!tab) return;
@@ -942,12 +891,8 @@ btnForward.onclick = () => {
     navigateTo(next, false);
 };
 
-// ---------------------------------------------------------------------------
-// マウスサイドボタン（戻る/進む）ナビゲーション
-// ---------------------------------------------------------------------------
-// button=3: XButton1（戻るボタン）/ button=4: XButton2（進むボタン）
+// マウスの進む・戻るボタンによるナビゲーション
 window.addEventListener('mousedown', (e) => {
-    // テキスト入力中は無視（リネームやアドレスバー操作に影響しないよう）
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
     const tab = getActiveTab();
@@ -984,26 +929,25 @@ btnSidebarHome.onclick = () => {
     showHome(true);
 };
 
+// ホーム画面のUI要素を表示する
 function showHomeUI() {
     homeView.style.display = 'block';
     explorerView.style.display = 'none';
     btnSidebarHome.classList.add('active');
     addressInput.value = 'HOME';
-    
-    // ツリーの選択解除
+
     document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
-    // HOME項目をアクティブに
     const homeNode = treeView.querySelector('.tree-node[data-path="HOME"]');
     if (homeNode) homeNode.querySelector('.tree-item').classList.add('active');
-    
+
     renderHomeContent();
 
-    // プレビューを閉じる
     if (typeof PreviewManager !== 'undefined') {
         PreviewManager.hide();
     }
 }
 
+// ホーム画面を表示する（履歴追加を含む）
 function showHome(isUserClick = false) {
     const tab = getActiveTab();
     if (!tab) return;
@@ -1019,6 +963,7 @@ function showHome(isUserClick = false) {
     renderTabs();
 }
 
+// ファイルエクスプローラーのUI要素を表示する
 function showExplorerUI(path) {
     homeView.style.display = 'none';
     explorerView.style.display = 'block';
@@ -1028,6 +973,7 @@ function showExplorerUI(path) {
     }
 }
 
+// 指定したパスのエクスプローラー画面を表示する
 function showExplorer(path) {
     const tab = getActiveTab();
     if (!tab) return;
@@ -1036,19 +982,18 @@ function showExplorer(path) {
     if (path) loadPath(path, true);
 }
 
+// ホーム画面のコンテンツ（クイックアクセス、履歴、お気に入り）を描画する
 async function renderHomeContent() {
     const quickAccess = document.getElementById('home-quick-access');
     const recentList = document.getElementById('home-recent-list');
     const favoriteList = document.getElementById('home-favorite-list');
     const greeting = document.getElementById('home-greeting');
-    
-    // 挨拶の更新
+
     const hour = new Date().getHours();
     if (hour < 12) greeting.textContent = "おはようございます";
     else if (hour < 18) greeting.textContent = "こんにちは";
     else greeting.textContent = "こんばんは";
 
-    // 表示モードの同期
     const btnRecent = document.getElementById('btn-home-recent');
     const btnFavorite = document.getElementById('btn-home-favorite');
     if (btnRecent && btnFavorite) {
@@ -1058,11 +1003,9 @@ async function renderHomeContent() {
         favoriteList.style.display = homeDisplayMode === 'favorite' ? 'flex' : 'none';
     }
 
-    // クイックアクセスの描画
     quickAccess.innerHTML = '';
-    
+
     if (quickAccessItems.length === 0 || !cachedSystemPaths) {
-        // 初回またはキャッシュがない場合の取得
         const paths = await window.api.getSystemPaths();
         if (paths) {
             cachedSystemPaths = paths;
@@ -1095,15 +1038,14 @@ async function renderHomeContent() {
         `;
         tile.onclick = () => showExplorer(item.path);
         tile.onauxclick = (e) => {
-            if (e.button === 1) { // ホイールクリック
+            if (e.button === 1) {
                 e.preventDefault();
-                addTab(item.path, false); // バックグラウンドで開く
+                addTab(item.path, false);
             }
         };
         quickAccess.appendChild(tile);
     });
 
-    // 最近使用したフォルダの描画
     recentList.innerHTML = '';
     if (recentFolders.length === 0) {
         recentList.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding: 20px; text-align: center;">履歴はありません</div>';
@@ -1122,23 +1064,22 @@ async function renderHomeContent() {
             `;
             item.onclick = () => showExplorer(folder.path);
             item.onauxclick = (e) => {
-                if (e.button === 1) { // ホイールクリック
+                if (e.button === 1) {
                     e.preventDefault();
-                    addTab(folder.path, false); // バックグラウンドで開く
+                    addTab(folder.path, false);
                 }
             };
             recentList.appendChild(item);
         });
     }
 
-    // お気に入りの描画
     favoriteList.innerHTML = '';
     if (favoriteItems.length === 0) {
         favoriteList.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding: 20px; text-align: center;">お気に入りは登録されていません</div>';
     } else {
         favoriteItems.forEach(folder => {
             const item = document.createElement('div');
-            item.className = 'recent-item'; // 同じスタイルを流用
+            item.className = 'recent-item';
             item.dataset.path = folder.path;
             item.dataset.label = folder.label;
             const iconHtml = IconThemeManager.customIcons[folder.icon] || IconThemeManager.customIcons.folder;
@@ -1155,6 +1096,7 @@ async function renderHomeContent() {
     }
 }
 
+// 最近使用したフォルダ履歴にパスを追加する
 function addToRecentFolders(path) {
     if (!path || path === 'HOME') return;
     const name = path.split('\\').filter(Boolean).pop() || path;
@@ -1165,7 +1107,7 @@ function addToRecentFolders(path) {
 }
 
 btnRefresh.onclick = () => {
-    addressInput.value = currentPath; // アドレスバーの表示をリセット
+    addressInput.value = currentPath;
     if (currentPath === 'HOME') {
         renderHomeContent();
     } else if (currentPath) {
@@ -1173,6 +1115,7 @@ btnRefresh.onclick = () => {
     }
 };
 
+// 指定したパスのフォルダを読み込む
 function loadPath(path, isUserClick = false) {
     if (window.isSelectingWallpaperMode) {
         const galleryView = document.getElementById('wallpaper-gallery-view');
@@ -1194,7 +1137,6 @@ function loadPath(path, isUserClick = false) {
     const tab = getActiveTab();
     if (!tab) return;
 
-    // パスの正規化（末尾のバックスラッシュが重複しないようにする）
     if (!path.endsWith('\\')) path += '\\';
     if (isUserClick && tab.path && tab.path !== path) {
         tab.historyBack.push(tab.path);
@@ -1222,44 +1164,17 @@ function loadPath(path, isUserClick = false) {
     }
 }
 
-function navigateTo(path) {
-    if (path === 'HOME' || path === 'HOME\\') {
-        showHome(false);
-        return;
-    }
-    const tab = getActiveTab();
-    if (!tab) return;
-
-    if (!path.endsWith('\\')) path += '\\';
-    tab.path = path;
-    addressInput.value = tab.path;
-    updateNavButtons();
-
-    if (tab.isHomeActive) {
-        tab.isHomeActive = false;
-        homeView.style.display = 'none';
-        explorerView.style.display = 'block';
-        btnSidebarHome.classList.remove('active');
-    }
-
-    renderTabs();
-    window.api.sendCommand(`CD|${tab.path}`);
-}
-
-// ---------------------------------------------------------------------------
-// バックエンド通信
-// ---------------------------------------------------------------------------
+// バックエンドからの通信レスポンスを受け取り、各処理を振り分ける
 window.api.onBackendResponse((obj) => {
     switch (obj.type) {
         case 'READY':
             const initialTab = getActiveTab();
             if (initialTab && initialTab.path !== 'HOME') {
-                loadPath(initialTab.path, true); // バックエンドの状態を同期
+                loadPath(initialTab.path, true);
             } else {
                 showHome();
             }
             initTree('HOME');
-            // getDrives() は不要（initTreeがGET_DRIVESを送信して取得するため削除）
             renderTabs();
             break;
 
@@ -1273,7 +1188,6 @@ window.api.onBackendResponse((obj) => {
             break;
 
         case 'CREATED':
-            // サーバーが生成した実際のパス（重複回避後の名前）を取得
             const createdPath = obj.content;
             const parts = createdPath.split('\\');
             const actualName = parts[parts.length - 1] || parts[parts.length - 2];
@@ -1309,7 +1223,6 @@ window.api.onBackendResponse((obj) => {
             break;
 
         case 'MOVED':
-            // 移動元と移動先が同一ディレクトリなら1回のLISTで済む
             window.api.sendCommand(`LIST|${currentPath}`);
             break;
 
@@ -1366,9 +1279,8 @@ window.api.onBackendResponse((obj) => {
         case 'TREE_DATA':
             addTreeItem(obj.content);
             break;
-            
+
         case 'START_DRIVES':
-            // 何もしない
             break;
         case 'DRIVE_DATA':
             createTreeNode(obj.content, treeView, true);
@@ -1381,11 +1293,7 @@ window.api.onBackendResponse((obj) => {
     }
 });
 
-// ---------------------------------------------------------------------------
-// ファイルリスト表示
-// ---------------------------------------------------------------------------
-
-// 選択中アイテムを [{name, srcPath}] で返す
+// 現在選択されている項目の一覧をオブジェクトの配列として取得する
 function getSelectedItems() {
     const items = [];
     document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(row => {
@@ -1395,11 +1303,12 @@ function getSelectedItems() {
     return items;
 }
 
-// ペーストボタンの有効/無効を制御
+// クリップボードの状態に合わせて貼り付けボタンの有効状態を更新する
 function updateClipboardButtons() {
     btnPaste.disabled = !clipboard.mode || clipboard.items.length === 0;
 }
 
+// 拡張子表示設定に基づき、ファイル名から拡張子を取り除いた名前を取得する
 function getFileNameWithoutExtension(name) {
     if (showExtensions) return name;
     const lastDotIndex = name.lastIndexOf('.');
@@ -1409,16 +1318,19 @@ function getFileNameWithoutExtension(name) {
     return name;
 }
 
+// 指定したファイル名が画像ファイルの拡張子を持つか判定する
 function isImageExtension(name) {
     const ext = name.split('.').pop().toLowerCase();
     return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'].includes(ext);
 }
 
+// 指定したファイル名が動画ファイルの拡張子を持つか判定する
 function isVideoExtension(name) {
     const ext = name.split('.').pop().toLowerCase();
     return ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'wmv', 'flv'].includes(ext);
 }
 
+// タイムスタンプ値を読みやすい日付文字列（YYYY/MM/DD HH:MM）に整形する
 function formatDate(timestampMs) {
     if (!timestampMs) return '';
     const date = new Date(timestampMs);
@@ -1430,6 +1342,7 @@ function formatDate(timestampMs) {
     return `${y}/${m}/${d} ${h}:${min}`;
 }
 
+// ファイルリスト（テーブルまたはグリッド）に新しいアイテムを追加する
 function addFileRow(data) {
     const parts = data.split('|');
     if (parts.length < 5) return;
@@ -1442,8 +1355,6 @@ function addFileRow(data) {
     const dateStr = formatDate(timestampMs);
 
     if (!showHiddenFiles && isHidden) return;
-
-
 
     const displayName = type === 'D' ? name : getFileNameWithoutExtension(name);
 
@@ -1464,7 +1375,6 @@ function addFileRow(data) {
             <td><span class="cell-content">${isDir ? '' : formatSize(size)}</span></td>
         `;
 
-        // D&D イベント
         tr.ondragstart = handleDragStart;
         tr.ondragend = handleDragEnd;
         if (isDir) {
@@ -1474,12 +1384,11 @@ function addFileRow(data) {
             tr.ondrop = handleDrop;
         }
 
-        // 選択ロジック
         tr.onmousedown = (e) => {
             if (isNavigationLocked()) return;
             if (e.button !== 0) return;
-            if (e.ctrlKey) return; 
-            
+            if (e.ctrlKey) return;
+
             if (!tr.classList.contains('selected')) {
                 document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
                 tr.classList.add('selected');
@@ -1517,11 +1426,11 @@ function addFileRow(data) {
         div.dataset.fullname = name;
         div.dataset.type = type;
         div.draggable = true;
-        
+
         let iconHtml = '';
         const isImg = isImageExtension(name);
         const isVid = isVideoExtension(name);
-        
+
         if (isImg || isVid) {
             const fileUri = encodeURI(`file:///${currentPath}${name}`.replace(/\\/g, '/')).replace(/#/g, '%23');
             if (isImg) {
@@ -1532,7 +1441,7 @@ function addFileRow(data) {
         } else {
             iconHtml = `<div class="grid-icon-placeholder">${customIcon}</div>`;
         }
-        
+
         div.innerHTML = `
             <div class="grid-content">
                 <div class="grid-icon">${iconHtml}</div>
@@ -1540,7 +1449,6 @@ function addFileRow(data) {
             </div>
         `;
 
-        // D&D イベント
         div.ondragstart = handleDragStart;
         div.ondragend = handleDragEnd;
         if (isDir) {
@@ -1550,7 +1458,6 @@ function addFileRow(data) {
             div.ondrop = handleDrop;
         }
 
-        // 選択ロジック
         div.onmousedown = (e) => {
             if (isNavigationLocked()) return;
             if (e.button !== 0) return;
@@ -1588,14 +1495,11 @@ function addFileRow(data) {
         element = div;
     }
 
-    // (個別要素の onclick/onmousedown は作成時に登録済み)
-
     element.ondblclick = async () => {
         if (isNavigationLocked()) return;
         if (type === 'D') {
             loadPath(currentPath + name + '\\', true);
         } else {
-            // 壁紙選択モード時の割り込み
             if (window.isSelectingWallpaperMode) {
                 const isImg = /\.(jpe?g|png|gif|webp|svg)$/i.test(name);
                 if (isImg) {
@@ -1629,11 +1533,11 @@ function addFileRow(data) {
     };
 
     element.onauxclick = (e) => {
-        if (e.button === 1) { // ホイールクリック
+        if (e.button === 1) {
             if (isNavigationLocked()) return;
             if (type === 'D') {
                 e.preventDefault();
-                addTab(currentPath + name + '\\', false); // バックグラウンドで開く
+                addTab(currentPath + name + '\\', false);
             }
         }
     };
@@ -1644,9 +1548,7 @@ function addFileRow(data) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// リネーム機能
-// ---------------------------------------------------------------------------
+// 指定した要素に対してインラインリネーム（名前編集入力）を開始する
 function startRename(el) {
     const nameCell = el.querySelector('.file-name');
     const oldName = el.dataset.fullname;
@@ -1672,20 +1574,18 @@ function startRename(el) {
         iconSpan.innerHTML = currentIcon;
         container.appendChild(iconSpan);
     }
-    
+
     container.appendChild(input);
     input.focus();
 
-    // 入力内容に合わせて入力欄の幅を動的に調整
     const adjustInputWidth = () => {
         const span = document.createElement('span');
         span.style.visibility = 'hidden';
         span.style.position = 'absolute';
         span.style.whiteSpace = 'pre';
         span.style.font = window.getComputedStyle(input).font;
-        span.textContent = input.value || ' '; // 空の場合は1文字分の幅を確保
+        span.textContent = input.value || ' ';
         document.body.appendChild(span);
-        // padding(左右合わせて10px)やカーソル幅を考慮して15pxほど余裕を持たせる
         input.style.width = (span.offsetWidth + 15) + 'px';
         document.body.removeChild(span);
     };
@@ -1703,7 +1603,6 @@ function startRename(el) {
     const finishRename = (cancel = false) => {
         let newName = input.value.trim();
 
-        // 共通の描画復旧処理
         const restoreView = (nameToUse) => {
             const currentIcon = IconThemeManager.getIcon(nameToUse, isDir);
             const displayName = isDir ? nameToUse : getFileNameWithoutExtension(nameToUse);
@@ -1711,7 +1610,6 @@ function startRename(el) {
                 nameCell.innerHTML = `<span class="cell-content"><span style="margin-right: 6px; display: flex; align-items: center; flex-shrink: 0;">${currentIcon}</span><span class="file-name-text">${displayName}</span></span>`;
             } else {
                 nameCell.textContent = displayName;
-                // グリッドの場合はアイコンも更新（名前で変わる可能性があるため）
                 const gridIcon = el.querySelector('.grid-icon');
                 if (gridIcon) {
                     const isImg = isImageExtension(nameToUse);
@@ -1723,7 +1621,6 @@ function startRename(el) {
             }
         };
 
-        // キャンセルまたは空入力
         if (cancel || !newName) {
             restoreView(oldName);
             return;
@@ -1763,8 +1660,7 @@ function startRename(el) {
     };
 }
 
-// 現在のファイルリストに同名エントリがあれば、連番を付けてユニークな名前を返す
-// skipName: 現在リネーム対象のファイル（自分自身は除外する）
+// ファイル名衝突を避けるために連番付きのユニークなファイル名を決定する
 function resolveNameConflict(name, skipName) {
     const existing = new Set();
     document.querySelectorAll('#file-list-body tr, .grid-item').forEach(row => {
@@ -1774,10 +1670,9 @@ function resolveNameConflict(name, skipName) {
 
     if (!existing.has(name)) return name;
 
-    // 拡張子とベース名を分離して連番を付ける
     const dotIndex = name.lastIndexOf('.');
     const base = dotIndex > 0 ? name.slice(0, dotIndex) : name;
-    const ext  = dotIndex > 0 ? name.slice(dotIndex)   : '';
+    const ext = dotIndex > 0 ? name.slice(dotIndex) : '';
 
     for (let i = 2; i < 1000; i++) {
         const candidate = `${base} (${i})${ext}`;
@@ -1786,9 +1681,7 @@ function resolveNameConflict(name, skipName) {
     return name;
 }
 
-// ---------------------------------------------------------------------------
 // 検索バー
-// ---------------------------------------------------------------------------
 const searchInput = document.getElementById('search-input');
 const searchResults = document.getElementById('search-results');
 let searchTimer = null;
@@ -1823,6 +1716,7 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// 検索結果を表示エリアに追加する
 function addSearchResult(data) {
     const placeholder = searchResults.querySelector('.search-searching');
     if (placeholder) placeholder.remove();
@@ -1862,8 +1756,8 @@ function addSearchResult(data) {
     };
 
     item.onmousedown = (e) => {
-        if (e.button === 1) { // Middle click
-            e.preventDefault(); // オートスクロールを防止
+        if (e.button === 1) {
+            e.preventDefault();
             const targetPath = type === 'D' ? (dirPath + name + '\\') : dirPath;
             if (typeof addTab === 'function') {
                 addTab(targetPath);
@@ -1876,9 +1770,7 @@ function addSearchResult(data) {
     searchResults.appendChild(item);
 }
 
-// ---------------------------------------------------------------------------
-// ユーティリティ
-// ---------------------------------------------------------------------------
+// ターミナル表示エリアに文字列（ログやコマンド）を追加出力する
 function appendTerminal(text, className = '') {
     const div = document.createElement('div');
     if (className) div.className = className;
@@ -1887,6 +1779,7 @@ function appendTerminal(text, className = '') {
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
 }
 
+// バイト値を適切な単位（B, KB, MB）の文字列にフォーマットする
 function formatSize(bytes) {
     const b = parseInt(bytes);
     if (isNaN(b)) return bytes;
@@ -1914,8 +1807,7 @@ terminalInput.addEventListener('keydown', (e) => {
             }
             appendTerminal(`> ${cmd}`, 'command-echo');
             window.api.sendCommand(`EXEC|${cmd}`);
-            
-            // コマンド履歴に追加
+
             if (terminalHistory.length === 0 || terminalHistory[terminalHistory.length - 1] !== cmd) {
                 terminalHistory.push(cmd);
                 if (terminalHistory.length > MAX_TERMINAL_HISTORY) {
@@ -1925,34 +1817,31 @@ terminalInput.addEventListener('keydown', (e) => {
             }
             terminalHistoryIndex = terminalHistory.length;
             terminalDraft = '';
-            
+
             terminalInput.value = '';
         }
     } else if (e.key === 'ArrowUp') {
         if (terminalHistory.length === 0) return;
         e.preventDefault();
-        
-        // 初めて履歴を遡る場合、現在の下書きを保存する
+
         if (terminalHistoryIndex === terminalHistory.length) {
             terminalDraft = terminalInput.value;
         }
-        
+
         if (terminalHistoryIndex > 0) {
             terminalHistoryIndex--;
             terminalInput.value = terminalHistory[terminalHistoryIndex];
-            // カーソルを末尾に移動
             setTimeout(() => {
                 terminalInput.setSelectionRange(terminalInput.value.length, terminalInput.value.length);
             }, 0);
         }
     } else if (e.key === 'ArrowDown') {
         if (terminalHistory.length === 0) return;
-        
+
         if (terminalHistoryIndex < terminalHistory.length - 1) {
             e.preventDefault();
             terminalHistoryIndex++;
             terminalInput.value = terminalHistory[terminalHistoryIndex];
-            // カーソルを末尾に移動
             setTimeout(() => {
                 terminalInput.setSelectionRange(terminalInput.value.length, terminalInput.value.length);
             }, 0);
@@ -1960,7 +1849,6 @@ terminalInput.addEventListener('keydown', (e) => {
             e.preventDefault();
             terminalHistoryIndex++;
             terminalInput.value = terminalDraft;
-            // カーソルを末尾に移動
             setTimeout(() => {
                 terminalInput.setSelectionRange(terminalInput.value.length, terminalInput.value.length);
             }, 0);
@@ -1974,16 +1862,13 @@ addressInput.addEventListener('keydown', (e) => {
     }
 });
 
-// ---------------------------------------------------------------------------
-// ツリービュー
-// ---------------------------------------------------------------------------
 const treeView = document.getElementById('tree-view');
 let treeLoadingPath = '';
 
+// サイドバーのフォルダツリービューを初期化する
 async function initTree(rootPath) {
     treeView.innerHTML = '';
-    
-    // クイックアクセスの初期化確認
+
     if (quickAccessItems.length === 0 || !cachedSystemPaths) {
         const paths = await window.api.getSystemPaths();
         if (paths) {
@@ -2005,21 +1890,19 @@ async function initTree(rootPath) {
         }
     }
 
-    // クイックアクセス
     quickAccessItems.forEach(item => {
         const iconHtml = IconThemeManager.customIcons[item.icon] || IconThemeManager.customIcons.folder;
         createTreeNode(item.path, treeView, true, iconHtml, item.label, true, true);
     });
-    
-    // セパレーター
+
     const sep = document.createElement('div');
     sep.className = 'tree-separator';
     treeView.appendChild(sep);
-    
-    // ドライブ一覧の取得
+
     window.api.sendCommand('GET_DRIVES');
 }
 
+// ツリービュー内のフォルダノードを新規作成してイベントを割り当てる
 function createTreeNode(fullPath, container, isRoot = false, customIcon = null, labelName = null, hideExpander = false, isQuickAccess = false) {
     const name = labelName || (isRoot ? fullPath : fullPath.split('\\').filter(Boolean).pop());
     const node = document.createElement('div');
@@ -2048,7 +1931,6 @@ function createTreeNode(fullPath, container, isRoot = false, customIcon = null, 
     item.appendChild(label);
     node.appendChild(item);
 
-    // D&D イベント (サイドバーは全てフォルダー)
     item.draggable = true;
     item.ondragstart = handleDragStart;
     item.ondragend = handleDragEnd;
@@ -2082,8 +1964,7 @@ function createTreeNode(fullPath, container, isRoot = false, customIcon = null, 
         e.stopPropagation();
         document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
         item.classList.add('active');
-        
-        // クイックアクセス等のトグルがない項目の場合は1クリックで移動
+
         if (hideExpander) {
             showExplorer(node.dataset.path);
         }
@@ -2096,11 +1977,11 @@ function createTreeNode(fullPath, container, isRoot = false, customIcon = null, 
     };
 
     item.onauxclick = (e) => {
-        if (e.button === 1) { // ホイールクリック
+        if (e.button === 1) {
             if (isNavigationLocked()) return;
             e.preventDefault();
             e.stopPropagation();
-            addTab(node.dataset.path, false); // バックグラウンドで開く
+            addTab(node.dataset.path, false);
         }
     };
 
@@ -2108,6 +1989,7 @@ function createTreeNode(fullPath, container, isRoot = false, customIcon = null, 
     return node;
 }
 
+// ツリーにフォルダ項目を追加する
 function addTreeItem(folderName) {
     const parentNode = findTreeNode(treeLoadingPath);
     if (parentNode) {
@@ -2116,17 +1998,18 @@ function addTreeItem(folderName) {
     }
 }
 
+// パスに対応するツリービュー内のノード要素を取得する
 function findTreeNode(path) {
     const p = path.endsWith('\\') ? path : path + '\\';
     const escapedPath = p.replace(/\\/g, '\\\\');
-    
-    // クイックアクセス以外のノード（ドライブツリー内のノード）を優先的に探す
+
     const node = treeView.querySelector(`.tree-node[data-path="${escapedPath}"]:not([data-is-quick-access="true"])`);
     if (node) return node;
-    
+
     return treeView.querySelector(`.tree-node[data-path="${escapedPath}"]`);
 }
 
+// カレントディレクトリに合わせてサイドバーツリーの選択状態を同期する
 function updateTreeActiveState() {
     document.querySelectorAll('.tree-item').forEach(item => {
         const node = item.closest('.tree-node');
@@ -2144,9 +2027,7 @@ function updateTreeActiveState() {
     });
 }
 
-// ---------------------------------------------------------------------------
-// リサイズ機能
-// ---------------------------------------------------------------------------
+// 各ペイン（サイドバー、ターミナル、プレビュー）のリサイズハンドラを設定する
 function initResizers() {
     const sidebar = document.querySelector('.sidebar');
     const terminalPane = document.querySelector('.terminal-pane');
@@ -2198,11 +2079,11 @@ function initResizers() {
     setupResizer(resizerPreview, previewPane, 'h', true);
 }
 
+// 選択されている項目の状態変化（プレビュー更新など）を処理する
 function onSelectionChanged() {
     if (typeof PreviewManager !== 'undefined') {
         PreviewManager.update();
     }
-    // 選択数が0件になったらドラッグやカットのビジュアルをクリア
     const selectedCount = document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').length;
     if (selectedCount === 0) {
         document.querySelectorAll('.dragging, .cut-item').forEach(el => {
@@ -2211,8 +2092,7 @@ function onSelectionChanged() {
     }
 }
 
-// 以前ここにあったショートカット用ヘルパー関数と initShortcuts は js/shortcuts.js へ移動しました
-
+// 選択項目をキーボードで上下移動する
 function navigateSelection(direction) {
     const items = Array.from(document.querySelectorAll('#file-list-body tr, .grid-item'));
     if (items.length === 0) return;
@@ -2236,14 +2116,9 @@ function navigateSelection(direction) {
     }
 }
 
-// レイアウト切り替えロジック
-
-
 initResizers();
 
-// ---------------------------------------------------------------------------
-// カラムリサイズ機能
-// ---------------------------------------------------------------------------
+// リサイズ用カラム調整を初期化する
 function initColumnResizers() {
     const resizers = document.querySelectorAll('.col-resizer');
     let startX, startWidth, currentTh;
@@ -2253,12 +2128,12 @@ function initColumnResizers() {
             currentTh = e.target.parentElement;
             startX = e.pageX;
             startWidth = currentTh.offsetWidth;
-            
+
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
             resizer.classList.add('resizing');
             document.body.style.cursor = 'col-resize';
-            e.preventDefault(); // テキスト選択を防ぐ
+            e.preventDefault();
         });
     });
 
@@ -2266,11 +2141,10 @@ function initColumnResizers() {
         if (!currentTh) return;
         const dx = e.pageX - startX;
         let newWidth = startWidth + dx;
-        
-        // CSS の min-width を取得して尊重する（設定されていない場合はデフォルト 50px）
+
         const computedStyle = window.getComputedStyle(currentTh);
         const minW = parseInt(computedStyle.minWidth) || 50;
-        
+
         if (newWidth < minW) newWidth = minW;
         currentTh.style.width = `${newWidth}px`;
     }
@@ -2287,30 +2161,27 @@ function initColumnResizers() {
 
 initColumnResizers();
 
-// ---------------------------------------------------------------------------
-// コンテキストメニュー制御
-// ---------------------------------------------------------------------------
+// 右クリックのコンテキストメニューを制御する
 const contextMenu = document.getElementById('context-menu');
-let contextTarget = null; // 右クリック対象のデータ
+let contextTarget = null;
 
 window.addEventListener('contextmenu', (e) => {
     e.preventDefault();
-    
-    // 他のドロップダウンメニューが開いている場合は閉じる
+
     if (typeof newMenu !== 'undefined' && newMenu) newMenu.classList.remove('visible');
     if (typeof sortMenu !== 'undefined' && sortMenu) sortMenu.classList.remove('visible');
     if (typeof viewMenu !== 'undefined' && viewMenu) viewMenu.classList.remove('visible');
-    
+
     const fileRow = e.target.closest('#file-list-body tr, .grid-item');
     const treeItem = e.target.closest('.tree-item');
     const homeItem = e.target.closest('.quick-tile, .recent-item');
     const isFilePane = e.target.closest('.file-pane');
-    
+
     if (!isFilePane && !treeItem) {
         contextMenu.style.display = 'none';
         return;
     }
-    
+
     if (fileRow) {
         let path = currentPath + fileRow.dataset.name;
         if (fileRow.dataset.type === 'D' && !path.endsWith('\\')) path += '\\';
@@ -2319,7 +2190,7 @@ window.addEventListener('contextmenu', (e) => {
             path: path,
             isDir: fileRow.dataset.type === 'D'
         };
-        
+
         if (!fileRow.classList.contains('selected')) {
             document.querySelectorAll('#file-list-body tr, .grid-item').forEach(el => el.classList.remove('selected'));
             fileRow.classList.add('selected');
@@ -2332,7 +2203,7 @@ window.addEventListener('contextmenu', (e) => {
             path: path,
             isDir: true
         };
-        
+
         document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
         treeItem.classList.add('active');
     } else if (homeItem) {
@@ -2349,7 +2220,6 @@ window.addEventListener('contextmenu', (e) => {
         document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(el => el.classList.remove('selected'));
     }
 
-    // メニューグループの表示切り替え
     const ctxGroupItem = document.getElementById('ctx-group-item');
     const ctxGroupEmpty = document.getElementById('ctx-group-empty');
     const isExplorer = e.target.closest('#explorer-view');
@@ -2366,25 +2236,22 @@ window.addEventListener('contextmenu', (e) => {
         return;
     }
 
-    // すべてのメニュー項目を一度リセット
     document.querySelectorAll('.context-item').forEach(item => {
         item.classList.remove('disabled');
     });
 
-    // アイテム選択の有無に応じた制御
     const hasSelection = contextTarget !== null;
     ['ctx-open', 'ctx-open-new-tab', 'ctx-open-new-window', 'ctx-cut', 'ctx-copy', 'ctx-rename', 'ctx-delete', 'ctx-quick-access', 'ctx-favorite', 'ctx-properties', 'ctx-copy-path'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.toggle('disabled', !hasSelection);
     });
 
-    // クイックアクセスのテキスト切り替え
     if (hasSelection && contextTarget.isDir) {
         const qaItem = document.getElementById('ctx-quick-access');
         if (qaItem) {
             const isQAEntry = treeItem && treeItem.closest('.tree-node').dataset.isQuickAccess === 'true';
             const isRegistered = quickAccessItems.some(item => item.path === contextTarget.path);
-            
+
             if (isQAEntry || isRegistered) {
                 qaItem.querySelector('span').textContent = 'クイックアクセスから解除';
             } else {
@@ -2392,26 +2259,22 @@ window.addEventListener('contextmenu', (e) => {
             }
         }
     } else if (hasSelection && !contextTarget.isDir) {
-        // ファイルの場合はクイックアクセス・お気に入り無効
         const qaItem = document.getElementById('ctx-quick-access');
         if (qaItem) qaItem.classList.add('disabled');
         const favItem = document.getElementById('ctx-favorite');
         if (favItem) favItem.classList.add('disabled');
-        // 新しいタブ・ウィンドウで開くも無効
         const newTabItem = document.getElementById('ctx-open-new-tab');
         if (newTabItem) newTabItem.classList.add('disabled');
         const newWinItem = document.getElementById('ctx-open-new-window');
         if (newWinItem) newWinItem.classList.add('disabled');
     }
 
-    // 壁紙設定項目の表示切替（画像ファイルの場合のみ表示）
     const isImageFile = hasSelection && !contextTarget.isDir && /\.(jpe?g|png|gif|webp|svg)$/i.test(contextTarget.name);
     const wallpaperItem = document.getElementById('ctx-set-wallpaper');
     if (wallpaperItem) {
         wallpaperItem.style.display = isImageFile ? 'flex' : 'none';
     }
 
-    // お気に入りのテキスト切り替え
     if (hasSelection && contextTarget.isDir) {
         const favItem = document.getElementById('ctx-favorite');
         if (favItem) {
@@ -2419,16 +2282,13 @@ window.addEventListener('contextmenu', (e) => {
             favItem.querySelector('span').textContent = isRegistered ? 'お気に入りから解除' : 'お気に入りに追加';
         }
     }
-    
-    // 貼り付けの制御
+
     const canPaste = clipboard.mode && clipboard.items.length > 0;
     document.getElementById('ctx-paste').classList.toggle('disabled', !canPaste);
 
-    // チェックマーク同期（Bug Fix 2 & 3）
     updateSortMenuUI();
     updateViewMenuUI();
 
-    // 表示位置の計算（Bug Fix 1: 画面外クランプ対応）
     contextMenu.style.display = 'block';
     const menuWidth = contextMenu.offsetWidth;
     const menuHeight = contextMenu.offsetHeight;
@@ -2447,17 +2307,12 @@ window.addEventListener('click', () => {
     tabContextMenu.style.display = 'none';
 }, true);
 
-// ---------------------------------------------------------------------------
-// サブメニュー位置制御（右端はみ出し防止）
-// ---------------------------------------------------------------------------
-// CSSホバーでサブメニューを表示する前に位置を調整するため、
-// mouseenterイベントで毎回方向を計算して切り替える
+// サブメニューの表示位置を調整する（画面端での折り返し制御）
 document.querySelectorAll('.has-submenu').forEach(item => {
     item.addEventListener('mouseenter', () => {
         const submenu = item.querySelector('.submenu');
         if (!submenu) return;
 
-        // 実際の幅と高さを取得するため、一時的にvisibility:hiddenで表示
         submenu.style.visibility = 'hidden';
         submenu.style.display = 'block';
         const submenuWidth = submenu.offsetWidth;
@@ -2465,39 +2320,32 @@ document.querySelectorAll('.has-submenu').forEach(item => {
         submenu.style.display = '';
         submenu.style.visibility = '';
 
-        // 要素の座標を取得
         const rect = item.getBoundingClientRect();
 
-        // 横幅の調整
         if (rect.right + submenuWidth > window.innerWidth) {
-            // 右側に入らない → 左側に反転
             submenu.style.left = 'auto';
             submenu.style.right = '100%';
         } else {
-            // 右側に余裕あり → デフォルト（右側）
             submenu.style.left = '100%';
             submenu.style.right = 'auto';
         }
 
-        // 高さの調整
         if (rect.top + submenuHeight > window.innerHeight) {
-            // 下側に入らない → 上に伸ばす
             submenu.style.top = 'auto';
             submenu.style.bottom = '0';
         } else {
-            // 下側に余裕あり → デフォルト（下へ）
             submenu.style.top = '-5px';
             submenu.style.bottom = 'auto';
         }
     });
 });
 
-// クイックアクセス操作
+// クイックアクセス項目を登録・削除する
 const btnCtxQuickAccess = document.getElementById('ctx-quick-access');
 if (btnCtxQuickAccess) {
     btnCtxQuickAccess.onclick = () => {
         if (!contextTarget || !contextTarget.isDir) return;
-        
+
         const index = quickAccessItems.findIndex(item => item.path === contextTarget.path);
         if (index !== -1) {
             quickAccessItems.splice(index, 1);
@@ -2519,18 +2367,18 @@ if (btnCtxQuickAccess) {
                 icon: icon
             });
         }
-        
+
         localStorage.setItem('quickAccessItems', JSON.stringify(quickAccessItems));
         refreshQuickAccessUI();
     };
 }
 
-// お気に入り操作
+// お気に入り項目を登録・削除する
 const btnCtxFavorite = document.getElementById('ctx-favorite');
 if (btnCtxFavorite) {
     btnCtxFavorite.onclick = () => {
         if (!contextTarget || !contextTarget.isDir) return;
-        
+
         const index = favoriteItems.findIndex(item => item.path === contextTarget.path);
         if (index !== -1) {
             favoriteItems.splice(index, 1);
@@ -2552,7 +2400,7 @@ if (btnCtxFavorite) {
                 icon: icon
             });
         }
-        
+
         localStorage.setItem('favoriteItems', JSON.stringify(favoriteItems));
         if (isHomeActive) renderHomeContent();
     };
@@ -2571,21 +2419,22 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// クイックアクセスの表示を更新する
 function refreshQuickAccessUI() {
     initTree(currentPath);
     if (isHomeActive) renderHomeContent();
 }
 
+// クイックアクセスの順序を変更する
 function reorderQuickAccess(srcPath, targetPath, isAfter) {
     const srcIndex = quickAccessItems.findIndex(item => item.path === srcPath);
     const targetIndex = quickAccessItems.findIndex(item => item.path === targetPath);
-    
+
     if (srcIndex !== -1 && targetIndex !== -1) {
         const item = quickAccessItems.splice(srcIndex, 1)[0];
-        // 移動によってインデックスがずれるのを防ぐため、再取得
         let newTargetIndex = quickAccessItems.findIndex(item => item.path === targetPath);
         const insertIndex = isAfter ? newTargetIndex + 1 : newTargetIndex;
-        
+
         quickAccessItems.splice(insertIndex, 0, item);
         localStorage.setItem('quickAccessItems', JSON.stringify(quickAccessItems));
         refreshQuickAccessUI();
@@ -2638,9 +2487,7 @@ document.getElementById('ctx-set-wallpaper').onclick = async () => {
     }
 };
 
-// ---------------------------------------------------------------------------
-// タブコンテキストメニューアクション
-// ---------------------------------------------------------------------------
+// タブのコンテキストメニューアクション
 document.getElementById('ctx-tab-close').onclick = () => {
     if (contextTabId) closeTab(contextTabId);
 };
@@ -2674,7 +2521,6 @@ document.getElementById('ctx-tab-duplicate').onclick = () => {
     }
 };
 
-// ピン留めトグルをメニューに追加するための動的制御
 tabContextMenu.addEventListener('mouseenter', () => {
     let pinItem = document.getElementById('ctx-tab-pin');
     if (!pinItem) {
@@ -2687,14 +2533,13 @@ tabContextMenu.addEventListener('mouseenter', () => {
         `;
         tabContextMenu.appendChild(pinItem);
     }
-    
+
     if (contextTabId) {
         const tab = tabs.find(t => t.id === contextTabId);
         if (tab) {
             pinItem.querySelector('span').textContent = tab.isPinned ? 'ピン留めを外す' : 'タブをピン留め';
             pinItem.onclick = () => {
                 tab.isPinned = !tab.isPinned;
-                // ピン留めされたものを左に寄せ、かつ元の順序をなるべく維持
                 tabs.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
                 renderTabs();
                 saveTabsState();
@@ -2703,8 +2548,6 @@ tabContextMenu.addEventListener('mouseenter', () => {
         }
     }
 });
-
-// 以前ここにあったショートカットキーの実装は initShortcuts に集約されました
 
 document.getElementById('ctx-cut').onclick = () => {
     const items = getSelectedItems();
@@ -2742,7 +2585,7 @@ document.getElementById('ctx-rename').onclick = () => {
     const selected = document.querySelector('.selected');
     if (selected) {
         const nameCell = selected.querySelector('.file-name');
-        if (nameCell) startRename(selected); // 修正: 引数を要素全体に変更（元々の startRename(selectedRows[0]) に合わせる）
+        if (nameCell) startRename(selected);
     }
 };
 
@@ -2754,6 +2597,7 @@ document.getElementById('ctx-delete').onclick = () => {
         });
     }
 };
+
 document.getElementById('ctx-properties').onclick = () => {
     if (!contextTarget) return;
     const useNative = localStorage.getItem('settings-native-properties') === 'true';
@@ -2764,7 +2608,7 @@ document.getElementById('ctx-properties').onclick = () => {
     }
 };
 
-// パスをコピー（Feature 2）
+// パスをコピーする
 document.getElementById('ctx-copy-path').onclick = () => {
     if (!contextTarget) return;
     navigator.clipboard.writeText(contextTarget.path).then(() => {
@@ -2774,15 +2618,13 @@ document.getElementById('ctx-copy-path').onclick = () => {
     });
 };
 
-// 右クリックから新規作成（Feature 1） - 動的に生成されるためここでは何もしない、または既存の静的要素のみ削除を検討
-// (updateNewFileMenus 内でイベントを付与するように変更済み)
-
+// プロパティ情報を取得・表示する
 function showPropertiesModal(path) {
-    // バックエンドに情報を要求
     window.api.sendCommand(`PROP|${path}`);
     appendTerminal(`Action: プロパティを取得中...`, 'command-echo');
 }
 
+// 取得したプロパティ詳細情報をモーダルに反映する
 function handlePropData(content) {
     const parts = content.split('|');
     if (parts.length < 8) return;
@@ -2797,11 +2639,10 @@ function handlePropData(content) {
     const dirCount = parseInt(parts[7]);
 
     const fileName = path.split('\\').filter(x => x).pop() || path;
-    const isDir = attr & 16; // FILE_ATTRIBUTE_DIRECTORY
+    const isDir = attr & 16;
 
     document.getElementById('prop-name').value = fileName;
-    
-    // アイコンの設定 (IconThemeManagerを使用)
+
     const iconWrapper = document.getElementById('prop-icon-wrapper');
     if (iconWrapper) {
         iconWrapper.innerHTML = IconThemeManager.getIcon(fileName, isDir);
@@ -2809,8 +2650,7 @@ function handlePropData(content) {
 
     document.getElementById('prop-type').textContent = isDir ? 'フォルダ' : (fileName.split('.').pop().toUpperCase() + ' ファイル');
     document.getElementById('prop-location').textContent = path.substring(0, path.lastIndexOf('\\'));
-    
-    // サイズフォーマット
+
     const formatSize = (bytes) => {
         if (bytes === 0) return '0 バイト';
         const k = 1024;
@@ -2820,7 +2660,6 @@ function handlePropData(content) {
     };
     document.getElementById('prop-size').textContent = formatSize(size);
 
-    // 内容（フォルダのみ）
     const containsRow = document.getElementById('prop-contains-row');
     if (isDir) {
         containsRow.style.display = 'flex';
@@ -2829,7 +2668,6 @@ function handlePropData(content) {
         containsRow.style.display = 'none';
     }
 
-    // 日付フォーマット
     const formatDate = (ms) => {
         const d = new Date(ms);
         return d.toLocaleString('ja-JP');
@@ -2838,15 +2676,13 @@ function handlePropData(content) {
     document.getElementById('prop-modified').textContent = formatDate(modified);
     document.getElementById('prop-accessed').textContent = formatDate(accessed);
 
-    // 属性
-    document.getElementById('prop-attr-readonly').checked = attr & 1; // READONLY
-    document.getElementById('prop-attr-hidden').checked = attr & 2;   // HIDDEN
+    document.getElementById('prop-attr-readonly').checked = attr & 1;
+    document.getElementById('prop-attr-hidden').checked = attr & 2;
 
-    // 表示
     document.getElementById('property-modal').style.display = 'flex';
 }
 
-// モーダルを閉じる処理
+// プロパティモーダルの閉じる処理を初期化する
 function initPropertyModal() {
     const modal = document.getElementById('property-modal');
     const closeBtn = document.getElementById('btn-close-prop');
@@ -2871,24 +2707,18 @@ function initPropertyModal() {
     }
 }
 
-// 初期化時に実行
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initPropertyModal);
 } else {
     initPropertyModal();
 }
 
-
-
-// ---------------------------------------------------------------------------
-// ドラッグ＆ドロップ (D&D) 制御
-// ---------------------------------------------------------------------------
-
-// グローバルドラッグ管理用変数
+// ドラッグ＆ドロップ(D&D)制御のためのグローバル変数
 window.activeDragPaths = null;
 window.hasTriggeredNativeDrag = false;
 window.isDragging = false;
 
+// HTML5ドラッグ開始イベントを処理する
 function handleDragStart(e) {
     const item = e.target.closest('tr, .grid-item, .tree-item');
     if (!item) return;
@@ -2906,10 +2736,8 @@ function handleDragStart(e) {
         count = 1;
         e.dataTransfer.setData('application/x-quick-access-path', node.dataset.path);
     } else if (item.classList.contains('tree-item')) {
-        // 通常のツリー項目のD&D（ディレクトリ移動）は、バグ回避のため一旦無効化
         return;
     } else {
-        // ファイルリスト（グリッド/詳細）からのドラッグ
         if (!item.classList.contains('selected')) {
             document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(r => r.classList.remove('selected'));
             item.classList.add('selected');
@@ -2922,20 +2750,15 @@ function handleDragStart(e) {
         count = selectedItems.length;
     }
 
-    // ドラッグデータをセット
     e.dataTransfer.setData('application/x-file-paths', JSON.stringify(paths));
     e.dataTransfer.effectAllowed = 'move';
 
-    // HTML5のデフォルトドラッグゴーストを完全に非表示化する（1x1の透明な画像を設定）
     const transparentImage = new Image();
     transparentImage.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     e.dataTransfer.setDragImage(transparentImage, 0, 0);
 
-
-    
     item.classList.add('dragging');
 
-    // ハイブリッドD&D管理変数のセット
     if (!isQA) {
         window.activeDragPaths = paths;
         window.hasTriggeredNativeDrag = false;
@@ -2943,33 +2766,30 @@ function handleDragStart(e) {
     }
 }
 
+// HTML5ドラッグ終了イベントを処理する
 function handleDragEnd(e) {
     const item = e.target.closest('tr, .grid-item');
     if (item) item.classList.remove('dragging');
-    
-    // 全てのハイライトを消去
+
     document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
 
-    // ハイブリッドD&D変数のクリア
     window.isDragging = false;
     window.activeDragPaths = null;
     window.hasTriggeredNativeDrag = false;
 }
 
-// HTML5ドラッグセッションを強制的にキャンセルしてゴースト画像を破棄するライフサイクルハック
+// HTML5ドラッグセッションを強制キャンセルする
 function cancelHtml5Drag() {
     const item = document.querySelector('.dragging');
     if (!item) return;
-    
+
     const parent = item.parentNode;
     if (!parent) return;
-    
+
     const nextSibling = item.nextSibling;
-    
-    // 一時的にDOMから離脱させることで、ブラウザにHTML5ドラッグループを強制終了させる
+
     parent.removeChild(item);
-    
-    // 50ms後に安全に再挿入（非同期にすることでChromiumにD&Dセッションを確実に破棄させる）
+
     setTimeout(() => {
         if (nextSibling) {
             parent.insertBefore(item, nextSibling);
@@ -2979,36 +2799,33 @@ function cancelHtml5Drag() {
     }, 50);
 }
 
-// ウィンドウ外へのドラッグアウトを監視してネイティブドラッグへ切り替える
+// ウィンドウ外へのドラッグアウトを検知してネイティブドラッグを開始する
 document.documentElement.addEventListener('dragleave', (e) => {
     if (window.isDragging && window.activeDragPaths && !window.hasTriggeredNativeDrag) {
-        // マウスがウィンドウの境界外へ完全に出たか（または別アプリの重なり領域に入ったか）を検証
         if (!e.relatedTarget || e.relatedTarget === document.documentElement) {
             window.hasTriggeredNativeDrag = true;
-            
-            // ブラウザのHTML5ドラッグセッションをキャンセルし、ゴーストを消滅させる
+
             cancelHtml5Drag();
-            
+
             window.api.send('ondragstart', window.activeDragPaths);
         }
     }
 });
 
+// ドラッグ要素が重なったときのイベントを処理する
 function handleDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    
-    // クイックアクセスの並べ替え中か判定
+
     const isQAMove = e.dataTransfer.types.includes('application/x-quick-access-path');
-    
+
     if (isQAMove) {
         const target = e.target.closest('.tree-node[data-is-quick-access="true"]');
         if (target) {
             const treeItem = target.querySelector('.tree-item');
             const rect = treeItem.getBoundingClientRect();
             const isAfter = e.clientY > (rect.top + rect.height / 2);
-            
-            // クラスの付け替え
+
             treeItem.classList.remove('drag-gap-top', 'drag-gap-bottom');
             treeItem.classList.add(isAfter ? 'drag-gap-bottom' : 'drag-gap-top');
             e.dataTransfer.dropEffect = 'move';
@@ -3022,6 +2839,7 @@ function handleDragOver(e) {
     }
 }
 
+// ドラッグ要素が離れたときのイベントを処理する
 function handleDragLeave(e) {
     const target = e.target.closest('tr[data-type="D"], .grid-item[data-type="D"], .tree-node, .tree-item');
     if (target) {
@@ -3032,13 +2850,13 @@ function handleDragLeave(e) {
     }
 }
 
+// ドロップ時のイベントを処理する
 function handleDrop(e) {
     e.preventDefault();
     document.querySelectorAll('.drag-over, .drag-gap-top, .drag-gap-bottom').forEach(el => {
         el.classList.remove('drag-over', 'drag-gap-top', 'drag-gap-bottom');
     });
 
-    // クイックアクセスの並べ替え
     const qaPath = e.dataTransfer.getData('application/x-quick-access-path');
     if (qaPath) {
         const targetNode = e.target.closest('.tree-node[data-is-quick-access="true"]');
@@ -3056,12 +2874,10 @@ function handleDrop(e) {
 
     let srcPaths = [];
     const pathsJson = e.dataTransfer.getData('application/x-file-paths');
-    
+
     if (pathsJson) {
         srcPaths = JSON.parse(pathsJson);
     } else {
-        // フォールバック: dataTransfer が空の場合は現在選択中のアイテムを使用
-        // (startDrag を使用すると renderer の dataTransfer がクリアされる場合があるため)
         srcPaths = getSelectedItems().map(i => i.srcPath);
     }
 
@@ -3076,7 +2892,6 @@ function handleDrop(e) {
 
     if (!destPath) return;
 
-    // ログ出力
     if (typeof appendTerminal === 'function') {
         appendTerminal(`Moving ${srcPaths.length} items to ${destPath}...`, 'command-echo');
     }
@@ -3084,14 +2899,14 @@ function handleDrop(e) {
     srcPaths.forEach(srcPath => {
         const fileName = srcPath.split('\\').pop();
         const targetPath = destPath + fileName;
-        
-        // 自分自身の中、または同一箇所への移動を防止
+
         if (srcPath !== targetPath && !destPath.startsWith(srcPath + '\\')) {
             window.api.sendCommand(`MOVE|${srcPath}|${targetPath}`);
         }
     });
 }
 
+// 管理者権限ダイアログを表示する
 function showPermissionDialog(path) {
     const overlay = document.createElement('div');
     overlay.className = 'permission-overlay';
@@ -3112,61 +2927,54 @@ function showPermissionDialog(path) {
             </div>
         </div>
     `;
-    
+
     document.body.appendChild(overlay);
-    
+
     overlay.querySelector('.btn-cancel').onclick = () => {
         document.body.removeChild(overlay);
     };
-    
+
     overlay.querySelector('.btn-continue').onclick = () => {
         window.api.sendCommand(`ELEVATE|${path}`);
         document.body.removeChild(overlay);
     };
 }
 
-// 壁紙選択モードの開始・終了ヘルパー
 window.isSelectingWallpaperMode = false;
 
+// 壁紙選択モードを開始する
 window.startWallpaperSelectionMode = async () => {
     window.isSelectingWallpaperMode = true;
-    
-    // ボディにギャラリーモードのクラスを追加
+
     document.body.classList.add('wallpaper-gallery-mode');
-    
-    // 設定画面を非表示にする
+
     const settingsScreen = document.getElementById('settings-screen');
     if (settingsScreen) settingsScreen.style.display = 'none';
-    
-    // バナーを表示する
+
     const banner = document.getElementById('wallpaper-select-banner');
     if (banner) {
         banner.style.display = 'flex';
     }
 
-    // 壁紙専用ウィンドウの場合：独自のギャラリー画面を表示し、ユーザー画像を検索する
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('selectWallpaper') === 'true') {
         const homeView = document.getElementById('home-view');
         const explorerView = document.getElementById('explorer-view');
         const galleryView = document.getElementById('wallpaper-gallery-view');
-        
+
         if (homeView) homeView.style.display = 'none';
         if (explorerView) explorerView.style.display = 'none';
         if (galleryView) {
             galleryView.style.display = 'flex';
-            
-            // ローディングプレースホルダーを表示
+
             const grid = document.getElementById('wallpaper-gallery-grid');
             if (grid) {
                 grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px; font-size: 13px;">画像をスキャン中...（数秒かかる場合があります）</div>';
             }
-            
+
             try {
-                // 画像スキャンの実行（バックエンド呼び出し）
                 const images = await window.api.invoke('SCAN_USER_IMAGES');
-                
-                // すでに壁紙履歴（履歴リスト）に登録されている画像を除外
+
                 let history = [];
                 try {
                     history = await window.api.invoke('GET_WALLPAPERS');
@@ -3174,14 +2982,12 @@ window.startWallpaperSelectionMode = async () => {
                     console.error('Failed to get wallpaper history for catalog exclusion:', e);
                 }
 
-                // 登録済み画像パスのセットを作成（パスの大文字小文字を揃えて比較）
                 const registeredPaths = new Set(
                     history
                         .map(item => (item.originalPath || '').toLowerCase().trim())
                         .filter(p => p !== '')
                 );
 
-                // 履歴に登録されていない画像のみに絞り込む
                 const filteredImages = images.filter(img => {
                     const imgPathLower = (img.path || '').toLowerCase().trim();
                     return !registeredPaths.has(imgPathLower);
@@ -3198,21 +3004,18 @@ window.startWallpaperSelectionMode = async () => {
     }
 };
 
+// 壁紙選択モードを終了する
 window.endWallpaperSelectionMode = (restoreSettings = false) => {
     window.isSelectingWallpaperMode = false;
-    
-    // ボディからギャラリーモードのクラスを削除
+
     document.body.classList.remove('wallpaper-gallery-mode');
-    
-    // バナーを非表示にする
+
     const banner = document.getElementById('wallpaper-select-banner');
     if (banner) banner.style.display = 'none';
-    
-    // ギャラリービューを隠す
+
     const galleryView = document.getElementById('wallpaper-gallery-view');
     if (galleryView) galleryView.style.display = 'none';
-    
-    // 壁紙専用ウィンドウの場合はウィンドウ自体を閉じる
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('selectWallpaper') === 'true') {
         window.close();
@@ -3220,7 +3023,6 @@ window.endWallpaperSelectionMode = (restoreSettings = false) => {
     }
 
     if (restoreSettings) {
-        // 設定画面を再表示し、壁紙タブを選択状態にする
         const settingsScreen = document.getElementById('settings-screen');
         if (settingsScreen) {
             settingsScreen.style.display = 'flex';
@@ -3230,23 +3032,24 @@ window.endWallpaperSelectionMode = (restoreSettings = false) => {
     }
 };
 
+// 壁紙ギャラリーのグリッドを描画する
 function renderGalleryGrid(images) {
     const grid = document.getElementById('wallpaper-gallery-grid');
     if (!grid) return;
-    
+
     grid.innerHTML = '';
-    
+
     if (!images || images.length === 0) {
         grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px; font-size: 13px;">画像ファイルが見つかりませんでした。</div>';
         return;
     }
-    
+
     images.forEach(img => {
         const card = document.createElement('div');
         card.className = 'gallery-card';
-        
+
         const fileUri = encodeURI(`file:///${img.path}`.replace(/\\/g, '/')).replace(/#/g, '%23');
-        
+
         card.innerHTML = `
             <div class="gallery-card-thumb">
                 <img src="${fileUri}" loading="lazy" alt="${img.name}" onerror="this.src='build/icon.ico'">
@@ -3256,8 +3059,7 @@ function renderGalleryGrid(images) {
                 <div class="gallery-card-path" title="${img.path}">${img.path}</div>
             </div>
         `;
-        
-        // ダブルクリックで壁紙に設定してクローズ
+
         card.ondblclick = async () => {
             try {
                 const history = await window.api.invoke('SET_WALLPAPER_BY_PATH', img.path);
@@ -3275,18 +3077,17 @@ function renderGalleryGrid(images) {
                 window.endWallpaperSelectionMode(false);
             }
         };
-        
-        // シングルクリック（選択ハイライト等）
+
         card.onclick = () => {
             document.querySelectorAll('.gallery-card').forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
         };
-        
+
         grid.appendChild(card);
     });
 }
 
-// バナーキャンセルボタンの初期化
+// 壁紙選択バナーのキャンセルボタンを初期化する
 document.addEventListener('DOMContentLoaded', () => {
     const cancelBtn = document.getElementById('btn-cancel-wallpaper-select');
     if (cancelBtn) {
@@ -3298,7 +3099,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// USBドライブ等の抜き差し（デバイス変更）を検知してツリービューを自動更新
+// デバイスの変更を検知してツリービューを自動更新する
 if (window.api && typeof window.api.onDeviceChange === 'function') {
     window.api.onDeviceChange(() => {
         console.log('USB/Removable drive change detected! Refreshing drives list...');

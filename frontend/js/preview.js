@@ -2,11 +2,13 @@ const PreviewManager = {
     isOpen: false,
     currentFile: null,
 
+    // プレビューマネージャーを初期化する
     init() {
         this.cacheDOM();
         this.bindEvents();
     },
 
+    // DOM要素のキャッシュを取得する
     cacheDOM() {
         this.pane = document.getElementById('preview-pane');
         this.resizer = document.getElementById('resizer-preview');
@@ -17,6 +19,7 @@ const PreviewManager = {
         this.openBtn = document.getElementById('btn-open-file');
     },
 
+    // イベントリスナーを登録する
     bindEvents() {
         if (this.closeBtn) {
             this.closeBtn.onclick = () => this.hide();
@@ -33,7 +36,6 @@ const PreviewManager = {
             };
         }
 
-        // ウィンドウが外部で閉じられた際の同期
         window.api.onBackendResponse((obj) => {
             if (obj.type === 'PREVIEW_WINDOW_CLOSED') {
                 this.isOpen = false;
@@ -42,6 +44,7 @@ const PreviewManager = {
         });
     },
 
+    // プレビュー画面の表示/非表示を切り替える
     toggle() {
         if (this.isOpen) {
             this.hide();
@@ -50,11 +53,12 @@ const PreviewManager = {
         }
     },
 
+    // プレビュー画面を表示する
     show() {
         const isWindowMode = localStorage.getItem('settings-window-preview') === 'true';
         
         if (isWindowMode) {
-            this.isOpen = true; // ウィンドウが開いている状態としてマーク
+            this.isOpen = true;
             this.pane.style.display = 'none';
             this.resizer.style.display = 'none';
             if (this.toggleBtn) this.toggleBtn.classList.add('active');
@@ -68,6 +72,7 @@ const PreviewManager = {
         }
     },
 
+    // プレビュー画面を非表示にする
     hide() {
         this.isOpen = false;
         this.pane.style.display = 'none';
@@ -75,12 +80,12 @@ const PreviewManager = {
         if (this.toggleBtn) this.toggleBtn.classList.remove('active');
         if (this.openBtn) this.openBtn.classList.remove('visible');
         
-        // ウィンドウモードならウィンドウを閉じる
         if (localStorage.getItem('settings-window-preview') === 'true') {
             window.api.sendCommand('CLOSE_PREVIEW_WINDOW');
         }
     },
 
+    // 選択されているファイルに合わせてプレビュー表示を更新する
     async update() {
         if (!this.isOpen) return;
 
@@ -140,6 +145,7 @@ const PreviewManager = {
         }
     },
 
+    // 選択ファイルがない場合のプレビュー初期表示を描画する
     renderPlaceholder() {
         this.currentFile = null;
         this.filename.textContent = 'File Preview';
@@ -155,17 +161,18 @@ const PreviewManager = {
         `;
     },
 
+    // 読み込み中表示を描画する
     renderLoading() {
         this.content.innerHTML = '<div class="preview-placeholder"><p>読み込み中...</p></div>';
     },
 
+    // エラー発生時の表示を描画する
     renderError(msg) {
         this.content.innerHTML = `<div class="preview-placeholder"><p style="color: var(--text-terminal-error)">エラー: ${msg}</p></div>`;
     },
 
+    // 画像プレビューを描画する
     renderImage(path) {
-        // ElectronのネイティブパスをURLに変換する必要がある場合がある
-        // ここでは一旦単純なパス指定（バックエンドで適切に処理される前提）
         const imgUrl = `file:///${path.replace(/\\/g, '/')}`;
         this.content.innerHTML = `
             <div class="preview-image-container">
@@ -174,6 +181,7 @@ const PreviewManager = {
         `;
     },
     
+    // 動画プレビューを描画する
     renderVideo(path) {
         const videoUrl = `file:///${path.replace(/\\/g, '/')}`;
         this.content.innerHTML = `
@@ -183,15 +191,15 @@ const PreviewManager = {
         `;
     },
 
+    // テキストファイルのプレビューを描画する
     async renderText(path) {
-        // メインプロセス経由でテキストを取得
-        // window.api.readFileContent などが必要
         const content = await window.api.invoke('READ_FILE_TEXT', path);
         this.content.innerHTML = `
             <div class="preview-text-container">${this.escapeHtml(content)}</div>
         `;
     },
 
+    // プレビュー非対応ファイルの基本情報を表示する
     renderGenericInfo(file) {
         this.content.innerHTML = `
             <div class="preview-info-card">
@@ -210,6 +218,7 @@ const PreviewManager = {
         `;
     },
 
+    // 特殊文字をエスケープする
     escapeHtml(str) {
         if (!str) return '';
         return str

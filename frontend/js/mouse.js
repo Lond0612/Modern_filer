@@ -1,7 +1,6 @@
-/**
- * MouseManager: 矩形選択やドラッグ＆ドロップなどのマウス操作を管理するクラス
- */
+// マウス操作（矩形選択など）を管理するクラス
 class MouseManager {
+    // マウス管理クラスを初期化する
     constructor() {
         this.isDragging = false;
         this.startX = 0;
@@ -11,52 +10,39 @@ class MouseManager {
         this.initialSelection = new Set();
         this.isDraggingItem = false;
         this.draggedItem = null;
-        
-        // 矩形選択の対象となるコンテナ
         this.containerId = 'explorer-view';
-        
         this.init();
     }
 
+    // 選択用矩形要素を作成し、各種マウスイベントを登録する
     init() {
-        // 選択矩形要素の作成
         this.rectElement = document.createElement('div');
         this.rectElement.className = 'selection-rectangle';
         document.body.appendChild(this.rectElement);
 
-        // イベントリスナーの登録
         document.addEventListener('mousedown', (e) => this.onMouseDown(e));
         document.addEventListener('mousemove', (e) => this.onMouseMove(e));
         document.addEventListener('mouseup', (e) => this.onMouseUp(e));
     }
 
-    /**
-     * ドラッグ開始判定
-     */
+    // マウスボタン押下時の矩形選択またはドラッグ開始を処理する
     onMouseDown(e) {
-        // 左クリックのみ対象
         if (e.button !== 0) return;
 
-        // すでに何らかの入力要素やボタン、スクロールバー等の上でクリックされた場合は無視
         if (e.target.closest('button, input, .col-resizer, .resizer-h, .resizer-v, .context-menu, .dropdown-menu')) {
             return;
         }
 
-        // ファイルエクスプローラー領域（またはその親のペイン）内かチェック
-        // explorer-viewが中身に応じて縮んでいる場合があるため、file-paneも対象にする
         const isExplorer = document.getElementById('explorer-view').style.display !== 'none';
         const inFileArea = e.target.closest('.file-pane');
         if (!isExplorer || !inFileArea) return;
 
-        // テーブルヘッダーの上でのクリックは無視
         if (e.target.closest('thead')) return;
 
         const item = e.target.closest('#file-list-body tr, .grid-item');
         const isContent = e.target.closest('.cell-content, .grid-content');
         const isSelected = item && item.classList.contains('selected');
         
-        // 【重要】文字やアイコンのある「実コンテンツ領域」の上、
-        // または「すでに選択されているアイテム」の上であれば、矩形選択を開始せずドラッグ等のアイテム操作を優先する
         if (isContent || isSelected) {
             this.isDraggingItem = true;
             this.draggedItem = item;
@@ -67,9 +53,8 @@ class MouseManager {
         this.startX = e.clientX;
         this.startY = e.clientY;
         this.marqueeStarted = false;
-        this.isPureEmptySpace = true; // ここに来る = itemがnullなので常にtrue
+        this.isPureEmptySpace = true;
 
-        // ドラッグ開始時点での選択状態を保持
         this.initialSelection = new Set();
         if (e.ctrlKey) {
             document.querySelectorAll('.selected').forEach(el => {
@@ -78,7 +63,6 @@ class MouseManager {
             });
         }
 
-        // 余白クリックなので即座に初期化
         this.marqueeStarted = true;
         this.updateRect(this.startX, this.startY, 0, 0);
         this.rectElement.style.display = 'block';
@@ -87,13 +71,10 @@ class MouseManager {
             this.clearSelection();
         }
 
-        // テキスト選択を防止
         document.body.classList.add('no-select');
     }
 
-    /**
-     * ドラッグ中
-     */
+    // マウスドラッグ中の選択矩形更新と交差判定を処理する
     onMouseMove(e) {
         if (!this.isDragging) return;
 
@@ -103,7 +84,6 @@ class MouseManager {
         const diffX = currentX - this.startX;
         const diffY = currentY - this.startY;
         
-        // アイテムの上から開始した場合のみ、しきい値（5px）を設ける
         if (!this.marqueeStarted) {
             if (Math.abs(diffX) > 5 || Math.abs(diffY) > 5) {
                 this.marqueeStarted = true;
@@ -126,9 +106,7 @@ class MouseManager {
         }
     }
 
-    /**
-     * ドラッグ終了
-     */
+    // マウスボタンが離されたときのドラッグ終了と確定処理を行う
     onMouseUp(e) {
         if (!this.isDragging) return;
 
@@ -145,12 +123,9 @@ class MouseManager {
         this.rectElement.style.display = 'none';
         document.body.classList.remove('no-select');
         
-        // 【選択解除の強化】
-        // 矩形選択が開始されず（移動距離が短く）、かつクリック対象がアイテムではなかった場合
         if (!wasMarquee && diffX < 5 && diffY < 5) {
             const item = e.target.closest('#file-list-body tr, .grid-item');
             if (!item && !e.ctrlKey) {
-                // ファイルエクスプローラー領域内であることを再確認
                 const isExplorer = document.getElementById('explorer-view').style.display !== 'none';
                 const inFileArea = e.target.closest('.file-pane');
                 if (isExplorer && inFileArea && !e.target.closest('thead')) {
@@ -159,15 +134,12 @@ class MouseManager {
             }
         }
         
-        // 矩形選択が行われた場合は通知
         if (wasMarquee && typeof onSelectionChanged === 'function') {
             onSelectionChanged();
         }
     }
 
-    /**
-     * 矩形の描画更新
-     */
+    // 選択矩形要素の位置とサイズを更新する
     updateRect(x, y, w, h) {
         this.rectElement.style.left = `${x}px`;
         this.rectElement.style.top = `${y}px`;
@@ -175,11 +147,8 @@ class MouseManager {
         this.rectElement.style.height = `${h}px`;
     }
 
-    /**
-     * 要素との交差判定
-     */
+    // 選択矩形と交差するファイルの選択状態を更新する
     checkIntersection(rectX, rectY, rectW, rectH, isCtrl) {
-        // 表示されている方のコンテナからアイテムを取得
         const isGrid = document.getElementById('file-grid').style.display !== 'none';
         const selector = isGrid ? '.grid-item' : '#file-list-body tr';
         const items = document.querySelectorAll(selector);
@@ -187,7 +156,6 @@ class MouseManager {
         items.forEach(item => {
             const box = item.getBoundingClientRect();
             
-            // 交差判定
             const intersects = (
                 rectX < box.right &&
                 rectX + rectW > box.left &&
@@ -198,7 +166,6 @@ class MouseManager {
             if (intersects) {
                 item.classList.add('selected');
             } else {
-                // Ctrlキーが押されていない場合、または初期選択に含まれていない場合のみ解除
                 if (!isCtrl) {
                     item.classList.remove('selected');
                 } else if (!this.initialSelection.has(item.dataset.name)) {
@@ -212,19 +179,15 @@ class MouseManager {
         }
     }
 
-    /**
-     * 選択状態のクリア
-     */
+    // すべてのファイル選択状態をクリアする
     clearSelection() {
         document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected').forEach(el => {
             el.classList.remove('selected');
         });
-        // renderer.js の選択変更通知を呼ぶ必要があるが、グローバルに公開されているか確認が必要
         if (typeof onSelectionChanged === 'function') {
             onSelectionChanged();
         }
     }
 }
 
-// グローバルインスタンスの作成
 window.mouseManager = new MouseManager();

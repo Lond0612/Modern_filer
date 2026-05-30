@@ -8,16 +8,13 @@
 #include "core/sort.h"
 #include "proc/cmd_proc.h"
 
-// ---------------------------------------------------------------------------
-// グローバル定義
-// ---------------------------------------------------------------------------
 CRITICAL_SECTION g_stdout_cs;
-static char currentPath[MAX_PATH] = {0}; // 検索で使う現在パス (UTF-8)
+static char currentPath[MAX_PATH] = {0};
 
 static SortKey g_sort_key = SORT_NAME;
 static SortOrder g_sort_order = SORT_ASC;
 
-// UTF-8への変換
+// 文字コードをCP932（Sjis）からUTF-8へ変換する
 void cp932_to_utf8(const char* cp932, char* utf8, size_t utf8_size) {
     if (!cp932 || !utf8 || utf8_size == 0) return;
     wchar_t wbuf[16384];
@@ -30,7 +27,7 @@ void cp932_to_utf8(const char* cp932, char* utf8, size_t utf8_size) {
     }
 }
 
-// CP932への変換
+// 文字コードをUTF-8からCP932（Sjis）へ変換する
 void utf8_to_cp932(const char* utf8, char* cp932, size_t cp932_size) {
     if (!utf8 || !cp932 || cp932_size == 0) return;
     wchar_t wbuf[8192];
@@ -42,7 +39,7 @@ void utf8_to_cp932(const char* utf8, char* cp932, size_t cp932_size) {
     }
 }
 
-// JSONエスケープ
+// 送信用JSONデータ向けに文字列内の特殊文字をエスケープする
 void json_escape(const char* input, char* output, size_t out_size) {
     size_t j = 0;
     for (size_t i = 0; input[i] != '\0' && j < out_size - 5; i++) {
@@ -60,7 +57,7 @@ void json_escape(const char* input, char* output, size_t out_size) {
     output[j] = '\0';
 }
 
-// 共通JSON送信関数 (UTF-8)
+// 指定タイプのJSONメッセージを標準出力へスレッドセーフに送信する
 void send_json_utf8(const char* type, const char* content_utf8) {
     char escaped[65536];
     json_escape(content_utf8 ? content_utf8 : "", escaped, sizeof(escaped));
@@ -70,9 +67,7 @@ void send_json_utf8(const char* type, const char* content_utf8) {
     LeaveCriticalSection(&g_stdout_cs);
 }
 
-// ---------------------------------------------------------------------------
-// 各種ハンドラ
-// ---------------------------------------------------------------------------
+// 指定フォルダ内のファイル・フォルダ一覧を取得し、ソートを適用してGUIに返信する
 void handle_list(const char* path_utf8) {
     FileList list = filelist_create();
     int count = filelist_fetch(&list, path_utf8);
@@ -110,6 +105,7 @@ void handle_list(const char* path_utf8) {
     filelist_free(&list);
 }
 
+// サイドバーのツリー向けに、指定フォルダ内のサブフォルダ一覧を返信する
 void handle_tree_list(const char* path_utf8) {
     FileList list = filelist_create();
     filelist_fetch(&list, path_utf8);
@@ -126,6 +122,7 @@ void handle_tree_list(const char* path_utf8) {
     filelist_free(&list);
 }
 
+// システム上の全論域ドライブ文字一覧を取得し、GUIに返信する
 void handle_get_drives() {
     wchar_t drives[512];
     DWORD len = GetLogicalDriveStringsW(511, drives);
@@ -145,13 +142,11 @@ void handle_get_drives() {
     send_json_utf8("END_DRIVES", "");
 }
 
-// ---------------------------------------------------------------------------
-// 検索ロジック (WCHAR化)
-// ---------------------------------------------------------------------------
 #define SEARCH_MAX_RESULTS 50
 #define SEARCH_QUEUE_MAX   512
 #define SPATH_MAX          1024
 
+// 幅優先探索を用いて指定キーワードに合致するファイルを階層的に検索する内部ヘルパー
 static void handle_search_level(const char* root_utf8, const char* keyword_utf8, const char* skip_name_utf8, int* result_count) {
     char (*queue)[SPATH_MAX] = (char(*)[SPATH_MAX])malloc((size_t)SEARCH_QUEUE_MAX * SPATH_MAX);
     if (!queue) return;
@@ -161,7 +156,6 @@ static void handle_search_level(const char* root_utf8, const char* keyword_utf8,
     queue[tail][SPATH_MAX - 1] = '\0';
     tail++;
 
-    // キーワードを小文字のWCHARに変換
     wchar_t kw_w[MAX_PATH];
     MultiByteToWideChar(CP_UTF8, 0, keyword_utf8, -1, kw_w, MAX_PATH);
     for (wchar_t *p = kw_w; *p; p++) *p = towlower(*p);
@@ -219,6 +213,7 @@ static void handle_search_level(const char* root_utf8, const char* keyword_utf8,
     free(queue);
 }
 
+// 指定の開始ディレクトリから上の階層または下の階層に向かってキーワード検索を実行する
 void handle_search(const char* start_root_utf8, const char* keyword_utf8) {
     int result_count = 0;
     send_json_utf8("START_SEARCH", keyword_utf8);
@@ -246,9 +241,7 @@ void handle_search(const char* start_root_utf8, const char* keyword_utf8) {
     send_json_utf8("END_SEARCH", keyword_utf8);
 }
 
-// ---------------------------------------------------------------------------
-// ターミナル同期
-// ---------------------------------------------------------------------------
+// バックエンドcmd.exeの出力を監視・受信し、カレントディレクトリ同期等の解析とGUIへの返信を行う
 void on_cmd_output(const char* text_cp932) {
     char* marker = strstr(text_cp932, "__CWD__:");
     if (marker) {
@@ -290,9 +283,7 @@ void on_cmd_output(const char* text_cp932) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// ユニークなファイル名生成
-// ---------------------------------------------------------------------------
+// ファイル・フォルダ作成時に同名衝突がある場合、(2)などの連番を付与したユニークなパスを生成する
 void get_unique_path_w(const wchar_t* path, wchar_t* out) {
     if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES) {
         wcscpy(out, path);
@@ -310,30 +301,26 @@ void get_unique_path_w(const wchar_t* path, wchar_t* out) {
             return;
         }
     }
-    wcscpy(out, path); // 万が一失敗したら元のパス（エラーになるはず）
+    wcscpy(out, path);
 }
 
-// ---------------------------------------------------------------------------
-// 権限昇格（UACプロンプトを表示してフォルダへのアクセス権を付与）
-// ---------------------------------------------------------------------------
+// 指定パスに対してUACを利用して管理者権限に昇格し、フォルダアクセス権を現在のユーザーに付与する
 void handle_elevate(const char* path_utf8) {
     wchar_t wpath[MAX_PATH];
     MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
 
-    // 末尾のバックスラッシュを削除（icacls "path\" となると \" がエスケープと見なされるため）
     size_t len = wcslen(wpath);
     if (len > 3 && wpath[len - 1] == L'\\') {
         wpath[len - 1] = L'\0';
     }
 
-    // icacls を管理者権限で実行
     wchar_t parameters[MAX_PATH + 128];
     _snwprintf(parameters, (sizeof(parameters)/sizeof(wchar_t)) - 1, L"/c icacls \"%s\" /grant %%USERNAME%%:(OI)(CI)F", wpath);
 
     SHELLEXECUTEINFOW sei = {0};
     sei.cbSize = sizeof(sei);
     sei.fMask = SEE_MASK_NOCLOSEPROCESS;
-    sei.lpVerb = L"runas"; // 管理者として実行（UACプロンプトが出る）
+    sei.lpVerb = L"runas";
     sei.lpFile = L"cmd.exe";
     sei.lpParameters = parameters;
     sei.nShow = SW_HIDE;
@@ -346,7 +333,7 @@ void handle_elevate(const char* path_utf8) {
 
         if (exitCode == 0) {
             send_json_utf8("LOG", "Permissions granted. Retrying...");
-            handle_list(path_utf8); // 成功したので再読み取りを試行
+            handle_list(path_utf8);
         } else {
             char msg[256];
             _snprintf(msg, sizeof(msg), "Elevation failed with code: %lu", exitCode);
@@ -364,9 +351,7 @@ void handle_elevate(const char* path_utf8) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// CRUD
-// ---------------------------------------------------------------------------
+// 指定したパスに新しいフォルダを作成する
 void handle_mkdir(const char* path_utf8) {
     wchar_t wpath_requested[MAX_PATH], wpath_final[MAX_PATH];
     MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath_requested, MAX_PATH);
@@ -384,6 +369,7 @@ void handle_mkdir(const char* path_utf8) {
     }
 }
 
+// 指定したパスに新しい空ファイルを作成する
 void handle_new_file(const char* path_utf8) {
     wchar_t wpath_requested[MAX_PATH], wpath_final[MAX_PATH];
     MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath_requested, MAX_PATH);
@@ -403,6 +389,7 @@ void handle_new_file(const char* path_utf8) {
     }
 }
 
+// ファイルまたはフォルダの名前を変更する
 void handle_rename(const char* old_path_utf8, const char* new_path_utf8) {
     wchar_t wold[MAX_PATH], wnew[MAX_PATH];
     MultiByteToWideChar(CP_UTF8, 0, old_path_utf8, -1, wold, MAX_PATH);
@@ -416,6 +403,7 @@ void handle_rename(const char* old_path_utf8, const char* new_path_utf8) {
     }
 }
 
+// 指定したディレクトリ配下の合計ファイルサイズ、ファイル数、フォルダ数を再帰的に取得する
 void get_directory_info(const wchar_t* path, long long* total_size, int* file_count, int* dir_count) {
     wchar_t search_path[MAX_PATH];
     _snwprintf(search_path, MAX_PATH - 1, L"%s\\*", path);
@@ -444,6 +432,7 @@ void get_directory_info(const wchar_t* path, long long* total_size, int* file_co
     FindClose(hFind);
 }
 
+// WindowsのFILETIME構造体をミリ秒単位の時刻情報に変換する
 static long long filetime_to_ms(FILETIME ft) {
     ULARGE_INTEGER ull;
     ull.LowPart = ft.dwLowDateTime;
@@ -451,6 +440,7 @@ static long long filetime_to_ms(FILETIME ft) {
     return (long long)((ull.QuadPart - 116444736000000000ULL) / 10000ULL);
 }
 
+// 指定パスの詳細プロパティ（サイズ、タイムスタンプ、属性など）を取得してGUIへ通知する
 void handle_prop(const char* path_utf8) {
     wchar_t wpath[MAX_PATH];
     MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
@@ -487,6 +477,7 @@ void handle_prop(const char* path_utf8) {
     send_json_utf8("PROP_DATA", result);
 }
 
+// エクスプローラー標準のネイティブプロパティダイアログを表示する
 void handle_prop_native(const char* path_utf8) {
     wchar_t wpath[MAX_PATH];
     MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
@@ -507,6 +498,7 @@ void handle_prop_native(const char* path_utf8) {
     }
 }
 
+// 指定パスをゴミ箱へ移動または完全に削除する
 void handle_delete(const char* path_utf8, int permanent) {
     wchar_t wpath[MAX_PATH + 2];
     MultiByteToWideChar(CP_UTF8, 0, path_utf8, -1, wpath, MAX_PATH);
@@ -515,11 +507,6 @@ void handle_delete(const char* path_utf8, int permanent) {
     SHFILEOPSTRUCTW op = {0};
     op.wFunc = FO_DELETE;
     op.pFrom = wpath;
-    // FOF_NOCONFIRMATION: ゴミ箱への移動確認を出さない
-    // FOF_WANTNUKEWARNING: ゴミ箱に入らず完全削除になる場合のみ警告を出す
-#ifndef FOF_WANTNUKEWARNING
-#define FOF_WANTNUKEWARNING 0x4000
-#endif
     if (permanent) {
         op.fFlags = FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
     } else {
@@ -536,6 +523,7 @@ void handle_delete(const char* path_utf8, int permanent) {
     }
 }
 
+// ファイルまたはフォルダをコピーする
 void handle_copy(const char* src_utf8, const char* dst_utf8) {
     wchar_t wsrc[MAX_PATH + 2], wdst[MAX_PATH + 2];
     MultiByteToWideChar(CP_UTF8, 0, src_utf8, -1, wsrc, MAX_PATH);
@@ -559,6 +547,7 @@ void handle_copy(const char* src_utf8, const char* dst_utf8) {
     }
 }
 
+// ファイルまたはフォルダを移動する
 void handle_move(const char* src_utf8, const char* dst_utf8) {
     wchar_t wsrc[MAX_PATH + 2], wdst[MAX_PATH + 2];
     MultiByteToWideChar(CP_UTF8, 0, src_utf8, -1, wsrc, MAX_PATH);
@@ -582,9 +571,7 @@ void handle_move(const char* src_utf8, const char* dst_utf8) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// メイン
-// ---------------------------------------------------------------------------
+// アプリケーションのエントリーポイント。標準入力からの制御コマンドを待機・処理するループを実行する
 int main(void) {
     char line[4096];
     InitializeCriticalSection(&g_stdout_cs);

@@ -3,34 +3,22 @@
 
 #include <windows.h>
 
-// ---------------------------------------------------------------------------
-// cmd.exe プロセス管理
-//
-// cmd_proc_start() で cmd.exe を子プロセスとして起動し、
-// stdin/stdout/stderr をパイプで接続する。
-//
-// 出力は内部スレッドが非同期で読み続け、登録したコールバックに渡す。
-// GUI はコールバック内で PostMessage して安全にログペインへ追記する。
-// ---------------------------------------------------------------------------
-
-// 出力コールバック: cmd の stdout/stderr が届くたびに呼ばれる
-// text は呼び出し側で free してはいけない（コールバック内でコピーすること）
+// 出力コールバック型定義。標準出力やエラー出力の受信時に呼び出される
 typedef void (*CmdOutputCallback)(const char *text);
 
-// cmd.exe を起動してパイプを接続する。成功で 1、失敗で 0 を返す。
+// バックエンドのcmd.exeプロセスを起動しパイプを接続する
 int cmd_proc_start(CmdOutputCallback cb);
 
-// cmd の stdin にテキストを送る（末尾に \r\n が自動付与される）
+// cmd.exeの標準入力にコマンドテキストを送信する
 void cmd_proc_send(const char *line);
 
-// プロセスを終了して全リソースを解放する
+// cmd.exeプロセスを終了しハンドル等を解放する
 void cmd_proc_stop(void);
 
-// プロセスが起動中かどうかを返す
+// プロセスが生存しているかを判定する
 int cmd_proc_is_alive(void);
 
-// カレントディレクトリを GUI と cmd で同期する
-// GUI 側でディレクトリ移動した際に呼ぶ
+// カレントディレクトリの変更をcmd.exeに同期する
 void cmd_proc_cd(const char *path);
 
 #endif // CMD_PROC_H

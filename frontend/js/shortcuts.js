@@ -1,19 +1,16 @@
-/**
- * ShortcutManager
- * アプリケーション全体のショートカットキーを一括管理するクラス
- */
 const ShortcutManager = {
     shortcuts: [],
     isEnabled: true,
 
+    // ショートカットマネージャーを初期化し、キーダウンイベントをバインドする
     init() {
         window.addEventListener('keydown', (e) => this.handleKeyDown(e), true);
         console.log('ShortcutManager initialized');
         
-        // 依存関係（renderer.jsの関数など）が読み込まれるのを待ってから登録
         this.applyDefaultConfiguration();
     },
 
+    // ショートカットキーの組み合わせとコールバック関数を登録する
     register(keyCombo, callback, options = {}) {
         this.shortcuts.push({
             combo: keyCombo,
@@ -25,6 +22,7 @@ const ShortcutManager = {
         });
     },
 
+    // キーボード押下イベントを捕捉し、登録されたショートカットと照合して実行する
     handleKeyDown(e) {
         if (!this.isEnabled) return;
 
@@ -45,6 +43,7 @@ const ShortcutManager = {
         }
     },
 
+    // イベントオブジェクトが指定されたキーの組み合わせと一致するか判定する
     isMatch(e, combo) {
         const parts = combo.split('+');
         const mainKey = parts.pop().toLowerCase();
@@ -62,11 +61,8 @@ const ShortcutManager = {
         return keyMatch && e.ctrlKey === hasCtrl && e.shiftKey === hasShift && e.altKey === hasAlt;
     },
 
-    // ---------------------------------------------------------------------------
-    // デフォルトショートカット設定
-    // ---------------------------------------------------------------------------
+    // アプリケーションのデフォルトショートカットキー群を登録する
     applyDefaultConfiguration() {
-        // ファイル操作
         this.register('F2', () => {
             const selectedRows = document.querySelectorAll('#file-list-body tr.selected, .grid-item.selected');
             if (selectedRows.length > 0 && typeof startRename === 'function') startRename(selectedRows[0]);
@@ -98,7 +94,6 @@ const ShortcutManager = {
         this.register('Shift+d', () => this.helpers.deleteSelectedItems(true));
         this.register('Ctrl+Shift+n', () => this.helpers.createNewFolder());
 
-        // ナビゲーション
         this.register('Alt+ArrowUp', () => document.getElementById('btn-up')?.click());
         this.register('Alt+ArrowLeft', () => document.getElementById('btn-back')?.click());
         this.register('Alt+ArrowRight', () => document.getElementById('btn-forward')?.click());
@@ -106,30 +101,24 @@ const ShortcutManager = {
         this.register('Ctrl+r', () => document.getElementById('btn-refresh')?.click());
         this.register('Ctrl+Shift+e', () => this.helpers.expandAllTreeFolders());
         
-        // 検索
         this.register('Ctrl+e', () => this.helpers.focusSearch());
         this.register('Ctrl+f', () => this.helpers.focusSearch());
         this.register('F3', () => this.helpers.focusSearch());
 
-        // 表示モード (Ctrl + Shift + 1-6)
         const modes = ['extralarge', 'large', 'medium', 'small', 'compact', 'details'];
         modes.forEach((m, i) => {
             this.register(`Ctrl+Shift+${i + 1}`, () => this.helpers.changeViewMode(m));
         });
 
-        // ウィンドウ操作
         this.register('F11', () => window.api.send('TOGGLE_MAXIMIZE'));
 
-        // プレビュー表示の切り替え
         this.register('Space', () => {
             if (typeof PreviewManager !== 'undefined') PreviewManager.toggle();
         });
 
-        // 選択項目の上下移動
         this.register('ArrowDown', (e) => this.helpers.navigateSelection(1, e.shiftKey));
         this.register('ArrowUp', (e) => this.helpers.navigateSelection(-1, e.shiftKey));
 
-        // タブ操作
         this.register('Ctrl+t', () => typeof addTab === 'function' && addTab('HOME'));
         this.register('Ctrl+w', () => typeof closeTab === 'function' && closeTab(window.activeTabId));
         
@@ -149,7 +138,6 @@ const ShortcutManager = {
 
         this.register('Ctrl+Shift+t', () => typeof restoreRecentlyClosedTab === 'function' && restoreRecentlyClosedTab());
 
-        // タブの数字キー切り替え (Ctrl+1 ~ 9)
         for (let i = 1; i <= 9; i++) {
             this.register(`Ctrl+${i}`, () => {
                 if (window.tabs && window.tabs[i - 1] && typeof switchTab === 'function') {
@@ -159,9 +147,7 @@ const ShortcutManager = {
         }
     },
 
-    // ---------------------------------------------------------------------------
-    // ヘルパー関数群
-    // ---------------------------------------------------------------------------
+    // ショートカット処理用の汎用的な操作を提供するヘルパー関数群
     helpers: {
         selectAllItems() {
             const items = document.querySelectorAll('#file-list-body tr, .grid-item');
@@ -181,8 +167,6 @@ const ShortcutManager = {
             if (window.isHomeActive) return;
             if (typeof resolveNameConflict !== 'function') return;
             let defaultName = resolveNameConflict('新しいフォルダ');
-            // renderer.js内の変数を直接いじるのは難しいため、window経由の操作が必要になる可能性があるが
-            // 一旦既存のロジックを模倣
             window.api.sendCommand(`MKDIR|${window.currentPath}${defaultName}`);
         },
 
@@ -246,8 +230,6 @@ const ShortcutManager = {
     }
 };
 
-// 起動時に初期化
-// renderer.js の読み込み完了を待つために load イベントを使用
 window.addEventListener('load', () => {
     ShortcutManager.init();
 });

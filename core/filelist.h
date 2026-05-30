@@ -3,27 +3,30 @@
 
 #include <windows.h>
 
-// --- ファイル情報 ---
 typedef struct
 {
     wchar_t name[MAX_PATH];
-    wchar_t extension[16]; // 拡張子（種類ソート用）
+    wchar_t extension[16];
     DWORD attributes;
     LONGLONG size;
-    FILETIME created_at; // 作成日時
-    FILETIME updated_at; // 更新日時
+    FILETIME created_at;
+    FILETIME updated_at;
 } FileEntry;
 
-// --- ls の結果リスト ---
 typedef struct
 {
-    FileEntry *entries; // 動的配列
-    int count;          // 有効件数
-    int capacity;       // 確保済み件数
+    FileEntry *entries;
+    int count;
+    int capacity;
 } FileList;
 
+// 空のファイルリストを生成する
 FileList filelist_create(void);
+
+// 指定パスのファイル一覧を取得して格納する
 int filelist_fetch(FileList *list, const char *path);
+
+// ファイルリストのメモリを解放する
 void filelist_free(FileList *list);
 
 #endif // FILELIST_H

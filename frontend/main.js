@@ -5,12 +5,12 @@ const { spawn } = require('child_process');
 const { StringDecoder } = require('string_decoder');
 const { pathToFileURL } = require('url');
 
-// 高パフォーマンスなカスタムファイルプロトコルのスキーム登録（メモリリーク・ファイルサイズ制限の解消）
+// orbiter-media:// カスタムプロトコルの登録（壁紙配信用）
 protocol.registerSchemesAsPrivileged([
   { scheme: 'orbiter-media', privileges: { bypassCSP: true, secure: true, supportFetchAPI: true } }
 ]);
 
-// パッケージ時は実行ファイルと同じ階層のdataフォルダをuserDataとして使用する（ポータブルモード）
+// ポータブルモード: exe 隣の data フォルダを userData に設定
 if (app.isPackaged) {
   const localDataPath = path.join(path.dirname(app.getPath('exe')), 'data');
   app.setPath('userData', localDataPath);
@@ -18,6 +18,11 @@ if (app.isPackaged) {
 
 const windows = new Map();
 
+// 終了時に強制クリーンアップする子プロセスとタイマーの追跡セット
+const trackedChildProcs = new Set();
+const trackedTimers = new Set();
+
+// BrowserWindow を生成し、サーバー起動・各種イベントを設定する
 function createWindow(initialPath = null, selectWallpaper = false) {
   let windowOptions = {
     width: selectWallpaper ? 1000 : 1200,
@@ -39,7 +44,7 @@ function createWindow(initialPath = null, selectWallpaper = false) {
     show: false
   };
 
-  // 既存のウィンドウがあれば位置を少しずらす
+  // 既存ウィンドウがあれば位置をずらす
   const focusedWin = BrowserWindow.getFocusedWindow();
   if (focusedWin) {
     const bounds = focusedWin.getBounds();
@@ -49,7 +54,7 @@ function createWindow(initialPath = null, selectWallpaper = false) {
 
   const win = new BrowserWindow(windowOptions);
 
-  // USBドライブ等の動的認識のためのウィンドウメッセージフック（Windows環境限定）
+  // USB 着脱を WM_DEVICECHANGE フックで検知しレンダラーに通知
   if (process.platform === 'win32') {
     const WM_DEVICECHANGE = 0x0219;
     win.hookWindowMessage(WM_DEVICECHANGE, (wParam, lParam) => {
@@ -100,6 +105,7 @@ function createWindow(initialPath = null, selectWallpaper = false) {
     win.show();
   });
 
+  // ロード完了後、キューに溜まったバックエンドメッセージを一括送信
   win.webContents.on('did-finish-load', () => {
     state.isWindowReady = true;
     for (const msg of state.messageQueue) {
@@ -108,6 +114,7 @@ function createWindow(initialPath = null, selectWallpaper = false) {
     state.messageQueue = [];
   });
 
+  // ウィンドウ閉鎖時: プレビュー・サーバーを終了し、最後のメインウィンドウなら壁紙選択ウィンドウも閉じる
   win.on('closed', () => {
     if (state.previewWindow && !state.previewWindow.isDestroyed()) {
       state.previewWindow.close();
@@ -117,7 +124,6 @@ function createWindow(initialPath = null, selectWallpaper = false) {
     }
     windows.delete(winId);
 
-    // すべての本アプリウィンドウ（メインウィンドウ）が閉じられたかチェック
     let mainWindowsCount = 0;
     for (const [id, wState] of windows.entries()) {
       if (!wState.isWallpaperSelectWindow) {
@@ -125,7 +131,6 @@ function createWindow(initialPath = null, selectWallpaper = false) {
       }
     }
 
-    // メインウィンドウが0になったら、残っている壁紙選択ウィンドウもすべて閉じる
     if (mainWindowsCount === 0) {
       for (const [id, wState] of windows.entries()) {
         if (wState.isWallpaperSelectWindow && wState.window && !wState.window.isDestroyed()) {
@@ -135,7 +140,7 @@ function createWindow(initialPath = null, selectWallpaper = false) {
     }
   });
 
-  // 開発時以外でもF12でデバッグできるようにする（α版用）
+  // F12 で DevTools を開く
   win.webContents.on('before-input-event', (event, input) => {
     if (input.key === 'F12') {
       win.webContents.toggleDevTools();
@@ -143,13 +148,13 @@ function createWindow(initialPath = null, selectWallpaper = false) {
     }
   });
 
-  // マウスの戻る/進むボタン（XButton1/2）による
-  // Electronデフォルトのページナビゲーションを抑制
+  // マウスサイドボタンによるページナビゲーションを抑制
   win.webContents.on('will-navigate', (event) => {
     event.preventDefault();
   });
 }
 
+// 指定ウィンドウ用の filer_server.exe を起動し stdout を JSON パースしてレンダラーに転送する
 function startServerForWindow(winId) {
   const state = windows.get(winId);
   if (!state) return;
@@ -158,19 +163,14 @@ function startServerForWindow(winId) {
   let serverCwd;
 
   if (app.isPackaged) {
-    // パッケージング後は resources フォルダ直下に配置される想定
     serverPath = path.join(process.resourcesPath, 'filer_server.exe');
     serverCwd = process.resourcesPath;
   } else {
-    // 開発環境
     serverPath = path.join(__dirname, '..', 'filer_server.exe');
     serverCwd = path.join(__dirname, '..');
   }
 
-  // サーバーの起動
-  const filerServer = spawn(serverPath, [], {
-    cwd: serverCwd
-  });
+  const filerServer = spawn(serverPath, [], { cwd: serverCwd });
   state.filerServer = filerServer;
 
   filerServer.stdout.on('data', (data) => {
@@ -191,7 +191,6 @@ function startServerForWindow(winId) {
         if (obj.type === 'CMD_OUT') {
           state.batchedCmdOut += obj.content;
         } else {
-          // If we have accumulated CMD_OUT, send them first
           if (state.batchedCmdOut) {
             state.window.webContents.send('backend-response', { type: 'CMD_OUT', content: state.batchedCmdOut });
             state.batchedCmdOut = '';
@@ -203,7 +202,6 @@ function startServerForWindow(winId) {
       }
     }
 
-    // Final flush of batched content
     if (state.batchedCmdOut && state.isWindowReady) {
       state.window.webContents.send('backend-response', { type: 'CMD_OUT', content: state.batchedCmdOut });
       state.batchedCmdOut = '';
@@ -220,11 +218,11 @@ function startServerForWindow(winId) {
 }
 
 app.whenReady().then(() => {
-  // カスタムメディアプロトコルのハンドラー登録
+  // orbiter-media:// リクエストを userData/wallpapers フォルダのファイルにマップ
   protocol.handle('orbiter-media', (request) => {
     try {
       const parsedUrl = new URL(request.url);
-      const fileName = parsedUrl.pathname.replace(/^\//, ''); // 先頭のスラッシュを除去
+      const fileName = parsedUrl.pathname.replace(/^\//, '');
       const wallpapersDir = path.join(app.getPath('userData'), 'wallpapers');
       const filePath = path.join(wallpapersDir, fileName);
       return net.fetch(pathToFileURL(filePath).toString());
@@ -247,18 +245,57 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
+// 終了前に残存タイマー・子プロセス・filerServer を強制クリーンアップしてログ出力
+app.on('before-quit', () => {
+  const timerCount = trackedTimers.size;
+  for (const id of trackedTimers) clearTimeout(id);
+  trackedTimers.clear();
+
+  let killed = 0;
+  let alreadyDone = 0;
+  for (const proc of trackedChildProcs) {
+    try {
+      if (proc.exitCode === null && !proc.killed) {
+        proc.kill('SIGKILL');
+        killed++;
+      } else {
+        alreadyDone++;
+      }
+    } catch (e) { }
+  }
+  trackedChildProcs.clear();
+
+  let serverKilled = 0;
+  let serverAlive = 0;
+  for (const [, state] of windows.entries()) {
+    if (state.filerServer) {
+      if (state.filerServer.exitCode === null && !state.filerServer.killed) {
+        state.filerServer.kill();
+        serverAlive++;
+      } else {
+        serverKilled++;
+      }
+    }
+  }
+
+  console.log(
+    `[before-quit] cleanup done — ` +
+    `timers cancelled: ${timerCount}, ` +
+    `child-procs force-killed: ${killed} (already exited: ${alreadyDone}), ` +
+    `filer-servers force-killed: ${serverAlive} (already exited: ${serverKilled})`
+  );
+});
+
+// コマンドをバックエンドに転送する。PROP_NATIVE と OPEN は Main Process で直接処理
 ipcMain.on('send-command', (event, command) => {
   if (!command) return;
 
-  // PROP_NATIVE: VBScript経由でWindowsプロパティを開く
-  // パスはコマンドライン引数で渡すことでVBSファイルを純ASCII化し
-  // 文字コード問題（UTF-8 vs ANSI）を回避する
+  // PROP_NATIVE: VBScript でファイルプロパティダイアログを開く
   if (command.startsWith('PROP_NATIVE|')) {
     const filePath = command.substring('PROP_NATIVE|'.length);
     const dir = path.dirname(filePath);
     const fileName = path.basename(filePath);
 
-    // VBSファイルはASCIIのみ、パスは引数経由で受け取る
     const vbsContent = [
       'Set oShell = CreateObject("Shell.Application")',
       'Dim sDir, sFile',
@@ -273,7 +310,6 @@ ipcMain.on('send-command', (event, command) => {
     const { tmpdir } = require('os');
     const { writeFileSync, unlinkSync } = require('fs');
     const tmpVbs = path.join(tmpdir(), `prop_${Date.now()}.vbs`);
-    // UTF-16 LE with BOM: wscript.exeが確実に認識できる文字コード
     writeFileSync(tmpVbs, '\ufeff' + vbsContent, 'utf16le');
 
     const proc = spawn('wscript.exe', [tmpVbs, dir, fileName], {
@@ -286,6 +322,7 @@ ipcMain.on('send-command', (event, command) => {
     return;
   }
 
+  // OPEN: shell.openPath でファイルを既定アプリで開く
   if (command.startsWith('OPEN|')) {
     const filePath = command.substring(5);
     shell.openPath(filePath).then((error) => {
@@ -301,6 +338,7 @@ ipcMain.on('send-command', (event, command) => {
   }
 });
 
+// OS 標準フォルダのパス一覧を返す
 ipcMain.handle('get-system-paths', () => {
   const getAbsPath = (name) => {
     try {
@@ -321,6 +359,7 @@ ipcMain.handle('get-system-paths', () => {
   };
 });
 
+// ユーザーテーマ JSON を読み込む（ファイルなければ初期テーマを生成）
 ipcMain.handle('GET_USER_THEMES', async () => {
   const themesPath = path.join(app.getPath('userData'), 'themes');
   const themesFile = path.join(themesPath, 'user_themes.json');
@@ -329,11 +368,9 @@ ipcMain.handle('GET_USER_THEMES', async () => {
     await fs.mkdir(themesPath, { recursive: true });
     try {
       const data = await fs.readFile(themesFile, 'utf8');
-      // コメント（// または /* */）を除去してからパース
       const cleanJson = data.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1');
       return JSON.parse(cleanJson);
     } catch (e) {
-      // 初期ファイルを作成（コメント付きの文字列として作成）
       const initialContent = `[
   {
     "id": "user-emerald",
@@ -384,17 +421,20 @@ ipcMain.handle('GET_USER_THEMES', async () => {
   }
 });
 
+// テーマフォルダを新しいウィンドウで開く
 ipcMain.handle('OPEN_THEMES_FOLDER', () => {
   const themesPath = path.join(app.getPath('userData'), 'themes');
   createWindow(themesPath);
 });
 
+// 指定パスで新しいウィンドウを開く
 ipcMain.handle('OPEN_NEW_WINDOW', (event, targetPath) => {
   if (targetPath) {
     createWindow(targetPath);
   }
 });
 
+// タイトルバーオーバーレイの色を更新する
 ipcMain.on('UPDATE_TITLE_BAR_OVERLAY', (event, data) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win && !win.isDestroyed() && typeof win.setTitleBarOverlay === 'function') {
@@ -406,8 +446,8 @@ ipcMain.on('UPDATE_TITLE_BAR_OVERLAY', (event, data) => {
   }
 });
 
+// 壁紙選択ウィンドウを開く（既に開いていればフォーカス）
 ipcMain.handle('OPEN_WALLPAPER_SELECT_WINDOW', () => {
-  // 既に壁紙設定ウィンドウが開いているかチェック
   for (const [id, wState] of windows.entries()) {
     if (wState.isWallpaperSelectWindow && wState.window && !wState.window.isDestroyed()) {
       if (wState.window.isMinimized()) {
@@ -418,12 +458,11 @@ ipcMain.handle('OPEN_WALLPAPER_SELECT_WINDOW', () => {
     }
   }
 
-  // 開いていなければ新しく作成する
   createWindow(null, true);
 });
 
+// 壁紙選択ウィンドウをすべて閉じる
 ipcMain.handle('CLOSE_WALLPAPER_SELECT_WINDOW', () => {
-  // すべての壁紙設定ウィンドウを閉じる
   for (const [id, wState] of windows.entries()) {
     if (wState.isWallpaperSelectWindow && wState.window && !wState.window.isDestroyed()) {
       wState.window.close();
@@ -431,6 +470,7 @@ ipcMain.handle('CLOSE_WALLPAPER_SELECT_WINDOW', () => {
   }
 });
 
+// 壁紙履歴を metadata.json と同期し、最新 5 枚を返す（古いファイルは削除）
 async function getWallpaperHistory() {
   const wallpapersDir = path.join(app.getPath('userData'), 'wallpapers');
   await fs.mkdir(wallpapersDir, { recursive: true });
@@ -440,18 +480,13 @@ async function getWallpaperHistory() {
   try {
     const raw = await fs.readFile(metadataPath, 'utf8');
     historyData = JSON.parse(raw);
-  } catch (e) {
-    // メタデータファイルが存在しないか破損している場合は新規生成
-  }
+  } catch (e) { }
 
-  // 物理ファイルの存在チェックと同期
   const files = await fs.readdir(wallpapersDir);
   const wpFiles = files.filter(f => f.startsWith('wp_'));
 
-  // 実際に存在する画像ファイルのみのメタデータに同期
   let syncedHistory = historyData.filter(item => wpFiles.includes(item.file));
 
-  // 登録されていない物理画像ファイル（古いバージョン等のデータ）があれば補完
   const trackedFiles = syncedHistory.map(item => item.file);
   const untrackedFiles = wpFiles.filter(f => !trackedFiles.includes(f));
 
@@ -468,10 +503,8 @@ async function getWallpaperHistory() {
     } catch (e) { }
   }
 
-  // タイムスタンプ降順（新しい順）にソート
   syncedHistory.sort((a, b) => b.timestamp - a.timestamp);
 
-  // 上位5枚を保持し、それ以外を削除
   const keep = syncedHistory.slice(0, 5);
   const remove = syncedHistory.slice(5);
 
@@ -483,14 +516,12 @@ async function getWallpaperHistory() {
     }
   }
 
-  // メタデータファイルの更新書き出し
   try {
     await fs.writeFile(metadataPath, JSON.stringify(keep, null, 2), 'utf8');
   } catch (e) {
     console.error('Failed to write wallpaper metadata:', e);
   }
 
-  // レンダラープロセスに返す配列を生成（元ファイルの絶対パス originalPath を含む）
   return keep.map(item => ({
     id: item.id,
     dataUrl: item.dataUrl,
@@ -498,6 +529,7 @@ async function getWallpaperHistory() {
   }));
 }
 
+// ダイアログで壁紙を選択し userData/wallpapers に保存する
 ipcMain.handle('SELECT_WALLPAPER', async () => {
   const { dialog } = require('electron');
   const result = await dialog.showOpenDialog({
@@ -522,7 +554,6 @@ ipcMain.handle('SELECT_WALLPAPER', async () => {
 
   await fs.copyFile(srcPath, destPath);
 
-  // メタデータファイルにオリジナルの絶対パスを含めて記録
   const metadataPath = path.join(wallpapersDir, 'metadata.json');
   let historyData = [];
   try {
@@ -546,6 +577,7 @@ ipcMain.handle('SELECT_WALLPAPER', async () => {
   return await getWallpaperHistory();
 });
 
+// パス指定で壁紙を userData/wallpapers に保存する（壁紙ギャラリーからのダブルクリック用）
 ipcMain.handle('SET_WALLPAPER_BY_PATH', async (event, srcPath) => {
   if (!srcPath) return null;
 
@@ -559,7 +591,6 @@ ipcMain.handle('SET_WALLPAPER_BY_PATH', async (event, srcPath) => {
 
   await fs.copyFile(srcPath, destPath);
 
-  // メタデータファイルにオリジナルの絶対パスを含めて記録
   const metadataPath = path.join(wallpapersDir, 'metadata.json');
   let historyData = [];
   try {
@@ -583,10 +614,12 @@ ipcMain.handle('SET_WALLPAPER_BY_PATH', async (event, srcPath) => {
   return await getWallpaperHistory();
 });
 
+// 壁紙履歴を返す
 ipcMain.handle('GET_WALLPAPERS', async () => {
   return await getWallpaperHistory();
 });
 
+// 壁紙ファイルと metadata.json をすべて削除する
 ipcMain.handle('CLEAR_WALLPAPER', async () => {
   const wallpapersDir = path.join(app.getPath('userData'), 'wallpapers');
   try {
@@ -601,16 +634,17 @@ ipcMain.handle('CLEAR_WALLPAPER', async () => {
   }
 });
 
+// レンダラーからのログをメインプロセスのコンソールに転送する
 ipcMain.on('RENDERER_LOG', (event, ...args) => {
   console.log('[RENDERER]', ...args);
 });
 
 const os = require('os');
 
+// ホームディレクトリ以下の画像ファイルを再帰スキャンする（壁紙ギャラリー用）
 async function scanImages(dir, fileList = [], limit = 1000) {
   if (fileList.length >= limit) return fileList;
 
-  // アプリフォルダの絶対パスを取得して小文字化
   const appDir = path.dirname(app.getAppPath()).toLowerCase();
   const execDir = path.dirname(process.execPath).toLowerCase();
 
@@ -622,15 +656,14 @@ async function scanImages(dir, fileList = [], limit = 1000) {
       const fullPath = path.join(dir, entry.name);
       const fullPathLower = fullPath.toLowerCase();
 
-      // 現在実行中のアプリパッケージフォルダやソースコードは絶対に除外
+      // アプリ自身のフォルダは除外
       if (fullPathLower.startsWith(appDir) || fullPathLower.startsWith(execDir)) {
         continue;
       }
 
-      // 除外フォルダ（大容量、システム、管理者権限が必要そうなフォルダ、およびアプリフォルダ名）
       const nameLower = entry.name.toLowerCase();
       if (entry.name.startsWith('.') ||
-        nameLower.includes('orbiter') || // Orbiterフォルダの除外！
+        nameLower.includes('orbiter') ||
         ['appdata', 'node_modules', 'local settings', 'application data', 'cookies',
           'sendto', 'start menu', 'my documents', 'templates', 'printhood', 'nethood',
           'recent', 'system32', 'windows', 'program files', 'program files (x86)',
@@ -642,12 +675,9 @@ async function scanImages(dir, fileList = [], limit = 1000) {
       if (entry.isDirectory()) {
         try {
           await scanImages(fullPath, fileList, limit);
-        } catch (e) {
-          // 権限エラーなどはスキップ
-        }
+        } catch (e) { }
       } else if (entry.isFile()) {
         const nameLower = entry.name.toLowerCase();
-        // アプリに含まれる3つのアイコン画像をデフォルトで除外
         if (['drag-icon.png', 'icon.png', 'icon_reencoded.png'].includes(nameLower)) {
           continue;
         }
@@ -661,12 +691,11 @@ async function scanImages(dir, fileList = [], limit = 1000) {
         }
       }
     }
-  } catch (e) {
-    // 権限エラーなどはスキップ
-  }
+  } catch (e) { }
   return fileList;
 }
 
+// ホーム以下の画像をスキャンして返す（壁紙ギャラリー用）
 ipcMain.handle('SCAN_USER_IMAGES', async () => {
   const homeDir = os.homedir();
   const images = [];
@@ -678,12 +707,12 @@ ipcMain.handle('SCAN_USER_IMAGES', async () => {
   return images;
 });
 
+// ファイルをテキストとして読み込む（1MB 超は先頭 10KB のみ）
 ipcMain.handle('READ_FILE_TEXT', async (event, filePath) => {
   try {
-    // セキュリティ上の配慮として、一定サイズ以上の場合は先頭のみ読み込む等の制限を設けるのが望ましい
     const stats = await fs.stat(filePath);
-    if (stats.size > 1024 * 1024) { // 1MB制限
-      const buffer = Buffer.alloc(1024 * 10); // 10KB
+    if (stats.size > 1024 * 1024) {
+      const buffer = Buffer.alloc(1024 * 10);
       const handle = await fs.open(filePath, 'r');
       const { bytesRead } = await handle.read(buffer, 0, 1024 * 10, 0);
       await handle.close();
@@ -696,6 +725,7 @@ ipcMain.handle('READ_FILE_TEXT', async (event, filePath) => {
   }
 });
 
+// プレビューウィンドウを表示する（既存なら再利用）
 ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
   const state = windows.get(event.sender.id);
   if (!state) return;
@@ -720,7 +750,7 @@ ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
 
   state.previewWindow = new BrowserWindow({
     width: winWidth,
-    height: winHeight, // 16:9 ratio
+    height: winHeight,
     x: Math.round((screenWidth - winWidth) / 2 + 100),
     y: Math.round((screenHeight - winHeight) / 2 + 100),
     title: 'Preview',
@@ -753,6 +783,7 @@ ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
   });
 });
 
+// プレビューウィンドウを閉じる
 ipcMain.on('CLOSE_PREVIEW_WINDOW', (event) => {
   const state = windows.get(event.sender.id);
   if (state && state.previewWindow) {
@@ -762,22 +793,17 @@ ipcMain.on('CLOSE_PREVIEW_WINDOW', (event) => {
 
 let currentDraggedFiles = [];
 
-// 外部アプリへのドラッグ＆ドロップ
+// 外部アプリへの D&D: ネイティブドラッグを開始し、同一ドライブへのドロップは移動としてエミュレートする
 ipcMain.on('ondragstart', (event, files) => {
   currentDraggedFiles = files || [];
   try {
     if (!files || files.length === 0) return;
 
-    const iconPath = path.join(__dirname, 'drag-icon.png');
-    let dragIcon = iconPath;
-    try {
-      const img = nativeImage.createFromPath(iconPath);
-      if (!img.isEmpty()) {
-        dragIcon = img.resize({ width: 32, height: 32 }); // クラッシュ防止のために32x32にリサイズ
-      }
-    } catch (e) {
-      console.error('Failed to load/resize drag icon:', e);
-    }
+    // 4×4 透明アイコン（IDragSourceHelper の HWND を不可視にして Task View ゴーストを防ぐ）
+    const dragIcon = nativeImage.createFromBitmap(
+      Buffer.alloc(4 * 4 * 4, 0),
+      { width: 4, height: 4 }
+    );
 
     const dragConfig = {
       files: files,
@@ -785,29 +811,27 @@ ipcMain.on('ondragstart', (event, files) => {
       icon: dragIcon
     };
 
-    // ネイティブドラッグを開始（Windowsではこの処理は完了するまで同期ブロックします）
+    // Windows では startDrag が完了するまで同期ブロックする
     event.sender.startDrag(dragConfig);
-    
-    // ドラッグ終了後、レンダラーに半透明クリアを指示
+
     if (!event.sender.isDestroyed()) {
       event.sender.send('backend-response', { type: 'DRAG_END' });
     }
 
-    // --- 同一ドライブ内へのドロップ時の「移動（カット）」エミュレーション処理 ---
     const { exec } = require('child_process');
     const cmd = 'powershell -NoProfile -Command "`$shell = New-Object -ComObject Shell.Application; try { `$shell.Windows() | ForEach-Object { if (`$_.Document.Folder.Self.Path) { `$_.Document.Folder.Self.Path } } } catch {}; [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop)"';
-    
-    // ドロップ後のファイル書き込み完了を少し待つ（300ms, 1200ms, 3000ms の多段階リトライで大容量ファイルや低速ディスクにも対応）
+
     const checkAttempts = [300, 1200, 3000];
     checkAttempts.forEach((delay) => {
-      setTimeout(() => {
-        exec(cmd, async (err, stdout) => {
+      const timerId = setTimeout(() => {
+        trackedTimers.delete(timerId);
+        const child = exec(cmd, async (err, stdout) => {
+          trackedChildProcs.delete(child);
           let destDirs = [];
           if (!err && stdout) {
             destDirs = stdout.split(/\r?\n/).map(p => p.trim()).filter(p => p.length > 0);
           }
-          
-          // OneDriveや標準のデスクトップパスを明示的に補完（ registryや環境変数の遅延・COMの空振りに備える）
+
           const home = os.homedir();
           const commonDesktops = [
             path.join(home, 'Desktop'),
@@ -819,51 +843,47 @@ ipcMain.on('ondragstart', (event, files) => {
             path.join(home, 'OneDrive - 個人用', 'desktop'),
             path.join(home, 'OneDrive - 個人用', 'デスクトップ')
           ];
-          
+
           destDirs = destDirs.concat(commonDesktops);
           const uniqueDestDirs = [...new Set(destDirs)];
-          
+
           let filesMoved = false;
           for (const srcPath of files) {
             try {
-              // 既に別のアテンプトや処理で元のファイルが削除（移動完了）されている場合はスキップ
               try {
                 await fs.access(srcPath);
               } catch (e) {
                 continue;
               }
-              
+
               const srcStat = await fs.stat(srcPath);
               const fileName = path.basename(srcPath);
               const srcDrive = srcPath[0].toLowerCase();
               const isDirectory = srcStat.isDirectory();
-              
+
               for (const destDir of uniqueDestDirs) {
                 const destDrive = destDir[0].toLowerCase();
-                if (srcDrive !== destDrive) continue; // 異なるドライブならコピーなので無視
-                
+                if (srcDrive !== destDrive) continue;
+
                 const destPath = path.join(destDir, fileName);
                 if (destPath.toLowerCase() === srcPath.toLowerCase()) continue;
-                
+
                 try {
                   const destStat = await fs.stat(destPath);
                   const now = Date.now();
-                  
+
                   const birthtimeVal = destStat.birthtime ? destStat.birthtime.getTime() : (destStat.birthtimeMs || 0);
                   const ctimeVal = destStat.ctime ? destStat.ctime.getTime() : (destStat.ctimeMs || 0);
-                  
-                  // Windows Explorerによる複製時は作成日時およびメタデータ更新日時が現在時刻になるため両方を監視（15秒の猶予を持たせる）
                   const isRecent = (now - birthtimeVal < 15000) || (now - ctimeVal < 15000);
-                  
+
                   let matches = false;
                   if (isDirectory && destStat.isDirectory()) {
                     matches = isRecent;
                   } else if (!isDirectory && !destStat.isDirectory()) {
                     matches = (destStat.size === srcStat.size) && isRecent;
                   }
-                  
+
                   if (matches) {
-                    // 同一ドライブへのコピーが成功したため、元のファイルを完全に削除（ゴミ箱にすらいかないようにする）
                     if (isDirectory) {
                       await fs.rm(srcPath, { recursive: true, force: true });
                     } else {
@@ -873,17 +893,18 @@ ipcMain.on('ondragstart', (event, files) => {
                     console.log(`Same-drive move completed on delay ${delay}ms: ${srcPath} -> ${destPath}`);
                     break;
                   }
-                } catch (e) {}
+                } catch (e) { }
               }
-            } catch (e) {}
+            } catch (e) { }
           }
-          
-          // 移動が発生した場合はリストを更新
+
           if (filesMoved && !event.sender.isDestroyed()) {
             event.sender.send('backend-response', { type: 'REFRESH_LIST' });
           }
         });
+        trackedChildProcs.add(child);
       }, delay);
+      trackedTimers.add(timerId);
     });
 
   } catch (err) {
@@ -891,9 +912,12 @@ ipcMain.on('ondragstart', (event, files) => {
   }
 });
 
+// 最後にドラッグされたファイルパス一覧を返す
 ipcMain.handle('GET_DRAGGED_FILES', () => {
   return currentDraggedFiles;
 });
+
+// ウィンドウの最大化・復元を切り替える
 ipcMain.on('TOGGLE_MAXIMIZE', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win) {
