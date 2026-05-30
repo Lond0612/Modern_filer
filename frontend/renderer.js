@@ -1164,6 +1164,31 @@ function loadPath(path, isUserClick = false) {
     }
 }
 
+// 指定したパスへ履歴移動する
+function navigateTo(path) {
+    if (path === 'HOME' || path === 'HOME\\') {
+        showHome(false);
+        return;
+    }
+    const tab = getActiveTab();
+    if (!tab) return;
+
+    if (!path.endsWith('\\')) path += '\\';
+    tab.path = path;
+    addressInput.value = tab.path;
+    updateNavButtons();
+
+    if (tab.isHomeActive) {
+        tab.isHomeActive = false;
+        homeView.style.display = 'none';
+        explorerView.style.display = 'block';
+        btnSidebarHome.classList.remove('active');
+    }
+
+    renderTabs();
+    window.api.sendCommand(`CD|${tab.path}`);
+}
+
 // バックエンドからの通信レスポンスを受け取り、各処理を振り分ける
 window.api.onBackendResponse((obj) => {
     switch (obj.type) {
