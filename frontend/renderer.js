@@ -1,13 +1,27 @@
+
 // タブの状態と情報を管理するクラス
 class Tab {
     constructor(id, path = 'HOME', isPinned = false) {
         this.id = id;
+        this._path = 'HOME';
         this.path = path;
         this.isPinned = isPinned;
         this.isHomeActive = (path === 'HOME');
         this.historyBack = [];
         this.historyForward = [];
         this.scrollPosition = 0;
+    }
+
+    get path() {
+        return this._path;
+    }
+
+    set path(val) {
+        if (val && val !== 'HOME' && !val.endsWith('\\')) {
+            this._path = val + '\\';
+        } else {
+            this._path = val;
+        }
     }
 
     get title() {
@@ -68,6 +82,9 @@ function getIsHomeActive() { return getActiveTab()?.isHomeActive ?? true; }
 function setIsHomeActive(val) { if (getActiveTab()) getActiveTab().isHomeActive = val; }
 function getHistoryBack() { return getActiveTab()?.historyBack || []; }
 function getHistoryForward() { return getActiveTab()?.historyForward || []; }
+
+let contextTarget = null;
+let selectionAnchorIndex = -1;
 
 Object.defineProperty(window, 'currentPath', { get: getCurrentPath, set: setCurrentPath, configurable: true });
 Object.defineProperty(window, 'isHomeActive', { get: getIsHomeActive, set: setIsHomeActive, configurable: true });
@@ -183,6 +200,7 @@ function applyTerminalVisibility() {
 // アプリケーション起動時の初期設定を行う
 window.onload = () => {
     initTabs();
+    initTabBarDragAndDrop();
 
     const btnTerminalToggle = document.getElementById('btn-terminal-toggle');
     if (btnTerminalToggle) {
@@ -213,6 +231,106 @@ function initTabs() {
     const urlParams = new URLSearchParams(window.location.search);
     const initialPath = urlParams.get('path') || 'HOME';
     addTab(initialPath);
+}
+
+// タブバー全体に対するドラッグ＆ドロップイベントを設定する（空白部分へのドロップで新規タブ作成）
+function initTabBarDragAndDrop() {
+    const tabBar = document.getElementById('tab-bar');
+    if (!tabBar) return;
+
+    tabBar.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        // タブ自体の位置でなく、タブバーの空白部分または追加ボタンの上に乗っている場合のみハイライト
+        if (e.target === tabBar || e.target.classList.contains('tab-add-btn')) {
+            e.dataTransfer.dropEffect = 'move';
+            tabBar.classList.add('drag-over');
+        } else {
+            tabBar.classList.remove('drag-over');
+        }
+    });
+
+    tabBar.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        if (e.target === tabBar || e.target.classList.contains('tab-add-btn')) {
+            tabBar.classList.add('drag-over');
+        }
+    });
+
+    tabBar.addEventListener('dragleave', (e) => {
+        if (!tabBar.contains(e.relatedTarget)) {
+            tabBar.classList.remove('drag-over');
+        }
+    });
+
+    tabBar.addEventListener('drop', (e) => {
+        e.preventDefault();
+        tabBar.classList.remove('drag-over');
+
+        const tabItem = e.target.closest('.tab-item');
+        if (tabItem) return;
+
+        const srcPaths = getPathsFromDragEvent(e);
+        if (srcPaths.length === 0) return;
+
+        let isDir = false;
+        let detected = false;
+        try {
+            const items = e.dataTransfer.items;
+            if (items && items.length > 0) {
+                const entry = items[0].webkitGetAsEntry();
+                if (entry) {
+                    isDir = entry.isDirectory;
+                    detected = true;
+                }
+            }
+        } catch (err) {
+            console.error('webkitGetAsEntry failed:', err);
+        }
+
+        const srcPath = srcPaths[0];
+
+        if (!detected) {
+            const isLocalItem = srcPath.startsWith(currentPath);
+            if (isLocalItem) {
+                const localName = srcPath.substring(currentPath.length);
+                const row = document.querySelector(`tr[data-name="${CSS.escape(localName)}"], .grid-item[data-name="${CSS.escape(localName)}"]`);
+                if (row && row.dataset.type === 'D') {
+                    isDir = true;
+                    detected = true;
+                }
+            } else {
+                const treeNode = document.querySelector(`.tree-node[data-path="${CSS.escape(srcPath)}"]`);
+                if (treeNode) {
+                    isDir = true;
+                    detected = true;
+                }
+            }
+        }
+
+        setTimeout(async () => {
+            try {
+                let targetPath = srcPath;
+                if (!detected) {
+                    try {
+                        isDir = await window.api.invoke('IS_DIRECTORY', srcPath);
+                    } catch (err) {
+                        console.error('Failed to check directory status via IPC:', err);
+                    }
+                }
+
+                if (!isDir) {
+                    const lastSlash = srcPath.lastIndexOf('\\');
+                    if (lastSlash !== -1) {
+                        targetPath = srcPath.substring(0, lastSlash + 1);
+                    }
+                }
+
+                addTab(targetPath, true);
+            } catch (err) {
+                console.error('TabBar drop deferred execution error:', err);
+            }
+        }, 0);
+    });
 }
 
 // 新規タブを追加する
@@ -331,6 +449,109 @@ function renderTabs() {
         `;
 
         tabEl.onmousedown = (e) => handleTabMouseDown(e, tab.id);
+
+        tabEl.ondragover = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'link';
+            tabEl.classList.add('drag-over');
+        };
+
+        tabEl.ondragenter = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            tabEl.classList.add('drag-over');
+        };
+
+        tabEl.ondragleave = (e) => {
+            e.stopPropagation();
+            if (!tabEl.contains(e.relatedTarget)) {
+                tabEl.classList.remove('drag-over');
+            }
+        };
+
+        tabEl.ondrop = (e) => {
+            try {
+                e.preventDefault();
+                e.stopPropagation();
+                tabEl.classList.remove('drag-over');
+
+                const srcPaths = getPathsFromDragEvent(e);
+                if (srcPaths.length === 0) return;
+
+                const srcPath = srcPaths[0];
+
+                let isDir = false;
+                let detected = false;
+                try {
+                    const items = e.dataTransfer.items;
+                    if (items && items.length > 0) {
+                        const entry = items[0].webkitGetAsEntry();
+                        if (entry) {
+                            isDir = entry.isDirectory;
+                            detected = true;
+                        }
+                    }
+                } catch (err) {
+                    console.error('webkitGetAsEntry failed:', err);
+                }
+
+                if (!detected) {
+                    const isLocalItem = srcPath.startsWith(currentPath);
+                    if (isLocalItem) {
+                        const localName = srcPath.substring(currentPath.length);
+                        const row = document.querySelector(`tr[data-name="${CSS.escape(localName)}"], .grid-item[data-name="${CSS.escape(localName)}"]`);
+                        if (row && row.dataset.type === 'D') {
+                            isDir = true;
+                            detected = true;
+                        }
+                    } else {
+                        const treeNode = document.querySelector(`.tree-node[data-path="${CSS.escape(srcPath)}"]`);
+                        if (treeNode) {
+                            isDir = true;
+                            detected = true;
+                        }
+                    }
+                }
+
+                setTimeout(async () => {
+                    try {
+                        let targetPath = srcPath;
+
+                        if (!detected) {
+                            try {
+                                isDir = await window.api.invoke('IS_DIRECTORY', srcPath);
+                            } catch (err) {
+                                console.error('Failed to check directory status via IPC:', err);
+                            }
+                        }
+
+                        if (!isDir) {
+                            const lastSlash = srcPath.lastIndexOf('\\');
+                            if (lastSlash !== -1) {
+                                targetPath = srcPath.substring(0, lastSlash + 1);
+                            }
+                        }
+
+                        if (tab.id === activeTabId) {
+                            loadPath(targetPath, true);
+                        } else {
+                            if (tab.path && tab.path !== targetPath) {
+                                tab.historyBack.push(tab.path);
+                                tab.historyForward = [];
+                            }
+                            tab.path = targetPath;
+                            tab.isHomeActive = (targetPath === 'HOME');
+                            switchTab(tab.id);
+                        }
+                    } catch (err) {
+                        console.error('Tab drop deferred execution error:', err);
+                    }
+                }, 0);
+            } catch (err) {
+                console.error('Error in tabEl.ondrop handler:', err);
+            }
+        };
 
         tabEl.oncontextmenu = (e) => {
             e.preventDefault();
@@ -1255,6 +1476,7 @@ window.api.onBackendResponse((obj) => {
             document.querySelectorAll('.dragging, .cut-item').forEach(el => {
                 el.classList.remove('dragging', 'cut-item');
             });
+            document.body.classList.remove('window-dragging-active');
             break;
 
         case 'REFRESH_LIST':
@@ -2188,7 +2410,6 @@ initColumnResizers();
 
 // 右クリックのコンテキストメニューを制御する
 const contextMenu = document.getElementById('context-menu');
-let contextTarget = null;
 
 window.addEventListener('contextmenu', (e) => {
     e.preventDefault();
@@ -2743,6 +2964,35 @@ window.activeDragPaths = null;
 window.hasTriggeredNativeDrag = false;
 window.isDragging = false;
 
+// ドラッグイベントのデータTransferからパス情報を抽出するヘルパー関数
+function getPathsFromDragEvent(e) {
+    let srcPaths = [];
+
+    // 1. HTML5カスタムMIME（同一アプリ内）から抽出
+    const pathsJson = e.dataTransfer.getData('application/x-file-paths');
+    if (pathsJson) {
+        try {
+            srcPaths = JSON.parse(pathsJson);
+        } catch (err) {
+            console.error('Failed to parse drag paths JSON:', err);
+        }
+    }
+
+    // 2. Electronネイティブ/外部アプリのドラッグから抽出
+    if ((!srcPaths || srcPaths.length === 0) && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        srcPaths = Array.from(e.dataTransfer.files)
+            .map(file => file.path)
+            .filter(path => path);
+    }
+
+    // 3. フォールバック: 現在の選択項目から抽出
+    if (!srcPaths || srcPaths.length === 0) {
+        srcPaths = getSelectedItems().map(i => i.srcPath);
+    }
+
+    return srcPaths;
+}
+
 // HTML5ドラッグ開始イベントを処理する
 function handleDragStart(e) {
     const item = e.target.closest('tr, .grid-item, .tree-item');
@@ -2776,7 +3026,7 @@ function handleDragStart(e) {
     }
 
     e.dataTransfer.setData('application/x-file-paths', JSON.stringify(paths));
-    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.effectAllowed = 'all';
 
     const transparentImage = new Image();
     transparentImage.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -2800,7 +3050,9 @@ function handleDragEnd(e) {
 
     window.isDragging = false;
     window.activeDragPaths = null;
-    window.hasTriggeredNativeDrag = false;
+    if (!window.hasTriggeredNativeDrag) {
+        window.hasTriggeredNativeDrag = false;
+    }
 }
 
 // HTML5ドラッグセッションを強制キャンセルする
@@ -2834,6 +3086,33 @@ document.documentElement.addEventListener('dragleave', (e) => {
 
             window.api.send('ondragstart', window.activeDragPaths);
         }
+    }
+});
+
+// ドラッグセッション中にタブバーの-webkit-app-region: dragを一時的に無効化し、ドロップを受け付けるようにする
+window.addEventListener('dragenter', (e) => {
+    document.body.classList.add('window-dragging-active');
+});
+
+window.addEventListener('dragover', (e) => {
+    document.body.classList.add('window-dragging-active');
+});
+
+window.addEventListener('dragleave', (e) => {
+    if (!window.hasTriggeredNativeDrag) {
+        if (!e.relatedTarget || e.relatedTarget === document.documentElement) {
+            document.body.classList.remove('window-dragging-active');
+        }
+    }
+});
+
+window.addEventListener('drop', (e) => {
+    document.body.classList.remove('window-dragging-active');
+});
+
+window.addEventListener('dragend', (e) => {
+    if (!window.hasTriggeredNativeDrag) {
+        document.body.classList.remove('window-dragging-active');
     }
 });
 
@@ -2897,14 +3176,7 @@ function handleDrop(e) {
     const target = e.target.closest('tr[data-type="D"], .grid-item[data-type="D"], .tree-node');
     if (!target) return;
 
-    let srcPaths = [];
-    const pathsJson = e.dataTransfer.getData('application/x-file-paths');
-
-    if (pathsJson) {
-        srcPaths = JSON.parse(pathsJson);
-    } else {
-        srcPaths = getSelectedItems().map(i => i.srcPath);
-    }
+    const srcPaths = getPathsFromDragEvent(e);
 
     if (srcPaths.length === 0) return;
 

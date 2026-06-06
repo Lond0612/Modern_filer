@@ -725,6 +725,16 @@ ipcMain.handle('READ_FILE_TEXT', async (event, filePath) => {
   }
 });
 
+// パスがディレクトリかどうか判定する
+ipcMain.handle('IS_DIRECTORY', async (event, filePath) => {
+  try {
+    const stats = await fs.stat(filePath);
+    return stats.isDirectory();
+  } catch (e) {
+    return false;
+  }
+});
+
 // プレビューウィンドウを表示する（既存なら再利用）
 ipcMain.handle('SHOW_PREVIEW_WINDOW', async (event, data) => {
   const state = windows.get(event.sender.id);
