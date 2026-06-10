@@ -3189,8 +3189,47 @@ function handleDrop(e) {
 
     if (!destPath) return;
 
+    const getDrive = (p) => {
+        if (p && p.length >= 2 && p[1] === ':') {
+            return p[0].toLowerCase();
+        }
+        if (p && p.startsWith('\\\\')) {
+            const parts = p.slice(2).split('\\');
+            if (parts.length >= 2) {
+                return '\\\\' + parts[0].toLowerCase() + '\\' + parts[1].toLowerCase();
+            }
+        }
+        return '';
+    };
+
+    let moveCount = 0;
+    let copyCount = 0;
+    srcPaths.forEach(srcPath => {
+        const fileName = srcPath.split('\\').pop();
+        const targetPath = destPath + fileName;
+        if (srcPath !== targetPath && !destPath.startsWith(srcPath + '\\')) {
+            const srcDrive = getDrive(srcPath);
+            const destDrive = getDrive(destPath);
+            if (srcDrive && destDrive && srcDrive === destDrive) {
+                moveCount++;
+            } else {
+                copyCount++;
+            }
+        }
+    });
+
     if (typeof appendTerminal === 'function') {
-        appendTerminal(`Moving ${srcPaths.length} items to ${destPath}...`, 'command-echo');
+        let msg = '';
+        if (moveCount > 0 && copyCount > 0) {
+            msg = `Moving ${moveCount} items and Copying ${copyCount} items to ${destPath}...`;
+        } else if (moveCount > 0) {
+            msg = `Moving ${moveCount} items to ${destPath}...`;
+        } else if (copyCount > 0) {
+            msg = `Copying ${copyCount} items to ${destPath}...`;
+        }
+        if (msg) {
+            appendTerminal(msg, 'command-echo');
+        }
     }
 
     srcPaths.forEach(srcPath => {
@@ -3198,7 +3237,13 @@ function handleDrop(e) {
         const targetPath = destPath + fileName;
 
         if (srcPath !== targetPath && !destPath.startsWith(srcPath + '\\')) {
-            window.api.sendCommand(`MOVE|${srcPath}|${targetPath}`);
+            const srcDrive = getDrive(srcPath);
+            const destDrive = getDrive(destPath);
+            if (srcDrive && destDrive && srcDrive === destDrive) {
+                window.api.sendCommand(`MOVE|${srcPath}|${targetPath}`);
+            } else {
+                window.api.sendCommand(`COPY|${srcPath}|${targetPath}`);
+            }
         }
     });
 }

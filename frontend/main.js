@@ -829,7 +829,7 @@ ipcMain.on('ondragstart', (event, files) => {
     }
 
     const { exec } = require('child_process');
-    const cmd = 'powershell -NoProfile -Command "`$shell = New-Object -ComObject Shell.Application; try { `$shell.Windows() | ForEach-Object { if (`$_.Document.Folder.Self.Path) { `$_.Document.Folder.Self.Path } } } catch {}; [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop)"';
+    const cmd = 'powershell -NoProfile -Command "$sh = New-Object -ComObject Shell.Application; $paths = New-Object System.Collections.Generic.List[string]; try { $sh.Windows() | ForEach-Object { $p = $_.Document.Folder.Self.Path; if ($p) { $paths.Add($p) } } } catch {}; try { $sh.Namespace(\'shell:::{679f85cb-0220-4080-b29b-5540cc05aab6}\').Items() | ForEach-Object { $p = $_.Path; if ($p) { $paths.Add($p) } } } catch {}; $paths.Add([System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::Desktop)); $paths.Add([System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::MyDocuments)); $paths.Add(([System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::UserProfile) + \'\\Downloads\')); $paths.Add([System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::MyPictures)); $paths.Add([System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::MyMusic)); $paths.Add([System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::MyVideos)); try { [System.IO.DriveInfo]::GetDrives() | ForEach-Object { if ($_.IsReady) { $paths.Add($_.Name) } } } catch {}; $paths | Select-Object -Unique"';
 
     const checkAttempts = [300, 1200, 3000];
     checkAttempts.forEach((delay) => {
@@ -842,20 +842,22 @@ ipcMain.on('ondragstart', (event, files) => {
             destDirs = stdout.split(/\r?\n/).map(p => p.trim()).filter(p => p.length > 0);
           }
 
-          const home = os.homedir();
-          const commonDesktops = [
-            path.join(home, 'Desktop'),
-            path.join(home, 'desktop'),
-            path.join(home, 'OneDrive', 'Desktop'),
-            path.join(home, 'OneDrive', 'desktop'),
-            path.join(home, 'OneDrive', 'デスクトップ'),
-            path.join(home, 'OneDrive - 個人用', 'Desktop'),
-            path.join(home, 'OneDrive - 個人用', 'desktop'),
-            path.join(home, 'OneDrive - 個人用', 'デスクトップ')
-          ];
-
-          destDirs = destDirs.concat(commonDesktops);
           const uniqueDestDirs = [...new Set(destDirs)];
+          const allCandidateDirs = [...uniqueDestDirs];
+
+          // Gather immediate subfolders of all target candidate directories
+          for (const dir of uniqueDestDirs) {
+            try {
+              const entries = await fs.readdir(dir, { withFileTypes: true });
+              for (const entry of entries) {
+                if (entry.isDirectory()) {
+                  allCandidateDirs.push(path.join(dir, entry.name));
+                }
+              }
+            } catch (e) {
+              // Ignore inaccessible folders
+            }
+          }
 
           let filesMoved = false;
           for (const srcPath of files) {
@@ -863,6 +865,7 @@ ipcMain.on('ondragstart', (event, files) => {
               try {
                 await fs.access(srcPath);
               } catch (e) {
+                // Already deleted or moved in a previous attempt
                 continue;
               }
 
@@ -871,12 +874,12 @@ ipcMain.on('ondragstart', (event, files) => {
               const srcDrive = srcPath[0].toLowerCase();
               const isDirectory = srcStat.isDirectory();
 
-              for (const destDir of uniqueDestDirs) {
+              const checkPromises = allCandidateDirs.map(async (destDir) => {
                 const destDrive = destDir[0].toLowerCase();
-                if (srcDrive !== destDrive) continue;
+                if (srcDrive !== destDrive) return null;
 
                 const destPath = path.join(destDir, fileName);
-                if (destPath.toLowerCase() === srcPath.toLowerCase()) continue;
+                if (destPath.toLowerCase() === srcPath.toLowerCase()) return null;
 
                 try {
                   const destStat = await fs.stat(destPath);
@@ -884,7 +887,7 @@ ipcMain.on('ondragstart', (event, files) => {
 
                   const birthtimeVal = destStat.birthtime ? destStat.birthtime.getTime() : (destStat.birthtimeMs || 0);
                   const ctimeVal = destStat.ctime ? destStat.ctime.getTime() : (destStat.ctimeMs || 0);
-                  const isRecent = (now - birthtimeVal < 15000) || (now - ctimeVal < 15000);
+                  const isRecent = (now - birthtimeVal < 20000) || (now - ctimeVal < 20000);
 
                   let matches = false;
                   if (isDirectory && destStat.isDirectory()) {
@@ -894,16 +897,23 @@ ipcMain.on('ondragstart', (event, files) => {
                   }
 
                   if (matches) {
-                    if (isDirectory) {
-                      await fs.rm(srcPath, { recursive: true, force: true });
-                    } else {
-                      await fs.unlink(srcPath);
-                    }
-                    filesMoved = true;
-                    console.log(`Same-drive move completed on delay ${delay}ms: ${srcPath} -> ${destPath}`);
-                    break;
+                    return destPath;
                   }
                 } catch (e) { }
+                return null;
+              });
+
+              const results = await Promise.all(checkPromises);
+              const foundDestPath = results.find(p => p !== null);
+
+              if (foundDestPath) {
+                if (isDirectory) {
+                  await fs.rm(srcPath, { recursive: true, force: true });
+                } else {
+                  await fs.unlink(srcPath);
+                }
+                filesMoved = true;
+                console.log(`Same-drive move completed on delay ${delay}ms: ${srcPath} -> ${foundDestPath}`);
               }
             } catch (e) { }
           }
