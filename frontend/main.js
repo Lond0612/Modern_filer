@@ -266,14 +266,15 @@ app.on('before-quit', () => {
   trackedChildProcs.clear();
 
   let serverKilled = 0;
-  let serverAlive = 0;
+  let serverAlreadyExited = 0; // 変数名を alreadyDone 側と合わせて分かりやすく変更
   for (const [, state] of windows.entries()) {
     if (state.filerServer) {
+      // 実行中の場合は kill して「強制終了数」をインクリメント
       if (state.filerServer.exitCode === null && !state.filerServer.killed) {
         state.filerServer.kill();
-        serverAlive++;
-      } else {
         serverKilled++;
+      } else {
+        serverAlreadyExited++;
       }
     }
   }
@@ -282,7 +283,7 @@ app.on('before-quit', () => {
     `[before-quit] cleanup done — ` +
     `timers cancelled: ${timerCount}, ` +
     `child-procs force-killed: ${killed} (already exited: ${alreadyDone}), ` +
-    `filer-servers force-killed: ${serverAlive} (already exited: ${serverKilled})`
+    `filer-servers force-killed: ${serverKilled} (already exited: ${serverAlreadyExited})`
   );
 });
 
