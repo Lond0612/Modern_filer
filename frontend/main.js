@@ -673,8 +673,8 @@ async function scanImages(dir, fileList = [], limit = 1000) {
         if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'].includes(ext)) {
           try {
             const stats = await fs.stat(fullPath);
-            // 500KB超の画像ファイルのみを対象とする
-            if (stats.size > 500 * 1024) {
+            // 80KB超の画像ファイルのみを対象とする
+            if (stats.size > 80 * 1024) {
               fileList.push({
                 path: fullPath,
                 name: entry.name
