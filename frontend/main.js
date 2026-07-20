@@ -646,23 +646,14 @@ const os = require('os');
 async function scanImages(dir, fileList = [], limit = 1000) {
   if (fileList.length >= limit) return fileList;
 
-  const appDir = path.dirname(app.getAppPath()).toLowerCase();
-  const execDir = path.dirname(process.execPath).toLowerCase();
-
   try {
     const entries = await fs.readdir(dir, { withFileTypes: true });
     for (const entry of entries) {
       if (fileList.length >= limit) break;
 
       const fullPath = path.join(dir, entry.name);
-      const fullPathLower = fullPath.toLowerCase();
-
-      // アプリ自身のフォルダは除外
-      if (fullPathLower.startsWith(appDir) || fullPathLower.startsWith(execDir)) {
-        continue;
-      }
-
       const nameLower = entry.name.toLowerCase();
+
       if (entry.name.startsWith('.') ||
         nameLower.includes('orbiter') ||
         ['appdata', 'node_modules', 'local settings', 'application data', 'cookies',
@@ -678,17 +669,18 @@ async function scanImages(dir, fileList = [], limit = 1000) {
           await scanImages(fullPath, fileList, limit);
         } catch (e) { }
       } else if (entry.isFile()) {
-        const nameLower = entry.name.toLowerCase();
-        if (['drag-icon.png', 'icon.png', 'icon_reencoded.png'].includes(nameLower)) {
-          continue;
-        }
-
         const ext = path.extname(entry.name).toLowerCase();
         if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'].includes(ext)) {
-          fileList.push({
-            path: fullPath,
-            name: entry.name
-          });
+          try {
+            const stats = await fs.stat(fullPath);
+            // 500KB超の画像ファイルのみを対象とする
+            if (stats.size > 500 * 1024) {
+              fileList.push({
+                path: fullPath,
+                name: entry.name
+              });
+            }
+          } catch (e) { }
         }
       }
     }
