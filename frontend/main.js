@@ -379,7 +379,7 @@ ipcMain.handle('GET_USER_THEMES', async () => {
     "colors": {
       "--bg-main": "#0b0f0e",       // メイン背景
       "--bg-side": "#121817",       // サイドバー背景
-      "--accent-color": "#10b981",  // アクセント（エメラルド）
+      "--accent-color": "#10b981",  // アクセント
       "--text-main": "#ecfdf5",     // テキスト
       "--border-main": "#1e2927",   // 境界線
       "--icon-folder": "#10b981",   // フォルダアイコン
@@ -388,28 +388,28 @@ ipcMain.handle('GET_USER_THEMES', async () => {
   },
   {
     "id": "user-cyber",
-    "name": "サイバー",
+    "name": "スポーティ",
     "colors": {
-      "--bg-main": "#0f172a",       // メイン背景（ミッドナイトブルー）
-      "--bg-side": "#1e293b",       // サイドバー背景
-      "--accent-color": "#f97316",  // アクセント（オレンジ）
-      "--text-main": "#f8fafc",     // テキスト
-      "--border-main": "#334155",   // 境界線
-      "--icon-folder": "#f97316",   // フォルダアイコン
-      "--icon-file": "#94a3b8"      // ファイルアイコン
+      "--bg-main": "#0f172a",
+      "--bg-side": "#1e293b",
+      "--accent-color": "#f97316",
+      "--text-main": "#f8fafc",
+      "--border-main": "#334155",
+      "--icon-folder": "#f97316",
+      "--icon-file": "#94a3b8"
     }
   },
   {
     "id": "user-obsidian",
     "name": "オブシディアン",
     "colors": {
-      "--bg-main": "#0a0a0a",       // メイン背景（深い黒）
-      "--bg-side": "#141414",       // サイドバー背景（わずかに明るい墨色）
-      "--accent-color": "#d4af37",  // アクセント（ゴールド）
-      "--text-main": "#f5f5f7",     // テキスト（オフホワイト）
-      "--border-main": "#262626",   // 境界線（ダークグレー）
-      "--icon-folder": "#d4af37",   // フォルダアイコン（ゴールド）
-      "--icon-file": "#a3a3a3"      // ファイルアイコン（ミディアムグレー）
+      "--bg-main": "#0a0a0a",
+      "--bg-side": "#141414",
+      "--accent-color": "#d4af37",
+      "--text-main": "#f5f5f7",
+      "--border-main": "#262626",
+      "--icon-folder": "#d4af37",
+      "--icon-file": "#a3a3a3"
     }
   }
 ]`;
